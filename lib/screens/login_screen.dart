@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '../app_state.dart';
@@ -78,6 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
         template,
         monday,
         fetchWeeks,
+        withPhoto: true,
       );
       _timeout?.cancel();
       await widget.state.completeLogin(result, monday);
@@ -88,91 +89,111 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
+    final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        automaticallyImplyLeading: false,
+        transitionBetweenRoutes: false,
         leading: _fetching
             ? null
-            : IconButton(
-                icon: const Icon(Icons.arrow_back),
-                tooltip: 'Назад',
+            : CupertinoNavigationBarBackButton(
+                previousPageTitle: 'Назад',
                 onPressed: widget.onBack,
               ),
-        automaticallyImplyLeading: false,
-        title: Text(_fetching ? 'Расписание' : 'Вход в личный кабинет'),
-        bottom: _pageLoading && !_fetching
-            ? const PreferredSize(
-                preferredSize: Size.fromHeight(2),
-                child: LinearProgressIndicator(minHeight: 2),
-              )
+        middle: Text(_fetching ? 'Расписание' : 'Вход в ЛК'),
+        trailing: _pageLoading && !_fetching
+            ? const CupertinoActivityIndicator()
             : null,
       ),
-      body: Stack(
-        children: [
-          InAppWebView(
-            initialUrlRequest: URLRequest(
-              url: WebUri(RanepaClient.scheduleUrl),
+      child: SafeArea(
+        bottom: false,
+        child: Stack(
+          children: [
+            InAppWebView(
+              initialUrlRequest: URLRequest(
+                url: WebUri(RanepaClient.scheduleUrl),
+              ),
+              initialUserScripts: RanepaClient.userScripts,
+              initialSettings: RanepaClient.settings,
+              onWebViewCreated: (c) {
+                _controller = c;
+                RanepaClient.attach(c, _onTemplate);
+              },
+              onLoadStart: (_, url) {
+                setState(() => _pageLoading = true);
+                _onUrl(url);
+              },
+              onLoadStop: (_, url) {
+                setState(() => _pageLoading = false);
+                _onUrl(url);
+              },
+              onUpdateVisitedHistory: (_, url, _) => _onUrl(url),
             ),
-            initialUserScripts: RanepaClient.userScripts,
-            initialSettings: RanepaClient.settings,
-            onWebViewCreated: (c) {
-              _controller = c;
-              RanepaClient.attach(c, _onTemplate);
-            },
-            onLoadStart: (_, url) {
-              setState(() => _pageLoading = true);
-              _onUrl(url);
-            },
-            onLoadStop: (_, url) {
-              setState(() => _pageLoading = false);
-              _onUrl(url);
-            },
-            onUpdateVisitedHistory: (_, url, _) => _onUrl(url),
-          ),
-          if (_fetching)
-            Positioned.fill(
-              child: ColoredBox(
-                color: theme.colorScheme.surface,
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+            if (_fetching)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: CupertinoColors.systemBackground.resolveFrom(context),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CupertinoActivityIndicator(radius: 14),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Загружаю расписание…',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: CupertinoColors.label.resolveFrom(context),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Обычно это занимает несколько секунд',
+                          style: TextStyle(fontSize: 15, color: secondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            if (_error != null)
+              Positioned(
+                left: 16,
+                right: 16,
+                bottom: MediaQuery.paddingOf(context).bottom + 16,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.secondarySystemGroupedBackground
+                        .resolveFrom(context),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0x26000000), blurRadius: 20),
+                    ],
+                  ),
+                  child: Row(
                     children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Загружаю расписание…',
-                        style: theme.textTheme.titleMedium,
+                      Icon(
+                        CupertinoIcons.exclamationmark_circle_fill,
+                        color: CupertinoColors.systemRed.resolveFrom(context),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Обычно это занимает несколько секунд',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: CupertinoColors.label.resolveFrom(context),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
-          if (_error != null)
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 16,
-              child: Material(
-                color: theme.colorScheme.errorContainer,
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(color: theme.colorScheme.onErrorContainer),
-                  ),
-                ),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

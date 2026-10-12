@@ -9,6 +9,25 @@ final _plugin = FlutterLocalNotificationsPlugin();
 // iOS держит не больше 64 запланированных уведомлений на приложение.
 const _maxScheduled = 60;
 
+// Id напоминаний — 0..59, у служебных уведомлений свои.
+const _changesId = 1000;
+const _sessionId = 1001;
+const _keepAliveId = 1002;
+
+/// Через сколько после последнего обновления напомнить открыть приложение.
+/// Refresh-токен ЛК живёт 24 часа — нужен запас.
+const keepAliveAfter = Duration(hours: 20);
+
+const _infoDetails = NotificationDetails(
+  android: AndroidNotificationDetails(
+    'schedule',
+    'Изменения в расписании',
+    importance: Importance.high,
+    priority: Priority.high,
+  ),
+  iOS: DarwinNotificationDetails(),
+);
+
 Future<void> initNotifications() async {
   await _plugin.initialize(
     settings: const InitializationSettings(
@@ -42,7 +61,8 @@ Future<bool> requestNotificationPermission() async {
 
 /// Перепланирует напоминания: [minutes] до начала каждой пары, 0 — выключено.
 Future<void> scheduleReminders(List<Lesson> lessons, int minutes) async {
-  await _plugin.cancelAll();
+  // Только запланированные: уже показанное «расписание изменилось» не трогаем.
+  await _plugin.cancelAllPendingNotifications();
   if (minutes <= 0) return;
 
   const details = NotificationDetails(
@@ -73,3 +93,50 @@ Future<void> scheduleReminders(List<Lesson> lessons, int minutes) async {
     );
   }
 }
+
+/// Одно уведомление на все изменения: первые строки и «и ещё N».
+Future<void> showScheduleChanges(List<String> changes) async {
+  if (changes.isEmpty) return;
+  const shown = 3;
+  final body = [
+    ...changes.take(shown),
+    if (changes.length > shown) 'и ещё ${changes.length - shown}',
+  ].join('\n');
+  await _plugin.show(
+    id: _changesId,
+    title: changes.length == 1
+        ? 'Изменение в расписании'
+        : 'Изменения в расписании',
+    body: body,
+    notificationDetails: _infoDetails,
+  );
+}
+
+Future<void> showSessionExpired() => _plugin.show(
+  id: _sessionId,
+  title: 'Расписание не обновляется',
+  body: 'Сессия ЛК истекла. Открой приложение и войди заново.',
+  notificationDetails: _infoDetails,
+);
+
+/// «Таймер мёртвой руки»: каждое успешное обновление переносит уведомление
+/// на [keepAliveAfter] вперёд. Пока фоновое обновление работает, оно не
+/// срабатывает; если приложение смахнули и iOS перестала его будить —
+/// пользователь узнает об этом до того, как истечёт сессия ЛК.
+Future<void> scheduleKeepAlive(DateTime lastSync) async {
+  await _plugin.cancel(id: _keepAliveId);
+  final at = lastSync.add(keepAliveAfter);
+  if (!at.isAfter(DateTime.now())) return;
+  await _plugin.zonedSchedule(
+    id: _keepAliveId,
+    title: 'Открой приложение',
+    body:
+        'Расписание не обновлялось почти сутки. Открой приложение, '
+        'иначе придётся заново входить в ЛК.',
+    scheduledDate: tz.TZDateTime.from(at, tz.UTC),
+    notificationDetails: _infoDetails,
+    androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+  );
+}
+
+Future<void> cancelKeepAlive() => _plugin.cancel(id: _keepAliveId);

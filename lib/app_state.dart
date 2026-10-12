@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,12 +7,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'format.dart';
 import 'models.dart';
 import 'ranepa_client.dart';
+import 'services/background.dart';
 import 'services/calendar_export.dart';
 import 'services/home_widget_bridge.dart';
 import 'services/notifications.dart';
+import 'services/sync.dart';
 
-/// Сколько недель качать начиная с понедельника текущей недели.
-const fetchWeeks = 5;
+export 'services/sync.dart' show fetchWeeks;
 
 /// Кэш старше этого обновляется автоматически при открытии приложения.
 const staleAfter = Duration(hours: 3);
@@ -30,11 +32,39 @@ class AppState extends ChangeNotifier {
   bool loading = false;
   String? error;
 
-  bool get loggedIn => _prefs.getBool('loggedIn') ?? false;
-  int get reminderMinutes => _prefs.getInt('reminderMinutes') ?? 0;
-  bool get calendarExport => _prefs.getBool('calendarExport') ?? false;
+  /// Изменения, найденные последним ручным обновлением: показываются
+  /// на главном экране и сбрасываются после показа.
+  List<String> pendingChanges = const [];
+
+  bool get loggedIn => _prefs.getBool(Keys.loggedIn) ?? false;
+  int get reminderMinutes => _prefs.getInt(Keys.reminderMinutes) ?? 0;
+  bool get calendarExport => _prefs.getBool(Keys.calendarExport) ?? false;
   ThemeMode get themeMode =>
       ThemeMode.values[_prefs.getInt('themeMode') ?? ThemeMode.system.index];
+
+  DateTime? get lastBackgroundRun {
+    final at = _prefs.getInt(Keys.lastBackgroundRun);
+    return at == null ? null : DateTime.fromMillisecondsSinceEpoch(at);
+  }
+
+  String? get fullName => _prefs.getString(Keys.fullName);
+  String? get program => _prefs.getString(Keys.program);
+
+  Uint8List? _photo;
+  String? _photoSource;
+
+  /// Уменьшенное фото из ЛК; декодируется один раз на каждое новое фото.
+  Uint8List? get photo {
+    final raw = _prefs.getString(Keys.photo);
+    if (raw != _photoSource) {
+      _photoSource = raw;
+      _photo = raw == null ? null : base64Decode(raw);
+    }
+    return _photo;
+  }
+
+  String? get lastBackgroundResult =>
+      _prefs.getString(Keys.lastBackgroundResult);
 
   bool get isStale =>
       fetchedAt == null || DateTime.now().difference(fetchedAt!) > staleAfter;
@@ -47,21 +77,37 @@ class AppState extends ChangeNotifier {
       lessons.where((l) => sameDay(l.start, day)).toList();
 
   void _loadCache() {
-    final raw = _prefs.getString('days');
-    if (raw != null) lessons = parseLessons(jsonDecode(raw) as List);
-    group = _prefs.getString('group');
-    final at = _prefs.getInt('fetchedAt');
+    lessons = cachedLessons(_prefs);
+    group = _prefs.getString(Keys.group);
+    final at = _prefs.getInt(Keys.fetchedAt);
     fetchedAt = at == null ? null : DateTime.fromMillisecondsSinceEpoch(at);
-    final start = _prefs.getInt('rangeStart');
+    final start = _prefs.getInt(Keys.rangeStart);
     rangeStart = start == null
         ? null
         : DateTime.fromMillisecondsSinceEpoch(start);
+    if (!loggedIn && (_prefs.getBool(Keys.sessionExpiredNotified) ?? false)) {
+      error = 'Сессия ЛК истекла, войди заново';
+    }
+  }
+
+  /// Фоновая задача пишет в SharedPreferences из другого изолята —
+  /// при возвращении в приложение перечитываем.
+  Future<void> reloadFromDisk() async {
+    await _prefs.reload();
+    _loadCache();
+    notifyListeners();
   }
 
   /// Вызывается экраном входа, когда страница ЛК уже авторизована.
   Future<void> completeLogin(FetchResult result, DateTime monday) async {
-    await _prefs.setBool('loggedIn', true);
-    await _apply(result, monday);
+    error = null;
+    final sync = await saveSchedule(_prefs, result, monday);
+    _loadCache();
+    error = sync.sideEffectError;
+    notifyListeners();
+    await scheduleBackgroundRefresh();
+    // Разрешение нужно и для уведомлений об изменениях, не только для напоминаний.
+    await requestNotificationPermission();
   }
 
   Future<void> refresh() async {
@@ -70,50 +116,25 @@ class AppState extends ChangeNotifier {
     error = null;
     notifyListeners();
     try {
-      final monday = mondayOf(DateTime.now());
-      await _apply(await RanepaClient.refresh(monday, fetchWeeks), monday);
+      final sync = await syncSchedule(_prefs);
+      pendingChanges = sync.changes;
+      error = sync.sideEffectError;
     } on NeedLoginException catch (e) {
+      await _prefs.setBool(Keys.loggedIn, false);
+      await cancelBackgroundRefresh();
+      await cancelKeepAlive();
       error = e.message;
-      await _prefs.setBool('loggedIn', false);
     } catch (e) {
       error = e is RanepaException ? e.message : 'Не удалось обновить: $e';
     } finally {
+      _loadCache();
       loading = false;
       notifyListeners();
     }
   }
 
-  Future<void> _apply(FetchResult result, DateTime monday) async {
-    lessons = parseLessons(result.days);
-    group = result.group ?? group;
-    fetchedAt = DateTime.now();
-    rangeStart = monday;
-    error = null;
-    await _prefs.setString('days', jsonEncode(result.days));
-    if (group != null) await _prefs.setString('group', group!);
-    await _prefs.setInt('fetchedAt', fetchedAt!.millisecondsSinceEpoch);
-    await _prefs.setInt('rangeStart', monday.millisecondsSinceEpoch);
-    notifyListeners();
-    await _syncSideEffects();
-  }
-
-  /// Напоминания, календарь телефона и виджет — всё строится из кэша.
-  Future<void> _syncSideEffects() async {
-    try {
-      await scheduleReminders(lessons, reminderMinutes);
-      await updateHomeWidget(lessons);
-      if (calendarExport) {
-        final err = await exportToCalendar(
-          lessons,
-          rangeStart ?? mondayOf(DateTime.now()),
-          rangeEnd,
-          reminderMinutes,
-        );
-        if (err != null) error = err;
-      }
-    } catch (e) {
-      error = 'Ошибка синхронизации: $e';
-    }
+  Future<void> _resync() async {
+    error = await applySideEffects(_prefs, lessons);
     notifyListeners();
   }
 
@@ -123,16 +144,16 @@ class AppState extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    await _prefs.setInt('reminderMinutes', minutes);
+    await _prefs.setInt(Keys.reminderMinutes, minutes);
     notifyListeners();
-    await _syncSideEffects();
+    await _resync();
   }
 
   Future<void> setCalendarExport(bool enabled) async {
-    await _prefs.setBool('calendarExport', enabled);
+    await _prefs.setBool(Keys.calendarExport, enabled);
     notifyListeners();
     if (enabled) {
-      await _syncSideEffects();
+      await _resync();
     } else {
       await removeCalendar();
     }
@@ -149,6 +170,7 @@ class AppState extends ChangeNotifier {
     // ошибка в одном шаге не должна оставлять пользователя залогиненным.
     for (final step in [
       RanepaClient.logout,
+      cancelBackgroundRefresh,
       () => scheduleReminders(const [], 0),
       if (calendarExport) removeCalendar,
       () => updateHomeWidget(const []),
@@ -159,13 +181,7 @@ class AppState extends ChangeNotifier {
         debugPrint('logout: $e');
       }
     }
-    for (final key in [
-      'loggedIn',
-      'days',
-      'group',
-      'fetchedAt',
-      'rangeStart',
-    ]) {
+    for (final key in Keys.session) {
       await _prefs.remove(key);
     }
     lessons = [];
@@ -173,6 +189,7 @@ class AppState extends ChangeNotifier {
     fetchedAt = null;
     rangeStart = null;
     error = null;
+    pendingChanges = const [];
     notifyListeners();
   }
 }

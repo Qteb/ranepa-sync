@@ -11,6 +11,8 @@ class RanepaClient {
   static const scheduleUrl = 'https://my.ranepa.ru/lk/student/schedule';
   static const studentGroupsUrl =
       'https://my.ranepa.ru/lk/n-api/manual/student-groups';
+  static const profileUrl = 'https://my.ranepa.ru/lk/n-api/profile';
+  static const photoUrl = 'https://my.ranepa.ru/lk/n-api/profile/photo';
 
   /// Перехватывает запрос расписания, который делает сама страница: в нём уже
   /// есть uid_org, все группы и подгруппы студента и нужные заголовки.
@@ -123,8 +125,9 @@ class RanepaClient {
     InAppWebViewController controller,
     ScheduleTemplate template,
     DateTime monday,
-    int weeks,
-  ) async {
+    int weeks, {
+    bool withPhoto = false,
+  }) async {
     final urls = [
       for (var w = 0; w < weeks; w++)
         template.withDates([
@@ -147,12 +150,21 @@ async function get(url) {
 try {
   const days = [];
   for (const u of urls) days.push(...((await get(u)).days || []));
-  let group = null;
+  // Профиль — необязательная часть: ошибка не должна ломать расписание.
+  const out = { days: days };
   try {
-    const sg = await get(groupsUrl);
-    group = sg.items && sg.items[0] && sg.items[0].academic_group;
+    const sg = ((await get(groupsUrl)).items || [])[0] || {};
+    out.group = sg.academic_group;
+    out.program = sg.edu_program_title;
   } catch (e) {}
-  return JSON.stringify({ days: days, group: group });
+  try {
+    const p = (await get(profileUrl)).item || {};
+    out.name = [p.last_name, p.first_name, p.middle_name].filter(Boolean).join(' ');
+  } catch (e) {}
+  if (withPhoto) {
+    try { out.photo = (await get(photoUrl)).result || ''; } catch (e) {}
+  }
+  return JSON.stringify(out);
 } catch (e) {
   return JSON.stringify({ error: String(e.message || e) });
 }
@@ -161,6 +173,9 @@ try {
         'urls': urls,
         'headers': headers,
         'groupsUrl': studentGroupsUrl,
+        'profileUrl': profileUrl,
+        'photoUrl': photoUrl,
+        'withPhoto': withPhoto,
       },
     );
     if (result == null || result.error != null) {
@@ -174,12 +189,19 @@ try {
     return FetchResult(
       days: data['days'] as List<dynamic>,
       group: data['group'] as String?,
+      program: data['program'] as String?,
+      fullName: data['name'] as String?,
+      photo: data['photo'] as String?,
     );
   }
 
   /// Обновление в фоне: невидимый WebView открывает ЛК с сохранёнными cookie и
   /// токенами. Страница сама обновит токен и запросит расписание.
-  static Future<FetchResult> refresh(DateTime monday, int weeks) async {
+  static Future<FetchResult> refresh(
+    DateTime monday,
+    int weeks, {
+    bool withPhoto = false,
+  }) async {
     final ready = Completer<ScheduleTemplate>();
     InAppWebViewController? controller;
 
@@ -209,7 +231,13 @@ try {
         onTimeout: () =>
             throw RanepaException('ЛК не ответил за минуту, попробуй позже'),
       );
-      return await fetch(controller!, template, monday, weeks);
+      return await fetch(
+        controller!,
+        template,
+        monday,
+        weeks,
+        withPhoto: withPhoto,
+      );
     } finally {
       await view.dispose();
     }
@@ -254,10 +282,24 @@ class ScheduleTemplate {
 }
 
 class FetchResult {
-  FetchResult({required this.days, this.group});
+  FetchResult({
+    required this.days,
+    this.group,
+    this.program,
+    this.fullName,
+    this.photo,
+  });
 
   final List<dynamic> days;
   final String? group;
+  final String? program;
+
+  /// «Фамилия Имя Отчество».
+  final String? fullName;
+
+  /// data:image/...;base64,… — null, если фото не запрашивали; пустая
+  /// строка, если в ЛК его нет.
+  final String? photo;
 }
 
 class RanepaException implements Exception {

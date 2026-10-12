@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 /// Стартовый экран до входа: что это за приложение и куда уходит пароль.
 class OnboardingScreen extends StatelessWidget {
@@ -9,12 +9,12 @@ class OnboardingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Scaffold(
-      body: SafeArea(
+    final label = CupertinoColors.label.resolveFrom(context);
+    final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
+    return CupertinoPageScaffold(
+      child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+          padding: const EdgeInsets.fromLTRB(28, 32, 28, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -29,8 +29,11 @@ class OnboardingScreen extends StatelessWidget {
               Text(
                 'Расписание РАНХиГС',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.36,
+                  color: label,
                 ),
               ),
               const SizedBox(height: 32),
@@ -40,11 +43,15 @@ class OnboardingScreen extends StatelessWidget {
               ),
               const _Block(
                 title: 'Как работает',
-                text: 'Входишь в ЛК на странице сайта. Логин и пароль приложение не видит и не хранит.',
+                text:
+                    'Входишь в ЛК на странице сайта. Логин и пароль '
+                    'приложение не видит и не хранит.',
               ),
               const _Block(
                 title: 'Что умеет',
-                text: 'Работает без интернета, напоминает о парах, добавляет их в календарь и виджет.',
+                text:
+                    'Работает без интернета, напоминает о парах, добавляет '
+                    'их в календарь и виджет.',
               ),
               const Spacer(flex: 3),
               if (error != null)
@@ -53,29 +60,26 @@ class OnboardingScreen extends StatelessWidget {
                   child: Text(
                     error!,
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.error,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: CupertinoColors.systemRed.resolveFrom(context),
                     ),
                   ),
                 ),
-              FilledButton(
+              CupertinoButton.filled(
                 onPressed: onLogin,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  textStyle: theme.textTheme.titleMedium,
+                sizeStyle: CupertinoButtonSize.large,
+                borderRadius: BorderRadius.circular(14),
+                child: const Text(
+                  'Войти через ЛК',
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
-                child: const Text('Войти через ЛК'),
               ),
               const SizedBox(height: 14),
               Text(
                 'Неофициальное приложение',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
+                style: TextStyle(fontSize: 13, color: secondary),
               ),
             ],
           ),
@@ -92,23 +96,28 @@ class _Block extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.primary,
-            ),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 18),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: CupertinoColors.label.resolveFrom(context),
           ),
-          const SizedBox(height: 4),
-          Text(text, style: theme.textTheme.bodyMedium),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(height: 2),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 17,
+            color: CupertinoColors.secondaryLabel.resolveFrom(context),
+          ),
+        ),
+      ],
+    ),
+  );
 }

@@ -43,6 +43,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   eventide: ^2.4.1
+  workmanager: ^0.10.10
 
 dev_dependencies:
   flutter_test:
