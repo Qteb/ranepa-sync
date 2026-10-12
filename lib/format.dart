@@ -41,3 +41,47 @@ DateTime mondayOf(DateTime t) =>
 
 bool sameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// «Сегодня», «Завтра», «Вчера» или день недели.
+String relativeDayName(DateTime d) {
+  final diff = dateOnly(d).difference(dateOnly(DateTime.now())).inDays;
+  return switch (diff) {
+    0 => 'Сегодня',
+    1 => 'Завтра',
+    -1 => 'Вчера',
+    _ => weekdaysLong[d.weekday - 1],
+  };
+}
+
+/// «40 мин», «1 ч», «1 ч 40 мин».
+String duration(Duration d) {
+  final h = d.inHours;
+  final m = d.inMinutes % 60;
+  if (h == 0) return '$m мин';
+  return m == 0 ? '$h ч' : '$h ч $m мин';
+}
+
+/// «сегодня в 12:20», «завтра в 09:00», «в среду в 09:00».
+String whenLabel(DateTime t) {
+  final diff = dateOnly(t).difference(dateOnly(DateTime.now())).inDays;
+  final day = switch (diff) {
+    0 => 'сегодня',
+    1 => 'завтра',
+    _ =>
+      '${_weekdaysAccusative[t.weekday - 1]} ${t.day} ${monthsGenitive[t.month - 1]}',
+  };
+  return '$day в ${hm(t)}';
+}
+
+const _weekdaysAccusative = [
+  'в понедельник',
+  'во вторник',
+  'в среду',
+  'в четверг',
+  'в пятницу',
+  'в субботу',
+  'в воскресенье',
+];
+
+String capitalize(String s) =>
+    s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
