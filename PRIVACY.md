@@ -61,7 +61,7 @@
 
 Если политика изменится, новая версия появится на этой странице.
 
-Вопросы можно отправить на почту: [ВАША ПОЧТА]
+Вопросы можно отправить на почту: qtebest.dev@gmail.com
 
 ---
 
@@ -128,4 +128,4 @@ During beta testing, Apple may collect crash reports and feedback that you send 
 
 If this policy changes, the updated version will be posted on this page.
 
-Questions: [YOUR EMAIL]
+Questions: qtebest.dev@gmail.com

@@ -1,4 +1,4 @@
-package com.qteb.ranepa_timetable
+package com.qteb.ranepa_sync
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
