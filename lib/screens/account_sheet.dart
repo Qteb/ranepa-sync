@@ -1,7 +1,7 @@
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show ThemeMode;
+import 'package:flutter/material.dart' show ThemeMode, showGeneralDialog;
 import 'package:workmanager/workmanager.dart';
 
 import '../app_state.dart';
@@ -13,19 +13,92 @@ import '../widgets/copy.dart';
 import '../widgets/settings.dart';
 import 'about_screen.dart';
 
-/// Аккаунт и настройки одним листом, как аккаунт в App Store.
-Future<void> showAccountSheet(BuildContext context, AppState state) =>
-    showCupertinoSheet(
-      context: context,
-      // «О приложении» открывается внутри листа.
-      useNestedNavigation: true,
-      // Лист iOS не задаёт стиль текста по умолчанию — без этого Flutter
-      // подчёркивает текст жёлтым.
-      scrollableBuilder: (context, controller) => DefaultTextStyle(
-        style: CupertinoTheme.of(context).textTheme.textStyle,
-        child: _AccountSheet(state: state, controller: controller),
+/// Аккаунт и настройки одним листом, как аккаунт в App Store. На iPad —
+/// окном по центру, как настройки в системных приложениях.
+Future<void> showAccountSheet(BuildContext context, AppState state) {
+  if (MediaQuery.sizeOf(context).width >= 700) {
+    return _showAccountPanel(context, state);
+  }
+  return showCupertinoSheet(
+    context: context,
+    // «О приложении» открывается внутри листа.
+    useNestedNavigation: true,
+    // Лист iOS не задаёт стиль текста по умолчанию — без этого Flutter
+    // подчёркивает текст жёлтым.
+    scrollableBuilder: (context, controller) => DefaultTextStyle(
+      style: CupertinoTheme.of(context).textTheme.textStyle,
+      child: _AccountSheet(
+        state: state,
+        controller: controller,
+        // Через корневой навигатор: pop из вложенного оставляет главный
+        // экран уменьшенным и затемнённым, как будто лист ещё открыт.
+        close: CupertinoSheetRoute.popSheet,
       ),
-    );
+    ),
+  );
+}
+
+/// iPad: окно 620 pt по центру со своей навигацией внутри.
+Future<void> _showAccountPanel(BuildContext context, AppState state) {
+  void close(BuildContext context) =>
+      Navigator.of(context, rootNavigator: true).pop();
+  return showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Закрыть',
+    barrierColor: const Color(0x47000000),
+    transitionDuration: const Duration(milliseconds: 300),
+    transitionBuilder: (context, animation, _, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween(
+            begin: const Offset(0, 0.08),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      );
+    },
+    pageBuilder: (context, _, _) {
+      final height = MediaQuery.sizeOf(context).height;
+      return Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 620,
+            maxHeight: height - 120 < 860 ? height - 120 : 860,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            // Цвета «приподнятые», как у системных окон в тёмной теме.
+            child: CupertinoUserInterfaceLevel(
+              data: CupertinoUserInterfaceLevelData.elevated,
+              // Окно не касается краёв экрана: отступы строки состояния
+              // и жеста «домой» внутри не нужны.
+              child: MediaQuery.removePadding(
+                context: context,
+                removeTop: true,
+                removeBottom: true,
+                child: Navigator(
+                  onGenerateRoute: (_) => CupertinoPageRoute<void>(
+                    builder: (context) => DefaultTextStyle(
+                      style: CupertinoTheme.of(context).textTheme.textStyle,
+                      child: _AccountSheet(state: state, close: close),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
 
 const _reminderOptions = [0, 5, 10, 15, 30, 60];
 
@@ -39,10 +112,17 @@ const _themeLabels = {
 };
 
 class _AccountSheet extends StatelessWidget {
-  const _AccountSheet({required this.state, required this.controller});
+  const _AccountSheet({
+    required this.state,
+    required this.close,
+    this.controller,
+  });
 
   final AppState state;
-  final ScrollController controller;
+  final ScrollController? controller;
+
+  /// Закрывает лист или окно целиком, из любого вложенного экрана.
+  final void Function(BuildContext) close;
 
   @override
   Widget build(BuildContext context) {
@@ -56,9 +136,7 @@ class _AccountSheet extends StatelessWidget {
           middle: const Text('Аккаунт'),
           trailing: CupertinoButton(
             padding: EdgeInsets.zero,
-            // Через корневой навигатор: pop из вложенного оставляет главный
-            // экран уменьшенным и затемнённым, как будто лист ещё открыт.
-            onPressed: () => CupertinoSheetRoute.popSheet(context),
+            onPressed: () => close(context),
             child: const Text(
               'Готово',
               style: TextStyle(fontWeight: FontWeight.w600),
@@ -275,7 +353,7 @@ class _AccountSheet extends StatelessWidget {
       ),
     );
     if (ok == true && context.mounted) {
-      CupertinoSheetRoute.popSheet(context);
+      close(context);
       await state.logout();
     }
   }
