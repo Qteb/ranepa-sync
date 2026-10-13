@@ -49,7 +49,7 @@ class OnboardingScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               Text(
-                'Расписание РАНХиГС',
+                'Расписание студента',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 28,
@@ -61,7 +61,7 @@ class OnboardingScreen extends StatelessWidget {
               const SizedBox(height: 32),
               const _Block(
                 title: 'Что это',
-                text: 'Твоё расписание из личного кабинета.',
+                text: 'Твоё расписание из личного кабинета РАНХиГС.',
               ),
               const _Block(
                 title: 'Как работает',

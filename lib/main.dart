@@ -59,7 +59,7 @@ class RanepaApp extends StatelessWidget {
     return ListenableBuilder(
       listenable: state,
       builder: (context, _) => MaterialApp(
-        title: 'Расписание РАНХиГС',
+        title: 'Расписание студента',
         debugShowCheckedModeBanner: false,
         theme: _theme(Brightness.light),
         darkTheme: _theme(Brightness.dark),

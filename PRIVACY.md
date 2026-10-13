@@ -1,8 +1,8 @@
-# Политика конфиденциальности «Расписание РАНХиГС»
+# Политика конфиденциальности «Расписание студента»
 
 Дата вступления в силу: 13 октября 2026 г.
 
-«Расписание РАНХиГС» — неофициальное приложение. Оно не связано с РАНХиГС и не поддерживается академией.
+«Расписание студента» — неофициальное приложение для студентов РАНХиГС. Оно не связано с РАНХиГС и не поддерживается академией.
 
 ## Что приложение не делает
 
@@ -69,11 +69,11 @@
 
 ---
 
-# Privacy Policy — "Расписание РАНХиГС" (RANEPA Timetable)
+# Privacy Policy — "Расписание студента" (Student Timetable)
 
 Effective date: October 13, 2026
 
-This is an unofficial app. It is not affiliated with or endorsed by RANEPA.
+This is an unofficial app for RANEPA students. It is not affiliated with or endorsed by RANEPA.
 
 ## What the app does not do
 

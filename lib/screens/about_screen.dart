@@ -63,7 +63,7 @@ class AboutScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Расписание РАНХиГС',
+                        'Расписание студента',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w600,
@@ -131,7 +131,7 @@ class AboutScreen extends StatelessWidget {
                       onTap: () => openMail(
                         context,
                         Links.email,
-                        subject: 'Расписание РАНХиГС $version',
+                        subject: 'Расписание студента $version',
                       ),
                     ),
                     CupertinoListTile(
