@@ -14,6 +14,8 @@ import '../widgets/tip_card.dart';
 import 'account_sheet.dart';
 import 'lesson_sheet.dart';
 
+part 'home_wide.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.state});
 
@@ -119,6 +121,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   DateTime _dayAt(int index) => _firstDay.add(Duration(days: index));
 
   void _goTo(DateTime day) {
+    // На iPad листаются недели, а не страницы дней.
+    if (!_pages.hasClients) {
+      final target = dateOnly(day);
+      if (target.isBefore(_firstDay) || target.isAfter(_dayAt(_dayCount - 1))) {
+        return;
+      }
+      setState(() => _selected = target);
+      return;
+    }
     _pages.animateToPage(
       _indexOf(day),
       duration: const Duration(milliseconds: 250),
@@ -152,6 +163,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final label = CupertinoColors.label.resolveFrom(context);
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
     final isToday = sameDay(_selected, currentTime());
+    final width = MediaQuery.sizeOf(context).width;
+    if (width >= _wideFrom) {
+      return _WideHome(
+        state: state,
+        selected: _selected,
+        firstDay: _firstDay,
+        lastDay: _dayAt(_dayCount - 1),
+        status: _status,
+        loadingQuietly: state.loading && !_pulling,
+        nextAfter: _nextAfter,
+        onSelect: _goTo,
+        onRefresh: _pullToRefresh,
+        width: width,
+      );
+    }
     return Scaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground.resolveFrom(
         context,

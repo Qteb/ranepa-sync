@@ -17,6 +17,8 @@ void showLessonSheet(BuildContext context, Lesson lesson) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    // На iPad лист не растягивается на всю ширину.
+    constraints: const BoxConstraints(maxWidth: 640),
     useSafeArea: true,
     // Фон рисует сам лист: цвет, вычисленный здесь, не сменится вместе
     // с темой, пока лист открыт.
