@@ -57,6 +57,15 @@ class Lesson {
     return i > 0 ? room.substring(0, i) : room;
   }
 
+  /// «1 - 2262, корпус 1» или «Дистанционно» — для уведомлений.
+  String get placeLabel {
+    if (isRemote) return 'Дистанционно';
+    final building = RegExp(r'корпус\s*(\d+)').firstMatch(room)?.group(1);
+    return building == null
+        ? shortLocation
+        : '$shortLocation, корпус $building';
+  }
+
   String get details => [
     lecturer,
     email,

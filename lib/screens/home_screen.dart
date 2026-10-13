@@ -7,6 +7,7 @@ import '../app_state.dart';
 import '../format.dart';
 import '../models.dart';
 import '../services/lesson_links.dart';
+import '../services/notifications.dart';
 import '../services/tips.dart';
 import '../widgets/avatar.dart';
 import '../widgets/banner.dart';
@@ -89,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     await state.reloadFromDisk();
     // Уведомления могли включить или выключить в настройках телефона.
     await state.checkNotifications();
+    removeStaleReminders();
     state.showLiveActivity();
     state.refresh(SyncTrigger.open);
   }

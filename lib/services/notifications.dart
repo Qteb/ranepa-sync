@@ -93,6 +93,7 @@ Future<bool> requestNotificationPermission() async {
 Future<void> scheduleReminders(List<Lesson> lessons, int minutes) async {
   // Только запланированные: уже показанное «расписание изменилось» не трогаем.
   await _plugin.cancelAllPendingNotifications();
+  await removeStaleReminders();
   if (minutes <= 0) return;
 
   const details = NotificationDetails(
@@ -102,7 +103,8 @@ Future<void> scheduleReminders(List<Lesson> lessons, int minutes) async {
       importance: Importance.high,
       priority: Priority.high,
     ),
-    iOS: DarwinNotificationDetails(),
+    // В одну стопку, чтобы напоминания за день не расползались по экрану.
+    iOS: DarwinNotificationDetails(threadIdentifier: 'lessons'),
   );
   final now = DateTime.now();
   final upcoming = lessons
@@ -115,13 +117,35 @@ Future<void> scheduleReminders(List<Lesson> lessons, int minutes) async {
   for (final (lesson, at) in upcoming) {
     await _plugin.zonedSchedule(
       id: id++,
-      title: lesson.title,
-      body: '${timeRange(lesson)} · ${lesson.location}',
+      // «Семинар через 15 мин» / «Математика» / «01:11 · 1 - 2262, корпус 1».
+      title:
+          '${capitalize(lesson.kind.isEmpty ? 'пара' : lesson.kind)} '
+          'через ${duration(Duration(minutes: minutes))}',
+      body: '${lesson.subject}\n${hm(lesson.start)} · ${lesson.placeLabel}',
       scheduledDate: tz.TZDateTime.from(at, tz.UTC),
       notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: lessonPayload(lesson.start),
     );
+  }
+}
+
+/// Убирает показанные напоминания о парах, которые уже начались: они
+/// копятся на экране блокировки под карточкой Live Activity. Сами
+/// уведомления исчезать не умеют — чистим при каждом запуске и обновлении.
+Future<void> removeStaleReminders() async {
+  final now = DateTime.now();
+  final shown = await _plugin.getActiveNotifications();
+  for (final n in shown) {
+    final payload = n.payload ?? '';
+    final ms = payload.startsWith('lesson:')
+        ? int.tryParse(payload.substring(7))
+        : null;
+    if (n.id != null &&
+        ms != null &&
+        !DateTime.fromMillisecondsSinceEpoch(ms).isAfter(now)) {
+      await _plugin.cancel(id: n.id!);
+    }
   }
 }
 

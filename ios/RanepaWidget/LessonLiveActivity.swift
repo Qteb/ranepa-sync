@@ -66,17 +66,21 @@ private struct Phase {
     let ongoing: Bool
     /// Следующая после неё.
     let after: Lesson?
+    /// Это последний кадр без обновления от приложения: iOS перерисовывает
+    /// активность сама только один раз (по staleDate). Таймер к концу пары
+    /// застрял бы на «0:00», поэтому показываем время окончания.
+    let frozen: Bool
 
     init(_ state: LessonActivityAttributes.ContentState, stale: Bool) {
         switch (state.isCurrent, stale) {
         case (true, false):  // идёт пара
-            lesson = state.lesson; ongoing = true; after = state.next
+            lesson = state.lesson; ongoing = true; after = state.next; frozen = false
         case (true, true):   // пара закончилась — перемена или конец дня
-            lesson = state.next; ongoing = false; after = nil
+            lesson = state.next; ongoing = false; after = nil; frozen = false
         case (false, false): // перемена до ближайшей
-            lesson = state.lesson; ongoing = false; after = state.next
+            lesson = state.lesson; ongoing = false; after = state.next; frozen = false
         case (false, true):  // ближайшая началась
-            lesson = state.lesson; ongoing = true; after = state.next
+            lesson = state.lesson; ongoing = true; after = state.next; frozen = true
         }
     }
 }
@@ -88,7 +92,9 @@ private struct CountdownText: View {
 
     var body: some View {
         if let lesson = phase.lesson {
-            if phase.ongoing {
+            if phase.ongoing && phase.frozen {
+                Text(hm(lesson.end))
+            } else if phase.ongoing {
                 Text(timerInterval: lesson.start...lesson.end, countsDown: true)
                     .monospacedDigit()
                     .multilineTextAlignment(.trailing)
@@ -155,7 +161,7 @@ private struct TimerColumn: View {
     var body: some View {
         if phase.lesson != nil {
             VStack(alignment: .trailing, spacing: 0) {
-                Text(phase.ongoing ? "до конца" : "начало через")
+                Text(phase.ongoing ? (phase.frozen ? "идёт до" : "до конца") : "начало через")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 CountdownText(phase: phase)
