@@ -52,21 +52,17 @@ class LegendScreen extends StatelessWidget {
             CupertinoListSection.insetGrouped(
               header: const Text('Типы пар'),
               footer: const SectionFooter(
-                'Цвет полоски слева от пары совпадает с цветом её типа '
-                'в подписи.',
+                'Цвет полоски слева от пары совпадает с цветом иконки и типа '
+                'в подписи. Те же иконки — на экране блокировки, в Dynamic '
+                'Island и на часах.',
               ),
               children: [
                 for (final (kind, title, subtitle) in _kinds)
                   CupertinoListTile(
-                    leading: Container(
-                      width: 4,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: LessonColors.of(kind).bar.resolveFrom(context),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+                    leading: Glyph(
+                      LessonColors.iconOf(kind),
+                      LessonColors.of(kind).bar.resolveFrom(context),
                     ),
-                    leadingSize: 12,
                     title: Text(title),
                     subtitle: subtitle == null ? null : Text(subtitle),
                   ),

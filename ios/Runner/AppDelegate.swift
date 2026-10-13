@@ -27,5 +27,6 @@ import workmanager_apple
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     WatchBridge.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "WatchBridge")!)
     LiveActivityBridge.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "LiveActivityBridge")!)
+    LinkBridge.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "LinkBridge")!)
   }
 }

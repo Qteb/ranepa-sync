@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Icons;
 
 /// Цвета типов пар. Системные цвета iOS, разнесённые по кругу, — не
 /// бордовый акцент приложения, чтобы тип не путался с кнопками.
@@ -9,6 +10,19 @@ class LessonColors {
 
   final CupertinoDynamicColor bar;
   final CupertinoDynamicColor text;
+
+  /// Иконка типа — те же, что SF Symbols в Live Activity и на часах
+  /// (ios/Shared/Lessons.swift, kindSymbol). У CupertinoIcons нет лектора
+  /// и бегуна, поэтому Material Rounded — они ближе всего к SF Symbols.
+  static IconData iconOf(String kind) => switch (kind) {
+    'лекция' => Icons.record_voice_over_rounded,
+    'семинар' => Icons.forum_rounded,
+    'физкультура' => Icons.directions_run_rounded,
+    'лабораторная' => Icons.science_rounded,
+    'консультация' => Icons.contact_support_rounded,
+    'экзамен' || 'зачёт' => Icons.verified_rounded,
+    _ => Icons.menu_book_rounded,
+  };
 
   static LessonColors of(String kind) => switch (kind) {
     'лекция' => _blue,

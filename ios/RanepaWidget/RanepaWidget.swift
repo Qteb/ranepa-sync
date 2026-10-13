@@ -167,6 +167,9 @@ struct RanepaWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             RanepaWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
+                // Нажатие открывает первую из показанных пар. Ссылка — по
+                // настоящим часам, как у Live Activity.
+                .widgetURL(entry.day?.lessons.first.map { lessonURL($0.start.addingTimeInterval(-entry.shift)) })
         }
         .configurationDisplayName("Пары")
         .description("Ближайшие пары на сегодня или следующий учебный день.")

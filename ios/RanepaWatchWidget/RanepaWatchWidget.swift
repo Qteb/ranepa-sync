@@ -134,8 +134,8 @@ struct WatchWidgetView: View {
     }
 
     private func lessonBlock(_ l: LessonItem, titleLines: Int) -> some View {
-        HStack(spacing: 5) {
-            RoundedRectangle(cornerRadius: 1.5).fill(kindColor(l.k)).frame(width: 3)
+        HStack(alignment: .top, spacing: 5) {
+            KindIcon(kind: l.k, size: 13).padding(.top, 2)
             VStack(alignment: .leading, spacing: 0) {
                 Text(l.t)
                     .font(.system(size: 15, weight: .semibold))
@@ -159,13 +159,14 @@ struct WatchWidgetView: View {
             Gauge(value: entry.now.timeIntervalSince(l.start), in: 0...l.end.timeIntervalSince(l.start)) {
                 Text("пара")
             } currentValueLabel: {
-                Text("\(max(0, Int((l.end.timeIntervalSince(entry.now) / 60).rounded(.up))))м")
+                // Иконка типа в кольце; минуты — в прямоугольном и угловом.
+                Image(systemName: kindSymbol(l.k))
             }
             .gaugeStyle(.accessoryCircularCapacity)
             .tint(accent)
         } else if let f = focus(entry) {
             VStack(spacing: 0) {
-                Image(systemName: "calendar").font(.system(size: 11)).widgetAccentable()
+                Image(systemName: kindSymbol(f.lesson.k)).font(.system(size: 11)).widgetAccentable()
                 Text(hm(f.lesson.start)).font(.system(size: 13, weight: .semibold)).minimumScaleFactor(0.7)
             }
         } else {

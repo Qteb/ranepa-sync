@@ -54,6 +54,31 @@ func kindColor(_ kind: String) -> Color {
     }
 }
 
+/// Иконка типа пары — как в приложении (LessonColors.iconOf).
+func kindSymbol(_ kind: String) -> String {
+    switch kind {
+    case "лекция": return "person.wave.2.fill"
+    case "семинар": return "bubble.left.and.bubble.right.fill"
+    case "физкультура": return "figure.run"
+    case "лабораторная": return "flask.fill"
+    case "консультация": return "questionmark.bubble.fill"
+    case "экзамен", "зачёт": return "checkmark.seal.fill"
+    default: return "book.fill"
+    }
+}
+
+/// Цветная иконка типа.
+struct KindIcon: View {
+    let kind: String
+    var size: CGFloat = 14
+
+    var body: some View {
+        Image(systemName: kindSymbol(kind))
+            .font(.system(size: size, weight: .semibold))
+            .foregroundStyle(kindColor(kind))
+    }
+}
+
 func dayLabel(_ date: Date, from now: Date) -> String {
     let cal = Calendar.current
     if cal.isDate(date, inSameDayAs: now) { return "Сегодня" }

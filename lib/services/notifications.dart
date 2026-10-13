@@ -3,6 +3,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../format.dart';
 import '../models.dart';
+import 'lesson_links.dart';
 
 final _plugin = FlutterLocalNotificationsPlugin();
 
@@ -38,7 +39,17 @@ Future<void> initNotifications() async {
         requestSoundPermission: false,
       ),
     ),
+    // Нажатие на напоминание открывает карточку пары.
+    onDidReceiveNotificationResponse: (r) => openLessonPayload(r.payload),
   );
+}
+
+/// Приложение запущено нажатием на напоминание — открыть ту пару.
+Future<void> openLaunchNotification() async {
+  final details = await _plugin.getNotificationAppLaunchDetails();
+  if (details?.didNotificationLaunchApp ?? false) {
+    openLessonPayload(details!.notificationResponse?.payload);
+  }
 }
 
 /// Разрешены ли уведомления в настройках телефона. Запрос не показывает.
@@ -109,6 +120,7 @@ Future<void> scheduleReminders(List<Lesson> lessons, int minutes) async {
       scheduledDate: tz.TZDateTime.from(at, tz.UTC),
       notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: lessonPayload(lesson.start),
     );
   }
 }

@@ -15,6 +15,9 @@ struct LessonActivityAttributes: ActivityAttributes {
         let start: Date
         let end: Date
 
+        /// Открыть приложение на этой паре.
+        var url: URL { lessonURL(start) }
+
         /// Для свёрнутого Dynamic Island: «1 - 2317» → «2317».
         var compactRoom: String {
             if room == "Дистанционно" { return "СДО" }
@@ -35,4 +38,10 @@ struct LessonActivityAttributes: ActivityAttributes {
         /// показать после этого, если приложение не успело обновить её.
         let isCurrent: Bool
     }
+}
+
+/// ranepa://lesson?start=<секунды> — приложение откроет день этой пары
+/// и её карточку (lib/services/lesson_links.dart).
+func lessonURL(_ start: Date) -> URL {
+    URL(string: "ranepa://lesson?start=\(Int(start.timeIntervalSince1970))")!
 }

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../format.dart';
 import '../models.dart';
+import '../services/lesson_links.dart';
 import '../services/tips.dart';
 import '../widgets/avatar.dart';
 import '../widgets/banner.dart';
@@ -63,6 +64,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       (_) => setState(() {}),
     );
     state.addListener(_onState);
+    pendingLesson.addListener(_openPendingLesson);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openPendingLesson());
     state.refresh(SyncTrigger.open);
     state.showLiveActivity();
     // Системный запрос — только если пользователь ещё не отвечал.
@@ -73,6 +76,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     state.removeListener(_onState);
+    pendingLesson.removeListener(_openPendingLesson);
     _ticker?.cancel();
     _pages.dispose();
     super.dispose();
@@ -115,6 +119,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
     }
     setState(() {});
+  }
+
+  /// Нажали на напоминание, Live Activity или виджет: день пары и её
+  /// карточка поверх.
+  void _openPendingLesson() {
+    final start = pendingLesson.value;
+    if (start == null || !mounted) return;
+    pendingLesson.value = null;
+    final lesson = state.lessons
+        .where((l) => l.start.difference(start).inMinutes.abs() < 1)
+        .firstOrNull;
+    if (lesson == null) return;
+    // Убрать открытые листы, чтобы карточка не легла поверх другой.
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    _goTo(lesson.start);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) showLessonSheet(context, lesson);
+    });
   }
 
   int _indexOf(DateTime day) =>
@@ -678,20 +700,28 @@ class _NowCard extends StatelessWidget {
   }
 }
 
-/// Подпись под названием: тип цветом типа, остальное серым.
-TextSpan _details(Lesson l, BuildContext context) {
+/// Подпись под названием: тип цветом типа, остальное серым. С [icon] —
+/// иконка типа перед словом (лента на iPhone).
+TextSpan _details(Lesson l, BuildContext context, {bool icon = false}) {
+  final color = LessonColors.of(l.kind).text.resolveFrom(context);
   final rest = [
     if (l.location.isNotEmpty) l.isRemote ? 'дистанционно' : l.shortLocation,
     if (l.cancelled) 'отменена',
   ].join(' · ');
   return TextSpan(
     children: [
+      if (l.kind.isNotEmpty && icon)
+        WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 3),
+            child: Icon(LessonColors.iconOf(l.kind), size: 14, color: color),
+          ),
+        ),
       if (l.kind.isNotEmpty)
         TextSpan(
           text: capitalize(l.kind),
-          style: TextStyle(
-            color: LessonColors.of(l.kind).text.resolveFrom(context),
-          ),
+          style: TextStyle(color: color),
         ),
       if (l.kind.isNotEmpty && rest.isNotEmpty) const TextSpan(text: ' · '),
       TextSpan(text: rest),
@@ -778,7 +808,7 @@ class _TimelineRow extends StatelessWidget {
                         ),
                       ),
                       Text.rich(
-                        _details(lesson, context),
+                        _details(lesson, context, icon: true),
                         style: TextStyle(fontSize: 15, color: secondary),
                       ),
                     ],

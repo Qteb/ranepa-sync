@@ -23,6 +23,7 @@
 		679A9FB602C8E16CE32BFB6D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 06620D9EE17542A7E4D831D5 /* Assets.xcassets */; };
 		68979C6770765CE657054D07 /* RanepaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 97EDF0AAB4309E1397D62811 /* RanepaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6905D82B1AB0D3F80E4890FE /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 99FCC0DCDDC7D7497CAADCC3 /* PrivacyInfo.xcprivacy */; };
+		7120651577A551927FF809ED /* LinkBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF7A0F856C4EE29A26448049 /* LinkBridge.swift */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
@@ -158,6 +159,7 @@
 		99FCC0DCDDC7D7497CAADCC3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		9B5C7E6C4E0AC02A9DAB5E39 /* RanepaWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RanepaWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AE91A4E6140090394B8B5E5C /* Pods-RunnerTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.debug.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.debug.xcconfig"; sourceTree = "<group>"; };
+		AF7A0F856C4EE29A26448049 /* LinkBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LinkBridge.swift; sourceTree = "<group>"; };
 		BD56DD3E2FC30F16E1350BE7 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C3794326E1F8B761E4E100B9 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		CDE9E34E16B3AC9A8FBE9C09 /* WatchBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchBridge.swift; sourceTree = "<group>"; };
@@ -355,6 +357,7 @@
 				ED936B796C337ED27A305164 /* PrivacyInfo.xcprivacy */,
 				CDE9E34E16B3AC9A8FBE9C09 /* WatchBridge.swift */,
 				D98B19ACEF1728E13DCCC481 /* LiveActivityBridge.swift */,
+				AF7A0F856C4EE29A26448049 /* LinkBridge.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -715,6 +718,7 @@
 				81B4656935032D66ED359688 /* WatchBridge.swift in Sources */,
 				BFD926805EED855E15AF2B1C /* LessonActivity.swift in Sources */,
 				B6D69AABB11B42B8D187BE5C /* LiveActivityBridge.swift in Sources */,
+				7120651577A551927FF809ED /* LinkBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

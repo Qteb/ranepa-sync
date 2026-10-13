@@ -14,6 +14,7 @@ import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'services/background.dart';
 import 'services/home_widget_bridge.dart';
+import 'services/lesson_links.dart';
 import 'services/notifications.dart';
 import 'services/tips.dart';
 
@@ -34,6 +35,8 @@ Future<void> main() async {
   await initBackground();
   final prefs = await SharedPreferences.getInstance();
   Tips.instance.init(prefs);
+  await initLessonLinks();
+  await openLaunchNotification();
   final state = AppState(prefs);
   // Задача могла не зарегистрироваться (обновление со старой версии).
   if (state.loggedIn && !state.demo) unawaited(scheduleBackgroundRefresh());

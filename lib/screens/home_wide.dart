@@ -565,25 +565,34 @@ class _WeekLessonCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  width: 3,
-                  color: LessonColors.of(lesson.kind).bar.resolveFrom(context),
-                ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 8, 6, 10),
+                    padding: const EdgeInsets.fromLTRB(10, 8, 6, 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          timeRange(lesson),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: ongoing
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                            color: ongoing ? accent : secondary,
-                          ),
+                        // Иконка типа вместо полоски: в узкой колонке
+                        // она не отнимает ширину у названия.
+                        Row(
+                          children: [
+                            Icon(
+                              LessonColors.iconOf(lesson.kind),
+                              size: 15,
+                              color: LessonColors.of(lesson.kind).bar
+                                  .resolveFrom(context),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              timeRange(lesson),
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: ongoing
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                                color: ongoing ? accent : secondary,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(

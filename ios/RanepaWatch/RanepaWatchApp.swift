@@ -201,7 +201,7 @@ struct NowCard: View {
         VStack(alignment: .leading, spacing: 3) {
             if let current = state.current {
                 caption("СЕЙЧАС", "ещё \(durationLabel(current.end.timeIntervalSince(now)))")
-                Text(current.t).font(.headline).lineLimit(2)
+                titleRow(current)
                 Text(current.r).font(.footnote).foregroundStyle(.secondary).lineLimit(1)
                 ThinProgress(value: now.timeIntervalSince(current.start)
                     / current.end.timeIntervalSince(current.start))
@@ -209,7 +209,7 @@ struct NowCard: View {
             } else if let next = state.next, Calendar.current.isDate(next.start, inSameDayAs: now) {
                 let wait = next.start.timeIntervalSince(now)
                 caption("ДАЛЕЕ", wait < 7200 ? "через \(durationLabel(wait))" : "в \(hm(next.start))")
-                Text(next.t).font(.headline).lineLimit(2)
+                titleRow(next)
                 Text("\(hm(next.start)) · \(next.r)").font(.footnote).foregroundStyle(.secondary).lineLimit(1)
             } else {
                 caption(state.today.isEmpty ? "СЕГОДНЯ ПАР НЕТ" : "ПАРЫ ЗАКОНЧИЛИСЬ", nil)
@@ -221,6 +221,13 @@ struct NowCard: View {
                     Text("Отдыхай").font(.headline)
                 }
             }
+        }
+    }
+
+    private func titleRow(_ lesson: LessonItem) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            KindIcon(kind: lesson.k, size: 15)
+            Text(lesson.t).font(.headline).lineLimit(2)
         }
     }
 
@@ -254,10 +261,10 @@ struct LessonRowView: View {
 
     var body: some View {
         let ongoing = !lesson.cancelled && lesson.start <= now && now < lesson.end
-        HStack(alignment: .top, spacing: 6) {
-            RoundedRectangle(cornerRadius: 1.5)
-                .fill(kindColor(lesson.k))
-                .frame(width: 3)
+        HStack(alignment: .top, spacing: 7) {
+            KindIcon(kind: lesson.k, size: 15)
+                .frame(width: 20)
+                .padding(.top, 2)
             VStack(alignment: .leading, spacing: 1) {
                 Text(lesson.t)
                     .font(.system(size: 15, weight: ongoing ? .semibold : .regular))
