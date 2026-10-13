@@ -53,7 +53,8 @@ const _rooms = [
 const _subjects = [
   ('Теория управления', 'Соколова Мария Андреевна', 'sokolova-ma'),
   ('Экономическая теория', 'Лебедев Игорь Павлович', 'lebedev-ip'),
-  ('Иностранный язык (английский)', 'Морозова Ксения Олеговна', 'morozova-ko'),
+  // Без почты: так тоже бывает, и карточка выглядит чище на скриншотах.
+  ('Иностранный язык (английский)', 'Морозова Ксения Олеговна', ''),
   (
     'Элективные дисциплины по физической культуре и спорту',
     'Васильев Денис Сергеевич',
@@ -157,7 +158,7 @@ FetchResult demoResult(DateTime now, {int revision = 0, Duration? shift}) {
         'type': kind,
         'room': place,
         'lecturer': lecturer,
-        'sam_email': '$email@ranepa.example',
+        'sam_email': email.isEmpty ? '' : '$email@ranepa.example',
         'groups': type == _lecture
             ? {'0': demoGroup, '1': 'ГМУ-ОБ25-04'}
             : {'0': demoGroup},
