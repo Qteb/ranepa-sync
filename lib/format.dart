@@ -38,6 +38,10 @@ const screenshotMode = bool.hasEnvironment('DEMO_AT');
 /// Сдвиг часов для скриншотов; ноль в обычной сборке. Его же получает виджет.
 Duration get clockShift => _clockShift;
 
+/// Сборка для записи видео (`--dart-define=RECORDING=true`): отладочная,
+/// но выглядит как релизная.
+const recordingMode = bool.fromEnvironment('RECORDING');
+
 /// Текущее время приложения. Без DEMO_AT — обычное DateTime.now().
 DateTime currentTime() => DateTime.now().add(_clockShift);
 
