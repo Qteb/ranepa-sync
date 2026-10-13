@@ -8,11 +8,15 @@ import '../format.dart';
 import '../services/background.dart';
 import '../services/calendar_export.dart';
 import '../widgets/avatar.dart';
+import '../widgets/settings.dart';
+import 'about_screen.dart';
 
 /// Аккаунт и настройки одним листом, как аккаунт в App Store.
 Future<void> showAccountSheet(BuildContext context, AppState state) =>
     showCupertinoSheet(
       context: context,
+      // «О приложении» открывается внутри листа.
+      useNestedNavigation: true,
       // Лист iOS не задаёт стиль текста по умолчанию — без этого Flutter
       // подчёркивает текст жёлтым.
       scrollableBuilder: (context, controller) => DefaultTextStyle(
@@ -62,10 +66,10 @@ class _AccountSheet extends StatelessWidget {
           children: [
             _Profile(state: state),
             CupertinoListSection.insetGrouped(
-              footer: _Footer(_backgroundFooter(state)),
+              footer: SectionFooter(_backgroundFooter(state)),
               children: [
                 CupertinoListTile(
-                  leading: const _Glyph(
+                  leading: const Glyph(
                     CupertinoIcons.bell_fill,
                     CupertinoColors.systemRed,
                   ),
@@ -75,7 +79,7 @@ class _AccountSheet extends StatelessWidget {
                   onTap: () => _pickReminder(context),
                 ),
                 CupertinoListTile(
-                  leading: const _Glyph(
+                  leading: const Glyph(
                     CupertinoIcons.calendar,
                     CupertinoColors.systemOrange,
                   ),
@@ -86,7 +90,7 @@ class _AccountSheet extends StatelessWidget {
                   ),
                 ),
                 CupertinoListTile(
-                  leading: const _Glyph(
+                  leading: const Glyph(
                     CupertinoIcons.moon_fill,
                     CupertinoColors.systemIndigo,
                   ),
@@ -98,6 +102,23 @@ class _AccountSheet extends StatelessWidget {
               ],
             ),
             if (kDebugMode) _DebugSection(state: state),
+            CupertinoListSection.insetGrouped(
+              children: [
+                CupertinoListTile(
+                  leading: const Glyph(
+                    CupertinoIcons.info,
+                    CupertinoColors.systemGrey,
+                  ),
+                  title: const Text('О приложении'),
+                  trailing: const CupertinoListTileChevron(),
+                  onTap: () => Navigator.of(context).push(
+                    CupertinoPageRoute<void>(
+                      builder: (_) => const AboutScreen(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
             CupertinoListSection.insetGrouped(
               children: [
                 CupertinoListTile(
@@ -240,26 +261,6 @@ class _Profile extends StatelessWidget {
   }
 }
 
-/// Цветная иконка-плашка, как в «Настройках» iPhone.
-class _Glyph extends StatelessWidget {
-  const _Glyph(this.icon, this.color);
-
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: color,
-      borderRadius: BorderRadius.circular(7),
-    ),
-    child: SizedBox.square(
-      dimension: 29,
-      child: Icon(icon, size: 18, color: CupertinoColors.white),
-    ),
-  );
-}
-
 class _Chevron extends StatelessWidget {
   const _Chevron();
 
@@ -279,7 +280,7 @@ class _DebugSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => CupertinoListSection.insetGrouped(
     header: const Text('Отладка'),
-    footer: _Footer(
+    footer: SectionFooter(
       'Последний результат: ${state.lastBackgroundResult ?? '—'}',
     ),
     children: [
@@ -301,21 +302,5 @@ class _DebugSection extends StatelessWidget {
         },
       ),
     ],
-  );
-}
-
-/// Подпись под блоком: 13 pt, вторичный цвет, как в «Настройках».
-class _Footer extends StatelessWidget {
-  const _Footer(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Text(
-    text,
-    style: TextStyle(
-      fontSize: 13,
-      color: CupertinoColors.secondaryLabel.resolveFrom(context),
-    ),
   );
 }

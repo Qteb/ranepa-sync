@@ -1,4 +1,8 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../links.dart';
 
 /// Стартовый экран до входа: что это за приложение и куда уходит пароль.
 class OnboardingScreen extends StatelessWidget {
@@ -10,7 +14,6 @@ class OnboardingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = CupertinoColors.label.resolveFrom(context);
-    final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
     return CupertinoPageScaffold(
       child: SafeArea(
         child: Padding(
@@ -76,11 +79,7 @@ class OnboardingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              Text(
-                'Неофициальное приложение',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: secondary),
-              ),
+              const _SourceNote(),
             ],
           ),
         ),
@@ -118,6 +117,46 @@ class _Block extends StatelessWidget {
           ),
         ),
       ],
+    ),
+  );
+}
+
+/// «Неофициальное приложение с открытым кодом», где «открытым кодом» —
+/// ссылка на репозиторий.
+class _SourceNote extends StatefulWidget {
+  const _SourceNote();
+
+  @override
+  State<_SourceNote> createState() => _SourceNoteState();
+}
+
+class _SourceNoteState extends State<_SourceNote> {
+  final _tap = TapGestureRecognizer()
+    ..onTap = () =>
+        launchUrl(Uri.parse(Links.repo), mode: LaunchMode.inAppBrowserView);
+
+  @override
+  void dispose() {
+    _tap.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Text.rich(
+    TextSpan(
+      text: 'Неофициальное приложение\nс ',
+      children: [
+        TextSpan(
+          text: 'открытым кодом',
+          style: TextStyle(color: CupertinoTheme.of(context).primaryColor),
+          recognizer: _tap,
+        ),
+      ],
+    ),
+    textAlign: TextAlign.center,
+    style: TextStyle(
+      fontSize: 13,
+      color: CupertinoColors.secondaryLabel.resolveFrom(context),
     ),
   );
 }
