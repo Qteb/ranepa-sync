@@ -228,61 +228,72 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
             ),
             // Дата мелкими заглавными, под ней крупно «Сегодня» / «Завтра».
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              '${weekdaysLong[_selected.weekday - 1]}, '
-                                      '${_selected.day} ${monthsGenitive[_selected.month - 1]}'
-                                  .toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: secondary,
+            // Большой заголовок растёт со шрифтом меньше остального, как
+            // в системных приложениях.
+            MediaQuery.withClampedTextScaling(
+              maxScaleFactor: 1.4,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  '${weekdaysLong[_selected.weekday - 1]}, '
+                                          '${_selected.day} ${monthsGenitive[_selected.month - 1]}'
+                                      .toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: secondary,
+                                  ),
+                                ),
                               ),
-                            ),
-                            if (state.loading && !_pulling) ...[
-                              const SizedBox(width: 6),
-                              const CupertinoActivityIndicator(radius: 6),
+                              if (state.loading && !_pulling) ...[
+                                const SizedBox(width: 6),
+                                const CupertinoActivityIndicator(radius: 6),
+                              ],
                             ],
-                          ],
-                        ),
-                        Text(
-                          relativeDayName(_selected),
-                          style: TextStyle(
-                            fontSize: 34,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.37,
-                            color: label,
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Semantics(
-                    button: true,
-                    label: 'Аккаунт и настройки',
-                    child: GestureDetector(
-                      onTap: () {
-                        Tips.instance.done(Tip.account);
-                        showAccountSheet(context, state);
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Avatar(state: state, size: 36),
+                          Text(
+                            relativeDayName(_selected),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 34,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.37,
+                              color: label,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Semantics(
+                      button: true,
+                      label: 'Аккаунт и настройки',
+                      child: GestureDetector(
+                        onTap: () {
+                          Tips.instance.done(Tip.account);
+                          showAccountSheet(context, state);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Avatar(state: state, size: 36),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             _WeekStrip(
@@ -304,11 +315,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ? const SizedBox(width: double.infinity)
                       : Padding(
                           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                          child: TipCard(
-                            tip: tip,
-                            icon: tip == Tip.refresh
-                                ? CupertinoIcons.arrow_down_circle
-                                : CupertinoIcons.person_crop_circle,
+                          child: MediaQuery.withClampedTextScaling(
+                            // Подсказка над лентой не должна вытеснять пары.
+                            maxScaleFactor: 1.3,
+                            child: TipCard(
+                              tip: tip,
+                              icon: tip == Tip.refresh
+                                  ? CupertinoIcons.arrow_down_circle
+                                  : CupertinoIcons.person_crop_circle,
+                            ),
                           ),
                         ),
                 );
@@ -369,46 +384,50 @@ class _WeekStrip extends StatelessWidget {
       }
     }
 
-    return GestureDetector(
-      onHorizontalDragEnd: (d) {
-        final v = d.primaryVelocity ?? 0;
-        if (v < -200) shift(7);
-        if (v > 200) shift(-7);
-      },
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                for (var i = 0; i < 7; i++)
-                  Expanded(
-                    child: Text(
-                      weekdaysShort[i],
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: secondary),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                for (var i = 0; i < 7; i++)
-                  Expanded(
-                    child: _Day(
-                      day: monday.add(Duration(days: i)),
-                      selected: sameDay(
-                        monday.add(Duration(days: i)),
-                        selected,
+    // Семь дней в ряд: крупнее ×1.3 цифры не помещаются.
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      child: GestureDetector(
+        onHorizontalDragEnd: (d) {
+          final v = d.primaryVelocity ?? 0;
+          if (v < -200) shift(7);
+          if (v > 200) shift(-7);
+        },
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  for (var i = 0; i < 7; i++)
+                    Expanded(
+                      child: Text(
+                        weekdaysShort[i],
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: secondary),
                       ),
-                      dot: hasLessons(monday.add(Duration(days: i))),
-                      onTap: () => onSelect(monday.add(Duration(days: i))),
                     ),
-                  ),
-              ],
-            ),
-          ],
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  for (var i = 0; i < 7; i++)
+                    Expanded(
+                      child: _Day(
+                        day: monday.add(Duration(days: i)),
+                        selected: sameDay(
+                          monday.add(Duration(days: i)),
+                          selected,
+                        ),
+                        dot: hasLessons(monday.add(Duration(days: i))),
+                        onTap: () => onSelect(monday.add(Duration(days: i))),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -446,39 +465,49 @@ class _Day extends StatelessWidget {
         : day.weekday >= 6
         ? secondary
         : label;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: fill),
-            child: Text(
-              '${day.day}',
-              style: TextStyle(
-                fontSize: 19,
-                fontWeight: selected || today
-                    ? FontWeight.w600
-                    : FontWeight.w400,
-                color: text,
+    final size = MediaQuery.textScalerOf(context).scale(34);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label:
+          '${today ? 'Сегодня, ' : ''}${weekdaysLong[day.weekday - 1]}, '
+          '${day.day} ${monthsGenitive[day.month - 1]}'
+          '${dot ? '' : ', пар нет'}',
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Column(
+          children: [
+            Container(
+              width: size,
+              height: size,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: fill),
+              child: Text(
+                '${day.day}',
+                style: TextStyle(
+                  fontSize: 19,
+                  fontWeight: selected || today
+                      ? FontWeight.w600
+                      : FontWeight.w400,
+                  color: text,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 3),
-          Container(
-            width: 4,
-            height: 4,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: dot
-                  ? CupertinoColors.systemGrey2.resolveFrom(context)
-                  : null,
+            const SizedBox(height: 3),
+            Container(
+              width: 4,
+              height: 4,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: dot
+                    ? CupertinoColors.systemGrey2.resolveFrom(context)
+                    : null,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -631,71 +660,78 @@ class _NowCard extends StatelessWidget {
       }
     }
 
-    return GestureDetector(
-      onTap: tapTarget == null
-          ? null
-          : () => showLessonSheet(context, tapTarget!),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
-            context,
+    return Semantics(
+      button: tapTarget != null,
+      container: true,
+      child: GestureDetector(
+        onTap: tapTarget == null
+            ? null
+            : () => showLessonSheet(context, tapTarget!),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
+              context,
+            ),
+            borderRadius: BorderRadius.circular(16),
           ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  caption,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: accent,
-                  ),
-                ),
-                const Spacer(),
-                if (trailing != null)
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
                   Text(
-                    trailing,
-                    style: TextStyle(fontSize: 13, color: secondary),
+                    caption,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: accent,
+                    ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: label,
+                  const Spacer(),
+                  if (trailing != null)
+                    Text(
+                      trailing,
+                      style: TextStyle(fontSize: 13, color: secondary),
+                    ),
+                ],
               ),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 2),
-              Text(subtitle, style: TextStyle(fontSize: 15, color: secondary)),
-            ],
-            if (progress != null) ...[
-              const SizedBox(height: 12),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(2),
-                child: LinearProgressIndicator(
-                  value: progress.clamp(0, 1),
-                  minHeight: 4,
-                  color: accent,
-                  backgroundColor: CupertinoColors.systemFill.resolveFrom(
-                    context,
-                  ),
+              const SizedBox(height: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: label,
                 ),
               ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(fontSize: 15, color: secondary),
+                ),
+              ],
+              if (progress != null) ...[
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: progress.clamp(0, 1),
+                    minHeight: 4,
+                    color: accent,
+                    backgroundColor: CupertinoColors.systemFill.resolveFrom(
+                      context,
+                    ),
+                  ),
+                ),
+              ],
+              if (footer != null) ...[
+                const SizedBox(height: 10),
+                Text(footer, style: TextStyle(fontSize: 13, color: secondary)),
+              ],
             ],
-            if (footer != null) ...[
-              const SizedBox(height: 10),
-              Text(footer, style: TextStyle(fontSize: 13, color: secondary)),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -749,74 +785,89 @@ class _TimelineRow extends StatelessWidget {
     final label = CupertinoColors.label.resolveFrom(context);
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => showLessonSheet(context, lesson),
-      child: Opacity(
-        opacity: dimmed ? 0.45 : 1,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(
-                  width: 48,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        hm(lesson.start),
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: ongoing
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: ongoing ? accent : label,
+    final scale = MediaQuery.textScalerOf(context);
+    // VoiceOver читает строку целиком: «10:40–12:00, Иностранный язык,
+    // семинар, 1 - 2317, идёт сейчас».
+    return Semantics(
+      button: true,
+      label: [
+        '${hm(lesson.start)}–${hm(lesson.end)}',
+        lesson.subject,
+        if (lesson.kind.isNotEmpty) lesson.kind,
+        lesson.isRemote ? 'дистанционно' : lesson.shortLocation,
+        if (lesson.cancelled) 'отменена',
+        if (ongoing) 'идёт сейчас',
+      ].join(', '),
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => showLessonSheet(context, lesson),
+        child: Opacity(
+          opacity: dimmed ? 0.45 : 1,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: scale.scale(48),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          hm(lesson.start),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: ongoing
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            color: ongoing ? accent : label,
+                          ),
                         ),
-                      ),
-                      Text(
-                        hm(lesson.end),
-                        style: TextStyle(fontSize: 13, color: secondary),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  width: 3,
-                  decoration: BoxDecoration(
-                    color: LessonColors.of(lesson.kind).bar
-                        .resolveFrom(context),
-                    borderRadius: BorderRadius.circular(1.5),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        lesson.subject,
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: ongoing
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: label,
-                          decoration: lesson.cancelled
-                              ? TextDecoration.lineThrough
-                              : null,
+                        Text(
+                          hm(lesson.end),
+                          style: TextStyle(fontSize: 13, color: secondary),
                         ),
-                      ),
-                      Text.rich(
-                        _details(lesson, context, icon: true),
-                        style: TextStyle(fontSize: 15, color: secondary),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 3,
+                    decoration: BoxDecoration(
+                      color: LessonColors.of(lesson.kind).bar
+                          .resolveFrom(context),
+                      borderRadius: BorderRadius.circular(1.5),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          lesson.subject,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: ongoing
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            color: label,
+                            decoration: lesson.cancelled
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                        ),
+                        Text.rich(
+                          _details(lesson, context, icon: true),
+                          style: TextStyle(fontSize: 15, color: secondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -840,7 +891,11 @@ class _Gap extends StatelessWidget {
         ? 'Окно ${duration(gap)}'
         : 'Перерыв ${duration(gap)}';
     return Padding(
-      padding: const EdgeInsets.only(left: 71, top: 2, bottom: 2),
+      padding: EdgeInsets.only(
+        left: MediaQuery.textScalerOf(context).scale(48) + 23,
+        top: 2,
+        bottom: 2,
+      ),
       child: Text(
         text,
         style: TextStyle(

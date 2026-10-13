@@ -92,8 +92,12 @@ class _LessonSheet extends StatelessWidget {
                         const SizedBox(height: 2),
                         CopyOnLongPress(
                           text: lesson.subject,
+                          // Крупный заголовок растёт меньше текста, иначе
+                          // название рвётся по слогам.
                           child: Text(
                             lesson.subject,
+                            textScaler: MediaQuery.textScalerOf(context)
+                                .clamp(maxScaleFactor: 1.4),
                             style: TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.w700,

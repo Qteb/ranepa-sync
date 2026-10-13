@@ -207,11 +207,15 @@ class _HomeTip extends StatelessWidget {
             ? const SizedBox(width: double.infinity)
             : Padding(
                 padding: padding,
-                child: TipCard(
-                  tip: tip,
-                  icon: tip == Tip.refresh
-                      ? CupertinoIcons.arrow_down_circle
-                      : CupertinoIcons.person_crop_circle,
+                child: MediaQuery.withClampedTextScaling(
+                  // Подсказка над лентой не должна вытеснять пары.
+                  maxScaleFactor: 1.3,
+                  child: TipCard(
+                    tip: tip,
+                    icon: tip == Tip.refresh
+                        ? CupertinoIcons.arrow_down_circle
+                        : CupertinoIcons.person_crop_circle,
+                  ),
                 ),
               ),
       );

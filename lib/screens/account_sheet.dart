@@ -146,101 +146,111 @@ class _AccountSheet extends StatelessWidget {
             ),
           ),
         ),
-        child: ListView(
-          controller: controller,
-          children: [
-            _Profile(state: state),
-            CupertinoListSection.insetGrouped(
-              footer: SectionFooter(_backgroundFooter(state)),
-              children: [
-                CupertinoListTile(
-                  leading: const Glyph(
-                    CupertinoIcons.bell_fill,
-                    CupertinoColors.systemRed,
-                  ),
-                  title: const Text('Напоминание'),
-                  additionalInfo: Text(
-                    state.notificationsEnabled == false
-                        ? 'Выключены'
-                        : _reminderLabel(state.reminderMinutes),
-                  ),
-                  trailing: const _Chevron(),
-                  onTap: () => state.notificationsEnabled == false
-                      ? _explainNotificationsOff(context)
-                      : _pickReminder(context),
-                ),
-                CupertinoListTile(
-                  leading: const Glyph(
-                    CupertinoIcons.calendar,
-                    CupertinoColors.systemOrange,
-                  ),
-                  title: const Text('Календарь iPhone'),
-                  trailing: CupertinoSwitch(
-                    value: state.calendarExport,
-                    onChanged: state.setCalendarExport,
-                  ),
-                ),
-                // Live Activity есть только на iOS.
-                if (Platform.isIOS)
+        // Строки настроек с переключателями: при очень крупном шрифте
+        // подпись не помещается даже в две строки.
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.4,
+          child: ListView(
+            controller: controller,
+            children: [
+              _Profile(state: state),
+              CupertinoListSection.insetGrouped(
+                footer: SectionFooter(_backgroundFooter(state)),
+                children: [
                   CupertinoListTile(
                     leading: const Glyph(
-                      CupertinoIcons.timer,
-                      CupertinoColors.systemGreen,
+                      CupertinoIcons.bell_fill,
+                      CupertinoColors.systemRed,
                     ),
-                    title: const Text('Пара на экране блокировки'),
+                    title: const Text('Напоминание', maxLines: 2),
+                    additionalInfo: Text(
+                      state.notificationsEnabled == false
+                          ? 'Выключены'
+                          : _reminderLabel(state.reminderMinutes),
+                    ),
+                    trailing: const _Chevron(),
+                    onTap: () => state.notificationsEnabled == false
+                        ? _explainNotificationsOff(context)
+                        : _pickReminder(context),
+                  ),
+                  CupertinoListTile(
+                    leading: const Glyph(
+                      CupertinoIcons.calendar,
+                      CupertinoColors.systemOrange,
+                    ),
+                    title: const Text('Календарь iPhone', maxLines: 2),
                     trailing: CupertinoSwitch(
-                      value: state.liveActivity,
-                      onChanged: state.setLiveActivity,
+                      value: state.calendarExport,
+                      onChanged: state.setCalendarExport,
                     ),
                   ),
-                CupertinoListTile(
-                  leading: const Glyph(
-                    CupertinoIcons.moon_fill,
-                    CupertinoColors.systemIndigo,
+                  // Live Activity есть только на iOS.
+                  if (Platform.isIOS)
+                    CupertinoListTile(
+                      leading: const Glyph(
+                        CupertinoIcons.timer,
+                        CupertinoColors.systemGreen,
+                      ),
+                      title: const Text(
+                        'Пара на экране блокировки',
+                        maxLines: 2,
+                      ),
+                      trailing: CupertinoSwitch(
+                        value: state.liveActivity,
+                        onChanged: state.setLiveActivity,
+                      ),
+                    ),
+                  CupertinoListTile(
+                    leading: const Glyph(
+                      CupertinoIcons.moon_fill,
+                      CupertinoColors.systemIndigo,
+                    ),
+                    title: const Text('Оформление', maxLines: 2),
+                    additionalInfo: Text(_themeLabels[state.themeMode]!),
+                    trailing: const _Chevron(),
+                    onTap: () => _pickTheme(context),
                   ),
-                  title: const Text('Оформление'),
-                  additionalInfo: Text(_themeLabels[state.themeMode]!),
-                  trailing: const _Chevron(),
-                  onTap: () => _pickTheme(context),
-                ),
-              ],
-            ),
-            if ((kDebugMode || testTools) && !recordingMode && !screenshotMode)
-              _DebugSection(state: state),
-            CupertinoListSection.insetGrouped(
-              children: [
-                CupertinoListTile(
-                  leading: const Glyph(
-                    CupertinoIcons.info,
-                    CupertinoColors.systemGrey,
-                  ),
-                  title: const Text('О приложении'),
-                  trailing: const CupertinoListTileChevron(),
-                  onTap: () => Navigator.of(context).push(
-                    CupertinoPageRoute<void>(
-                      builder: (_) => const AboutScreen(),
+                ],
+              ),
+              if ((kDebugMode || testTools) &&
+                  !recordingMode &&
+                  !screenshotMode)
+                _DebugSection(state: state),
+              CupertinoListSection.insetGrouped(
+                children: [
+                  CupertinoListTile(
+                    leading: const Glyph(
+                      CupertinoIcons.info,
+                      CupertinoColors.systemGrey,
+                    ),
+                    title: const Text('О приложении', maxLines: 2),
+                    trailing: const CupertinoListTileChevron(),
+                    onTap: () => Navigator.of(context).push(
+                      CupertinoPageRoute<void>(
+                        builder: (_) => const AboutScreen(),
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            CupertinoListSection.insetGrouped(
-              children: [
-                CupertinoListTile(
-                  title: Center(
-                    child: Text(
-                      state.demo && !screenshotMode
-                          ? 'Выйти из демо'
-                          : 'Выйти из ЛК',
-                      style: TextStyle(color: CupertinoColors.systemRed),
+                ],
+              ),
+              CupertinoListSection.insetGrouped(
+                children: [
+                  CupertinoListTile(
+                    title: Center(
+                      child: Text(
+                        state.demo && !screenshotMode
+                            ? 'Выйти из демо'
+                            : 'Выйти из ЛК',
+                        style: TextStyle(color: CupertinoColors.systemRed),
+                      ),
                     ),
+                    onTap: () => _confirmLogout(context),
                   ),
-                  onTap: () => _confirmLogout(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-          ],
+                ],
+              ),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
@@ -325,7 +335,7 @@ class _AccountSheet extends StatelessWidget {
     final picked = await showCupertinoModalPopup<ThemeMode>(
       context: context,
       builder: (c) => CupertinoActionSheet(
-        title: const Text('Оформление'),
+        title: const Text('Оформление', maxLines: 2),
         actions: [
           for (final e in _themeLabels.entries)
             CupertinoActionSheetAction(

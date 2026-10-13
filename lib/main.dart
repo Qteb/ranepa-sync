@@ -81,7 +81,12 @@ class RanepaApp extends StatelessWidget {
                 : SystemUiOverlayStyle.dark,
             child: DefaultTextStyle(
               style: CupertinoTheme.of(context).textTheme.textStyle,
-              child: child!,
+              // Крупный шрифт из настроек iOS, но не больше ×2: дальше
+              // названия пар рвутся по слогам на каждой строке.
+              child: MediaQuery.withClampedTextScaling(
+                maxScaleFactor: 2,
+                child: child!,
+              ),
             ),
           );
         },

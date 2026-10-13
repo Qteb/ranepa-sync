@@ -267,7 +267,7 @@ struct LessonRowView: View {
                 .padding(.top, 2)
             VStack(alignment: .leading, spacing: 1) {
                 Text(lesson.t)
-                    .font(.system(size: 15, weight: ongoing ? .semibold : .regular))
+                    .font(ongoing ? .body.weight(.semibold) : .body)
                     .strikethrough(lesson.cancelled)
                     .lineLimit(2)
                 Text("\(hm(lesson.start)) · \(lesson.cancelled ? "отменена" : lesson.r)")
@@ -277,5 +277,6 @@ struct LessonRowView: View {
             }
         }
         .opacity(lesson.end <= now || lesson.cancelled ? 0.45 : 1)
+        .accessibilityElement(children: .combine)
     }
 }

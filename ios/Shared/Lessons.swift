@@ -76,6 +76,8 @@ struct KindIcon: View {
         Image(systemName: kindSymbol(kind))
             .font(.system(size: size, weight: .semibold))
             .foregroundStyle(kindColor(kind))
+            // Тип и так звучит в тексте рядом — имя символа не читать.
+            .accessibilityHidden(true)
     }
 }
 

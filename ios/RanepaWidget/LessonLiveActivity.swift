@@ -111,6 +111,7 @@ private struct KindBadge: View {
             .foregroundStyle(kindColor(kind))
             .frame(width: size, height: size)
             .background(kindColor(kind).opacity(0.25), in: Circle())
+            .accessibilityHidden(true)
     }
 }
 
