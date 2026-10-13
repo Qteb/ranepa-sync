@@ -55,7 +55,9 @@ class _AccountSheet extends StatelessWidget {
           middle: const Text('Аккаунт'),
           trailing: CupertinoButton(
             padding: EdgeInsets.zero,
-            onPressed: () => Navigator.of(context).pop(),
+            // Через корневой навигатор: pop из вложенного оставляет главный
+            // экран уменьшенным и затемнённым, как будто лист ещё открыт.
+            onPressed: () => CupertinoSheetRoute.popSheet(context),
             child: const Text(
               'Готово',
               style: TextStyle(fontWeight: FontWeight.w600),
@@ -219,7 +221,7 @@ class _AccountSheet extends StatelessWidget {
       ),
     );
     if (ok == true && context.mounted) {
-      Navigator.of(context).pop();
+      CupertinoSheetRoute.popSheet(context);
       await state.logout();
     }
   }

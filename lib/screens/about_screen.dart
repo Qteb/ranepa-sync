@@ -13,6 +13,21 @@ import '../widgets/settings.dart';
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
+  /// Приложение GitHub, если оно установлено (universal link), иначе —
+  /// встроенный Safari.
+  Future<void> _openRepo() async {
+    final uri = Uri.parse(Links.repo);
+    try {
+      if (await launchUrl(
+        uri,
+        mode: LaunchMode.externalNonBrowserApplication,
+      )) {
+        return;
+      }
+    } catch (_) {}
+    await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+  }
+
   @override
   Widget build(BuildContext context) {
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
@@ -69,10 +84,7 @@ class AboutScreen extends StatelessWidget {
                       leading: const _GitHubGlyph(),
                       title: const Text('GitHub'),
                       trailing: const ExternalLinkMark(),
-                      onTap: () => launchUrl(
-                        Uri.parse(Links.repo),
-                        mode: LaunchMode.inAppBrowserView,
-                      ),
+                      onTap: _openRepo,
                     ),
                   ],
                 ),
