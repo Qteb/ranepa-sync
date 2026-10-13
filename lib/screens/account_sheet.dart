@@ -445,6 +445,21 @@ class _DebugSection extends StatelessWidget {
         onTap: () => _startFastDay(context),
       ),
       CupertinoListTile(
+        title: const Text('Напоминание о паре'),
+        subtitle: const Text('Через 5 секунд — заблокируй телефон'),
+        onTap: () {
+          final now = currentTime();
+          final lesson =
+              state.lessons
+                  .where((l) => !l.cancelled && l.start.isAfter(now))
+                  .firstOrNull ??
+              state.lessons.lastOrNull;
+          if (lesson != null) {
+            showTestReminder(lesson, state.reminderMinutes.clamp(1, 60));
+          }
+        },
+      ),
+      CupertinoListTile(
         title: const Text('Уведомление об изменении'),
         subtitle: const Text('Показать сразу, как после обновления'),
         onTap: () => showScheduleChanges(const [

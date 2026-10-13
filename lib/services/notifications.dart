@@ -89,6 +89,38 @@ Future<bool> requestNotificationPermission() async {
   return false;
 }
 
+const _reminderDetails = NotificationDetails(
+  android: AndroidNotificationDetails(
+    'lessons',
+    'Напоминания о парах',
+    importance: Importance.high,
+    priority: Priority.high,
+  ),
+  // В одну стопку, чтобы напоминания за день не расползались по экрану.
+  iOS: DarwinNotificationDetails(threadIdentifier: 'lessons'),
+);
+
+/// «Семинар через 15 мин» / «Математика» / «01:11 · 1 - 2262, корпус 1».
+String _reminderTitle(Lesson lesson, int minutes) =>
+    '${capitalize(lesson.kind.isEmpty ? 'пара' : lesson.kind)} '
+    'через ${duration(Duration(minutes: minutes))}';
+
+String _reminderBody(Lesson lesson) =>
+    '${lesson.subject}\n${hm(lesson.start)} · ${lesson.placeLabel}';
+
+/// Отладка: напоминание о [lesson] через 5 секунд — успеть заблокировать
+/// телефон. Такое же, как настоящее, и так же открывает карточку пары.
+Future<void> showTestReminder(Lesson lesson, int minutes) =>
+    _plugin.zonedSchedule(
+      id: 999,
+      title: _reminderTitle(lesson, minutes),
+      body: _reminderBody(lesson),
+      scheduledDate: tz.TZDateTime.now(tz.UTC).add(const Duration(seconds: 5)),
+      notificationDetails: _reminderDetails,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      payload: lessonPayload(lesson.start),
+    );
+
 /// Перепланирует напоминания: [minutes] до начала каждой пары, 0 — выключено.
 Future<void> scheduleReminders(List<Lesson> lessons, int minutes) async {
   // Только запланированные: уже показанное «расписание изменилось» не трогаем.
@@ -96,16 +128,6 @@ Future<void> scheduleReminders(List<Lesson> lessons, int minutes) async {
   await removeStaleReminders();
   if (minutes <= 0) return;
 
-  const details = NotificationDetails(
-    android: AndroidNotificationDetails(
-      'lessons',
-      'Напоминания о парах',
-      importance: Importance.high,
-      priority: Priority.high,
-    ),
-    // В одну стопку, чтобы напоминания за день не расползались по экрану.
-    iOS: DarwinNotificationDetails(threadIdentifier: 'lessons'),
-  );
   final now = DateTime.now();
   final upcoming = lessons
       .where((l) => !l.cancelled)
@@ -117,13 +139,10 @@ Future<void> scheduleReminders(List<Lesson> lessons, int minutes) async {
   for (final (lesson, at) in upcoming) {
     await _plugin.zonedSchedule(
       id: id++,
-      // «Семинар через 15 мин» / «Математика» / «01:11 · 1 - 2262, корпус 1».
-      title:
-          '${capitalize(lesson.kind.isEmpty ? 'пара' : lesson.kind)} '
-          'через ${duration(Duration(minutes: minutes))}',
-      body: '${lesson.subject}\n${hm(lesson.start)} · ${lesson.placeLabel}',
+      title: _reminderTitle(lesson, minutes),
+      body: _reminderBody(lesson),
       scheduledDate: tz.TZDateTime.from(at, tz.UTC),
-      notificationDetails: details,
+      notificationDetails: _reminderDetails,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       payload: lessonPayload(lesson.start),
     );
