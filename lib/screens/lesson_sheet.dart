@@ -45,7 +45,9 @@ class _LessonSheet extends StatelessWidget {
         transitionBetweenRoutes: false,
         border: null,
         backgroundColor: CupertinoColors.systemGroupedBackground,
-        trailing: const _CloseButton(),
+        // Закрытие без действия — слева (cancellationAction в iOS 26),
+        // справа место для подтверждения, которого здесь нет.
+        leading: const _CloseButton(),
       ),
       child: ListView(
         controller: controller,
@@ -65,8 +67,8 @@ class _LessonSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                GestureDetector(
-                  onTap: () => copyText(context, lesson.subject),
+                CopyOnLongPress(
+                  text: lesson.subject,
                   child: Text(
                     lesson.subject,
                     style: TextStyle(
@@ -172,37 +174,34 @@ class _Row extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback? onTap;
 
-  /// Что копировать: по нажатию, если у строки нет своего действия,
-  /// иначе долгим нажатием. По умолчанию — сам текст строки.
+  /// Что копировать долгим нажатием; по умолчанию — текст строки.
   final String? copy;
 
   @override
-  Widget build(BuildContext context) {
-    void copyRow() => copyText(context, copy ?? title);
-    return GestureDetector(
-      onLongPress: onTap == null ? null : copyRow,
-      child: CupertinoListTile(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        leading: Icon(
-          icon,
-          size: 22,
-          color: CupertinoColors.secondaryLabel.resolveFrom(context),
-        ),
-        title: Text(
-          title,
-          maxLines: 4,
-          style: TextStyle(
-            color: color ?? CupertinoColors.label.resolveFrom(context),
-          ),
-        ),
-        trailing: trailing,
-        onTap: onTap ?? copyRow,
+  Widget build(BuildContext context) => CopyOnLongPress(
+    text: copy ?? title,
+    child: CupertinoListTile(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      leading: Icon(
+        icon,
+        size: 22,
+        color: CupertinoColors.secondaryLabel.resolveFrom(context),
       ),
-    );
-  }
+      title: Text(
+        title,
+        maxLines: 4,
+        style: TextStyle(
+          color: color ?? CupertinoColors.label.resolveFrom(context),
+        ),
+      ),
+      trailing: trailing,
+      onTap: onTap,
+    ),
+  );
 }
 
-/// Круглая кнопка закрытия листа, как в системных приложениях iOS.
+/// Кнопка закрытия листа в стиле iOS 26: круглая «стеклянная» кнопка
+/// с крестиком цвета текста, зона нажатия 44×44.
 class _CloseButton extends StatelessWidget {
   const _CloseButton();
 
@@ -212,20 +211,30 @@ class _CloseButton extends StatelessWidget {
     minimumSize: const Size.square(44),
     onPressed: () => Navigator.of(context).pop(),
     child: Semantics(
+      button: true,
       label: 'Закрыть',
-      child: DecoratedBox(
+      child: Container(
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
-          color: CupertinoColors.tertiarySystemFill.resolveFrom(context),
-          shape: BoxShape.circle,
-        ),
-        child: SizedBox.square(
-          dimension: 30,
-          child: Icon(
-            CupertinoIcons.xmark,
-            size: 14,
-            weight: 700,
-            color: CupertinoColors.secondaryLabel.resolveFrom(context),
+          color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
+            context,
           ),
+          shape: BoxShape.circle,
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1F000000),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          CupertinoIcons.xmark,
+          size: 16,
+          weight: 600,
+          color: CupertinoColors.label.resolveFrom(context),
         ),
       ),
     ),

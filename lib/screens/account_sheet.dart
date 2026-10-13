@@ -293,8 +293,8 @@ class _Profile extends StatelessWidget {
           const SizedBox(height: 4),
           for (final line in [state.group, state.program])
             if (line != null && line.isNotEmpty)
-              GestureDetector(
-                onTap: () => copyText(context, line),
+              CopyOnLongPress(
+                text: line,
                 child: Text(
                   line,
                   textAlign: TextAlign.center,
