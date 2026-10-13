@@ -11,6 +11,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Flutter может быть не в PATH (например, при запуске из другого терминала).
+if ! command -v flutter >/dev/null; then
+  export PATH="$HOME/development/flutter/bin:$PATH"
+fi
+
 device="${1:-}"
 if [[ -z "$device" ]]; then
   device=$(xcrun devicectl list devices 2>/dev/null \
