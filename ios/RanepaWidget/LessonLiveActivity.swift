@@ -92,10 +92,14 @@ private struct CountdownText: View {
                 Text(timerInterval: lesson.start...lesson.end, countsDown: true)
                     .monospacedDigit()
                     .multilineTextAlignment(.trailing)
-            } else {
-                Text(lesson.start, style: .timer)
+            } else if lesson.start > Date() {
+                // Не .timer: на заблокированном экране iOS заменяет его
+                // словами («2 минуты»). Интервал всегда идёт как 1:15.
+                Text(timerInterval: Date()...lesson.start, countsDown: true)
                     .monospacedDigit()
                     .multilineTextAlignment(.trailing)
+            } else {
+                Text(hm(lesson.start))
             }
         } else {
             Text("")
@@ -156,6 +160,8 @@ private struct TimerColumn: View {
                     .foregroundStyle(.secondary)
                 CountdownText(phase: phase)
                     .font(.system(size: 28, weight: .semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .frame(maxWidth: 110, alignment: .trailing)
             }
         }
