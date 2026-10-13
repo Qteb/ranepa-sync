@@ -58,6 +58,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
     state.addListener(_onState);
     state.refresh(SyncTrigger.open);
+    // Системный запрос — только если пользователь ещё не отвечал.
+    state.checkNotifications(request: true);
   }
 
   @override
@@ -74,6 +76,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (lifecycle != AppLifecycleState.resumed) return;
     // Пока приложение было свёрнуто, расписание могла обновить фоновая задача.
     await state.reloadFromDisk();
+    // Уведомления могли включить или выключить в настройках телефона.
+    await state.checkNotifications();
     state.refresh(SyncTrigger.open);
   }
 

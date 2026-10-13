@@ -14,7 +14,8 @@ import 'services/notifications.dart';
 import 'services/remote_config.dart';
 import 'services/sync.dart';
 
-export 'services/sync.dart' show SyncTrigger, fetchWeeks;
+export 'services/sync.dart'
+    show SyncTrigger, defaultReminderMinutes, fetchWeeks;
 
 class AppState extends ChangeNotifier {
   AppState(this._prefs) {
@@ -34,8 +35,12 @@ class AppState extends ChangeNotifier {
   /// на главном экране и сбрасываются после показа.
   List<String> pendingChanges = const [];
 
+  /// Разрешены ли уведомления в настройках телефона; null — ещё не знаем.
+  bool? notificationsEnabled;
+
   bool get loggedIn => _prefs.getBool(Keys.loggedIn) ?? false;
-  int get reminderMinutes => _prefs.getInt(Keys.reminderMinutes) ?? 0;
+  int get reminderMinutes =>
+      _prefs.getInt(Keys.reminderMinutes) ?? defaultReminderMinutes;
   bool get calendarExport => _prefs.getBool(Keys.calendarExport) ?? false;
   ThemeMode get themeMode =>
       ThemeMode.values[_prefs.getInt('themeMode') ?? ThemeMode.system.index];
@@ -108,7 +113,22 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     await scheduleBackgroundRefresh();
     // Разрешение нужно и для уведомлений об изменениях, не только для напоминаний.
-    await requestNotificationPermission();
+    await checkNotifications(request: true);
+  }
+
+  /// Перечитывает разрешение на уведомления (пользователь мог поменять его в
+  /// настройках). С [request] — показывает системный запрос, если ещё не
+  /// спрашивали.
+  Future<void> checkNotifications({bool request = false}) async {
+    final allowed = request
+        ? await requestNotificationPermission()
+        : await notificationsAllowed();
+    if (allowed == notificationsEnabled) return;
+    final wasOff = notificationsEnabled == false;
+    notificationsEnabled = allowed;
+    notifyListeners();
+    // Включили в настройках — сразу ставим напоминания заново.
+    if (allowed && wasOff && loggedIn) await _resync();
   }
 
   /// [SyncTrigger.open] — при открытии, если данные устарели;

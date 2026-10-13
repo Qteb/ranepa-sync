@@ -16,6 +16,9 @@ import 'remote_config.dart';
 /// Делается при входе и первым обновлением за день.
 const fetchWeeks = 5;
 
+/// Напоминание о паре по умолчанию, пока пользователь не выбрал своё.
+const defaultReminderMinutes = 15;
+
 /// Данные старше этого обновляются при открытии приложения.
 const staleAfter = Duration(hours: 4);
 
@@ -328,7 +331,7 @@ Future<String?> applySideEffects(
   SharedPreferences prefs,
   List<Lesson> lessons,
 ) async {
-  final minutes = prefs.getInt(Keys.reminderMinutes) ?? 0;
+  final minutes = prefs.getInt(Keys.reminderMinutes) ?? defaultReminderMinutes;
   try {
     await scheduleReminders(lessons, minutes);
     // После scheduleReminders: тот снимает все запланированные уведомления.

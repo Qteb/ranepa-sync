@@ -17,6 +17,13 @@ void showLessonSheet(BuildContext context, Lesson lesson) {
   );
 }
 
+/// Тип занятия для заголовка листа: «лекция» → «Лекция».
+String _kindTitle(String kind) => switch (kind) {
+  '' => 'Пара',
+  'лаба' => 'Лабораторная',
+  _ => capitalize(kind),
+};
+
 class _LessonSheet extends StatelessWidget {
   const _LessonSheet({required this.lesson, required this.controller});
 
@@ -34,7 +41,7 @@ class _LessonSheet extends StatelessWidget {
       navigationBar: CupertinoNavigationBar(
         automaticallyImplyLeading: false,
         transitionBetweenRoutes: false,
-        middle: const Text('Пара'),
+        middle: Text(_kindTitle(lesson.kind)),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => Navigator.of(context).pop(),
@@ -71,17 +78,12 @@ class _LessonSheet extends StatelessWidget {
                   [dayTitle(lesson.start), timeRange(lesson)].join(', '),
                   style: TextStyle(fontSize: 17, color: secondary),
                 ),
-                if (lesson.kind.isNotEmpty || lesson.cancelled)
+                if (lesson.cancelled)
                   Text(
-                    [
-                      if (lesson.kind.isNotEmpty) lesson.kind,
-                      if (lesson.cancelled) 'отменена',
-                    ].join(' · '),
+                    'Отменена',
                     style: TextStyle(
                       fontSize: 17,
-                      color: lesson.cancelled
-                          ? CupertinoColors.systemRed.resolveFrom(context)
-                          : secondary,
+                      color: CupertinoColors.systemRed.resolveFrom(context),
                     ),
                   ),
               ],

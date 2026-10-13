@@ -41,6 +41,25 @@ Future<void> initNotifications() async {
   );
 }
 
+/// Разрешены ли уведомления в настройках телефона. Запрос не показывает.
+Future<bool> notificationsAllowed() async {
+  final ios = _plugin
+      .resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin
+      >();
+  if (ios != null) {
+    return (await ios.checkPermissions())?.isEnabled ?? false;
+  }
+  final android = _plugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+  if (android != null) return await android.areNotificationsEnabled() ?? false;
+  return false;
+}
+
+/// Показывает системный запрос, если пользователь ещё не отвечал; после
+/// отказа iOS запрос больше не показывает и сразу возвращает false.
 Future<bool> requestNotificationPermission() async {
   final ios = _plugin
       .resolvePlatformSpecificImplementation<

@@ -47,6 +47,7 @@ dependencies:
   package_info_plus: ^10.2.2
   markdown: ^7.3.1
   flutter_svg: ^2.3.0
+  app_settings: ^9.0.0
 
 dev_dependencies:
   flutter_test:

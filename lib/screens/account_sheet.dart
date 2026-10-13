@@ -1,3 +1,4 @@
+import 'package:app_settings/app_settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show ThemeMode;
@@ -77,9 +78,15 @@ class _AccountSheet extends StatelessWidget {
                     CupertinoColors.systemRed,
                   ),
                   title: const Text('Напоминание'),
-                  additionalInfo: Text(_reminderLabel(state.reminderMinutes)),
+                  additionalInfo: Text(
+                    state.notificationsEnabled == false
+                        ? 'Выключены'
+                        : _reminderLabel(state.reminderMinutes),
+                  ),
                   trailing: const _Chevron(),
-                  onTap: () => _pickReminder(context),
+                  onTap: () => state.notificationsEnabled == false
+                      ? _explainNotificationsOff(context)
+                      : _pickReminder(context),
                 ),
                 CupertinoListTile(
                   leading: const Glyph(
@@ -152,7 +159,40 @@ class _AccountSheet extends StatelessWidget {
         : 'Последнее фоновое обновление — '
               '${sameDay(at, DateTime.now()) ? 'сегодня' : '${at.day}.${at.month.toString().padLeft(2, '0')}'}'
               ' в ${hm(at)}.';
-    return '$calendarРасписание обновляется в фоне примерно раз в 4 часа. $last';
+    final off = state.notificationsEnabled == false
+        ? 'Уведомления выключены — об изменениях в расписании ты не узнаешь. '
+        : '';
+    return '$off$calendarРасписание обновляется в фоне примерно раз в 4 часа. '
+        '$last';
+  }
+
+  /// Уведомления запрещены в настройках телефона: iOS больше не покажет
+  /// запрос, включить их можно только там.
+  Future<void> _explainNotificationsOff(BuildContext context) async {
+    final open = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (c) => CupertinoAlertDialog(
+        title: const Text('Уведомления выключены'),
+        content: const Text(
+          'Чтобы получать напоминания о парах и изменениях в расписании, '
+          'разреши уведомления в Настройках.',
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Отмена'),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Открыть Настройки'),
+          ),
+        ],
+      ),
+    );
+    if (open == true) {
+      await AppSettings.openAppSettings(type: AppSettingsType.notification);
+    }
   }
 
   Future<void> _pickReminder(BuildContext context) async {
