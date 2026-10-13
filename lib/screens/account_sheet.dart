@@ -189,7 +189,8 @@ class _AccountSheet extends StatelessWidget {
                 ),
               ],
             ),
-            if (kDebugMode && !state.demo && !recordingMode) _DebugSection(state: state),
+            if (kDebugMode && !state.demo && !recordingMode)
+              _DebugSection(state: state),
             CupertinoListSection.insetGrouped(
               children: [
                 CupertinoListTile(

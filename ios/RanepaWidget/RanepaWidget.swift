@@ -2,35 +2,6 @@ import SwiftUI
 import UIKit
 import WidgetKit
 
-private let appGroup = "group.com.qteb.ranepatimetable"
-
-struct LessonItem: Decodable, Hashable {
-    let s: Double
-    let e: Double
-    let t: String
-    let k: String
-    let r: String
-
-    var start: Date { Date(timeIntervalSince1970: s) }
-    var end: Date { Date(timeIntervalSince1970: e) }
-}
-
-/// Пары пишет Flutter-приложение (home_widget) в общий UserDefaults группы.
-private func loadLessons() -> [LessonItem] {
-    guard
-        let raw = UserDefaults(suiteName: appGroup)?.string(forKey: "lessons"),
-        let data = raw.data(using: .utf8),
-        let items = try? JSONDecoder().decode([LessonItem].self, from: data)
-    else { return [] }
-    return items.sorted { $0.s < $1.s }
-}
-
-/// Сдвиг часов виджета. Ненулевой только в сборке для скриншотов
-/// (DEMO_AT во Flutter).
-private func clockShift() -> TimeInterval {
-    UserDefaults(suiteName: appGroup)?.double(forKey: "nowShift") ?? 0
-}
-
 struct LessonsEntry: TimelineEntry {
     /// Когда WidgetKit показывает запись — по настоящим часам.
     let shown: Date
@@ -98,37 +69,6 @@ private let accent = Color(UIColor { traits in
         ? UIColor(red: 0.90, green: 0.45, blue: 0.50, alpha: 1)
         : UIColor(red: 0.56, green: 0.11, blue: 0.18, alpha: 1)
 })
-
-/// Цвет типа пары — как в приложении (lib/widgets/lesson_colors.dart).
-private func kindColor(_ kind: String) -> Color {
-    switch kind {
-    case "лекция": return .blue
-    case "семинар": return .green
-    case "физкультура": return .orange
-    case "лабораторная": return .purple
-    case "консультация": return .teal
-    case "экзамен", "зачёт": return .pink
-    default: return .gray
-    }
-}
-
-private func dayLabel(_ date: Date, from now: Date) -> String {
-    let cal = Calendar.current
-    if cal.isDate(date, inSameDayAs: now) { return "Сегодня" }
-    if let tomorrow = cal.date(byAdding: .day, value: 1, to: now), cal.isDate(date, inSameDayAs: tomorrow) {
-        return "Завтра"
-    }
-    let f = DateFormatter()
-    f.locale = Locale(identifier: "ru_RU")
-    f.dateFormat = "EE, d MMMM"
-    return f.string(from: date).capitalized
-}
-
-private func hm(_ date: Date) -> String {
-    let f = DateFormatter()
-    f.dateFormat = "HH:mm"
-    return f.string(from: date)
-}
 
 struct LessonRow: View {
     let lesson: LessonItem

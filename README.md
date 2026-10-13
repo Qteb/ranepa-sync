@@ -17,6 +17,9 @@
 - Напоминает о паре заранее.
 - Выгружает пары в отдельный календарь «РАНХиГС» на телефоне.
 - Показывает ближайшие пары в виджете на главном экране и экране блокировки.
+- На Apple Watch — пары на сегодня, виджет в смарт-стопке и усложнения
+  циферблата. Расписание приходит с iPhone, поэтому на часах оно есть и без
+  телефона рядом.
 
 ## Приватность
 
@@ -108,6 +111,11 @@
 - **Виджет.** `home_widget` передаёт пары на 14 дней через App Group. Нативный
   виджет (iOS — `ios/RanepaWidget`, Android — `RanepaWidgetProvider.kt`) сам
   отбрасывает прошедшие пары.
+- **Apple Watch.** После каждого обновления iPhone отправляет те же пары на
+  часы через WatchConnectivity (`ios/Runner/WatchBridge.swift`). Приложение
+  для часов (`ios/RanepaWatch`) сохраняет их у себя, усложнения
+  (`ios/RanepaWatchWidget`) читают оттуда. Сами часы в ЛК не ходят. Общая
+  модель пар — `ios/Shared/Lessons.swift`.
 - **Интерфейс.** Экраны свёрстаны на Cupertino-виджетах по Apple Human Interface
   Guidelines.
 
@@ -120,6 +128,14 @@ flutter pub get
 flutter run                      # на подключённом устройстве или симуляторе
 flutter build ios --simulator    # сборка для iOS Simulator
 flutter build apk                # APK для Android
+```
+
+С приложением для часов `flutter build ios --simulator` не работает: Flutter
+требует конкретное устройство. Для симулятора — так:
+
+```bash
+flutter build ios --config-only --simulator --debug
+xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Debug -destination "id=<iPhone>" build
 ```
 
 В отладочной сборке на экране аккаунта есть раздел «Отладка»: запуск фонового

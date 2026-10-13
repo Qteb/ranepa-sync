@@ -13,6 +13,7 @@ import workmanager_apple
     // и lib/services/background.dart.
     WorkmanagerPlugin.setPluginRegistrantCallback { registry in
       GeneratedPluginRegistrant.register(with: registry)
+      WatchBridge.register(with: registry.registrar(forPlugin: "WatchBridge")!)
     }
     WorkmanagerPlugin.registerPeriodicTask(
       withIdentifier: "com.qteb.ranepaTimetable.refresh",
@@ -23,5 +24,6 @@ import workmanager_apple
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    WatchBridge.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "WatchBridge")!)
   }
 }
