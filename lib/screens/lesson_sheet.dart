@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show showModalBottomSheet;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../format.dart';
@@ -6,13 +7,25 @@ import '../models.dart';
 import '../widgets/copy.dart';
 import '../widgets/mail.dart';
 
-/// Подробности пары листом, как карточка события в Календаре iOS.
+/// Подробности пары листом высотой по содержимому, как карточка места
+/// в Картах: язычок сверху, закрывается свайпом вниз, тапом мимо или
+/// крестиком. Длинная карточка растёт почти до верха и прокручивается.
 void showLessonSheet(BuildContext context, Lesson lesson) {
-  showCupertinoSheet(
+  showModalBottomSheet<void>(
     context: context,
-    scrollableBuilder: (context, controller) => DefaultTextStyle(
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: CupertinoColors.systemGroupedBackground.resolveFrom(
+      context,
+    ),
+    barrierColor: const Color(0x47000000),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+    ),
+    clipBehavior: Clip.antiAlias,
+    builder: (context) => DefaultTextStyle(
       style: CupertinoTheme.of(context).textTheme.textStyle,
-      child: _LessonSheet(lesson: lesson, controller: controller),
+      child: _LessonSheet(lesson: lesson),
     ),
   );
 }
@@ -25,10 +38,9 @@ String _kindLabel(String kind) => switch (kind) {
 };
 
 class _LessonSheet extends StatelessWidget {
-  const _LessonSheet({required this.lesson, required this.controller});
+  const _LessonSheet({required this.lesson});
 
   final Lesson lesson;
-  final ScrollController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -36,126 +48,151 @@ class _LessonSheet extends StatelessWidget {
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
     final accent = CupertinoTheme.of(context).primaryColor;
 
-    return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.systemGroupedBackground,
-      // Карточку только смотрят, поэтому закрывается крестиком, а не
-      // «Готово», как карточка события в Календаре.
-      navigationBar: CupertinoNavigationBar(
-        automaticallyImplyLeading: false,
-        transitionBetweenRoutes: false,
-        border: null,
-        backgroundColor: CupertinoColors.systemGroupedBackground,
-        // Закрытие без действия — слева (cancellationAction в iOS 26),
-        // справа место для подтверждения, которого здесь нет.
-        leading: const _CloseButton(),
-      ),
-      child: ListView(
-        controller: controller,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _kindLabel(lesson.kind),
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                    color: accent,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                CopyOnLongPress(
-                  text: lesson.subject,
-                  child: Text(
-                    lesson.subject,
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      height: 1.15,
-                      color: label,
-                      decoration: lesson.cancelled
-                          ? TextDecoration.lineThrough
-                          : null,
+    return SingleChildScrollView(
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _Grabber(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 2, 12, 4),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _kindLabel(lesson.kind),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                            color: accent,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        CopyOnLongPress(
+                          text: lesson.subject,
+                          child: Text(
+                            lesson.subject,
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w700,
+                              height: 1.15,
+                              color: label,
+                              decoration: lesson.cancelled
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          [
+                            dayTitle(lesson.start),
+                            timeRange(lesson),
+                          ].join(', '),
+                          style: TextStyle(fontSize: 17, color: secondary),
+                        ),
+                        if (lesson.cancelled)
+                          Text(
+                            'Отменена',
+                            style: TextStyle(
+                              fontSize: 17,
+                              color: CupertinoColors.systemRed.resolveFrom(
+                                context,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  [dayTitle(lesson.start), timeRange(lesson)].join(', '),
-                  style: TextStyle(fontSize: 17, color: secondary),
-                ),
-                if (lesson.cancelled)
-                  Text(
-                    'Отменена',
-                    style: TextStyle(
-                      fontSize: 17,
-                      color: CupertinoColors.systemRed.resolveFrom(context),
-                    ),
+                  // Справа на уровне названия, как в карточке места в Картах.
+                  const _CloseButton(),
+                ],
+              ),
+            ),
+            CupertinoListSection.insetGrouped(
+              children: [
+                if (lesson.location.isNotEmpty)
+                  _Row(
+                    icon: lesson.isRemote
+                        ? CupertinoIcons.videocam
+                        : CupertinoIcons.placemark,
+                    title: lesson.isRemote ? 'Дистанционно' : lesson.room,
                   ),
-              ],
-            ),
-          ),
-          CupertinoListSection.insetGrouped(
-            children: [
-              if (lesson.location.isNotEmpty)
-                _Row(
-                  icon: lesson.isRemote
-                      ? CupertinoIcons.videocam
-                      : CupertinoIcons.placemark,
-                  title: lesson.isRemote ? 'Дистанционно' : lesson.room,
-                ),
-              if (lesson.lecturer.isNotEmpty)
-                _Row(icon: CupertinoIcons.person, title: lesson.lecturer),
-              if (lesson.email.isNotEmpty)
-                _Row(
-                  icon: CupertinoIcons.mail,
-                  title: lesson.email,
-                  color: accent,
-                  onTap: () => openMail(context, lesson.email),
-                  copy: lesson.email,
-                ),
-              if (lesson.groups.isNotEmpty)
-                _Row(
-                  icon: CupertinoIcons.person_3,
-                  title: lesson.groups.join(', '),
-                ),
-            ],
-          ),
-          if (lesson.comment.isNotEmpty)
-            CupertinoListSection.insetGrouped(
-              header: const Text('Комментарий'),
-              children: [
-                _Row(icon: CupertinoIcons.text_bubble, title: lesson.comment),
-              ],
-            ),
-          if (lesson.lmsLink.isNotEmpty)
-            CupertinoListSection.insetGrouped(
-              children: [
-                _Row(
-                  icon: CupertinoIcons.book,
-                  title: 'Открыть курс в СДО',
-                  color: accent,
-                  trailing: Icon(
-                    CupertinoIcons.arrow_up_right,
-                    size: 16,
+                if (lesson.lecturer.isNotEmpty)
+                  _Row(icon: CupertinoIcons.person, title: lesson.lecturer),
+                if (lesson.email.isNotEmpty)
+                  _Row(
+                    icon: CupertinoIcons.mail,
+                    title: lesson.email,
                     color: accent,
+                    onTap: () => openMail(context, lesson.email),
+                    copy: lesson.email,
                   ),
-                  onTap: () => launchUrl(
-                    Uri.parse(lesson.lmsLink),
-                    mode: LaunchMode.externalApplication,
+                if (lesson.groups.isNotEmpty)
+                  _Row(
+                    icon: CupertinoIcons.person_3,
+                    title: lesson.groups.join(', '),
                   ),
-                  copy: lesson.lmsLink,
-                ),
               ],
             ),
-          const SizedBox(height: 32),
-        ],
+            if (lesson.comment.isNotEmpty)
+              CupertinoListSection.insetGrouped(
+                header: const Text('Комментарий'),
+                children: [
+                  _Row(icon: CupertinoIcons.text_bubble, title: lesson.comment),
+                ],
+              ),
+            if (lesson.lmsLink.isNotEmpty)
+              CupertinoListSection.insetGrouped(
+                children: [
+                  _Row(
+                    icon: CupertinoIcons.book,
+                    title: 'Открыть курс в СДО',
+                    color: accent,
+                    trailing: Icon(
+                      CupertinoIcons.arrow_up_right,
+                      size: 16,
+                      color: accent,
+                    ),
+                    onTap: () => launchUrl(
+                      Uri.parse(lesson.lmsLink),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                    copy: lesson.lmsLink,
+                  ),
+                ],
+              ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
+}
+
+/// Язычок листа: подсказывает, что его можно смахнуть вниз.
+class _Grabber extends StatelessWidget {
+  const _Grabber();
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Container(
+      margin: const EdgeInsets.only(top: 6, bottom: 4),
+      width: 36,
+      height: 5,
+      decoration: BoxDecoration(
+        color: CupertinoColors.systemGrey3.resolveFrom(context),
+        borderRadius: BorderRadius.circular(2.5),
+      ),
+    ),
+  );
 }
 
 class _Row extends StatelessWidget {
@@ -200,8 +237,8 @@ class _Row extends StatelessWidget {
   );
 }
 
-/// Кнопка закрытия листа в стиле iOS 26: круглая «стеклянная» кнопка
-/// с крестиком цвета текста, зона нажатия 44×44.
+/// Кнопка закрытия листа, как в Картах: серый круг с крестиком,
+/// зона нажатия 44×44.
 class _CloseButton extends StatelessWidget {
   const _CloseButton();
 
@@ -214,27 +251,18 @@ class _CloseButton extends StatelessWidget {
       button: true,
       label: 'Закрыть',
       child: Container(
-        width: 36,
-        height: 36,
+        width: 30,
+        height: 30,
         decoration: BoxDecoration(
-          color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
-            context,
-          ),
+          color: CupertinoColors.tertiarySystemFill.resolveFrom(context),
           shape: BoxShape.circle,
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x1F000000),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
         ),
         alignment: Alignment.center,
         child: Icon(
           CupertinoIcons.xmark,
-          size: 16,
-          weight: 600,
-          color: CupertinoColors.label.resolveFrom(context),
+          size: 14,
+          weight: 700,
+          color: CupertinoColors.secondaryLabel.resolveFrom(context),
         ),
       ),
     ),
