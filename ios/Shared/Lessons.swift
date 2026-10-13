@@ -19,7 +19,10 @@ struct LessonItem: Codable, Hashable {
     let t: String
     let k: String
     let r: String
+    /// Отменена. Есть только в данных для часов.
+    var c: Bool? = nil
 
+    var cancelled: Bool { c ?? false }
     var start: Date { Date(timeIntervalSince1970: s) }
     var end: Date { Date(timeIntervalSince1970: e) }
 }
@@ -85,8 +88,9 @@ struct LessonState {
 
     init(lessons: [LessonItem], now: Date) {
         let cal = Calendar.current
+        let active = lessons.filter { !$0.cancelled }
         today = lessons.filter { cal.isDate($0.start, inSameDayAs: now) }
-        current = lessons.first { $0.start <= now && now < $0.end }
-        next = lessons.first { $0.start > now }
+        current = active.first { $0.start <= now && now < $0.end }
+        next = active.first { $0.start > now }
     }
 }

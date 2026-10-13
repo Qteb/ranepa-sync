@@ -11,7 +11,7 @@ struct RanepaWatchApp: App {
 
     var body: some Scene {
         WindowGroup {
-            TodayView().environmentObject(store)
+            WeekView().environmentObject(store)
         }
         .backgroundTask(.watchConnectivity) {
             await LessonStore.shared.waitForDelivery()
@@ -75,43 +75,121 @@ final class LessonStore: NSObject, ObservableObject, WCSessionDelegate {
 /// Акцент приложения в тёмной теме — на часах она всегда тёмная.
 let watchAccent = Color(red: 0.90, green: 0.45, blue: 0.50)
 
-struct TodayView: View {
+/// Текущая неделя: колёсико или свайп листают дни, открывается на сегодня.
+struct WeekView: View {
     @EnvironmentObject var store: LessonStore
+    @State private var selected: Date?
 
     var body: some View {
         NavigationStack {
             TimelineView(.everyMinute) { context in
                 let now = context.date.addingTimeInterval(clockShift())
-                let state = LessonState(lessons: store.lessons, now: now)
-                List {
-                    if store.lessons.isEmpty {
+                if store.lessons.isEmpty {
+                    List {
                         Text("Открой «Расписание» на iPhone — пары появятся здесь.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
-                    } else {
-                        Section {
-                            NowCard(state: state, now: now)
-                        }
-                        // Пара из карточки «Сейчас» в списке не повторяется.
-                        let inCard = state.current ?? state.next
-                        let upcoming = state.today.filter { $0.start > now && $0 != inCard }
-                        Section {
-                            ForEach(upcoming, id: \.self) { lesson in
-                                LessonRowView(lesson: lesson, now: now)
-                            }
-                        } header: {
-                            if !upcoming.isEmpty { Text("Дальше") }
-                        } footer: {
-                            if let at = store.receivedAt {
-                                Text("Получено с iPhone \(dayLabel(at, from: Date()).lowercased()) в \(hm(at))")
-                            }
+                    }
+                    .navigationTitle("Сегодня")
+                } else {
+                    let days = weekDays(around: now)
+                    TabView(selection: $selected) {
+                        ForEach(days, id: \.self) { day in
+                            DayPage(day: day, now: now, lessons: store.lessons, receivedAt: store.receivedAt)
+                                .tag(Optional(day))
                         }
                     }
+                    .tabViewStyle(.verticalPage)
+                    .onAppear { selected = Calendar.current.startOfDay(for: now) }
                 }
-                .navigationTitle("Сегодня")
             }
         }
         .tint(watchAccent)
+    }
+
+    /// Понедельник–воскресенье недели, в которой [now].
+    private func weekDays(around now: Date) -> [Date] {
+        var cal = Calendar(identifier: .gregorian)
+        cal.firstWeekday = 2
+        let today = cal.startOfDay(for: now)
+        let weekday = (cal.component(.weekday, from: today) + 5) % 7  // пн = 0
+        let monday = cal.date(byAdding: .day, value: -weekday, to: today)!
+        return (0..<7).map { cal.date(byAdding: .day, value: $0, to: monday)! }
+    }
+}
+
+/// Один день недели. Сегодня — карточка «Сейчас» и следующие пары,
+/// другие дни — все пары дня.
+struct DayPage: View {
+    let day: Date
+    let now: Date
+    let lessons: [LessonItem]
+    let receivedAt: Date?
+
+    var body: some View {
+        let cal = Calendar.current
+        let isToday = cal.isDate(day, inSameDayAs: now)
+        let dayLessons = lessons.filter { cal.isDate($0.start, inSameDayAs: day) }
+        List {
+            Text(subtitle(dayLessons))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .listRowBackground(Color.clear)
+            if isToday {
+                let state = LessonState(lessons: lessons, now: now)
+                Section { NowCard(state: state, now: now) }
+                // Пара из карточки «Сейчас» в списке не повторяется.
+                let inCard = state.current ?? state.next
+                let upcoming = dayLessons.filter { $0.start > now && $0 != inCard }
+                if !upcoming.isEmpty {
+                    Section("Дальше") {
+                        ForEach(upcoming, id: \.self) { LessonRowView(lesson: $0, now: now) }
+                    }
+                }
+            } else if dayLessons.isEmpty {
+                Text("Пар нет").foregroundStyle(.secondary)
+            } else {
+                ForEach(dayLessons, id: \.self) { LessonRowView(lesson: $0, now: now) }
+            }
+            if isToday, let at = receivedAt {
+                Text("Получено с iPhone \(dayLabel(at, from: Date()).lowercased()) в \(hm(at))")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .listRowBackground(Color.clear)
+            }
+        }
+        .navigationTitle(title)
+    }
+
+    private var title: String {
+        let cal = Calendar.current
+        if cal.isDate(day, inSameDayAs: now) { return "Сегодня" }
+        if let d = cal.date(byAdding: .day, value: 1, to: now), cal.isDate(day, inSameDayAs: d) { return "Завтра" }
+        if let d = cal.date(byAdding: .day, value: -1, to: now), cal.isDate(day, inSameDayAs: d) { return "Вчера" }
+        return upperFirst(format("EEEE"))
+    }
+
+    /// «Вторник, 13 октября · 3 пары».
+    private func subtitle(_ dayLessons: [LessonItem]) -> String {
+        let n = dayLessons.filter { !$0.cancelled }.count
+        let date = upperFirst(format("EEEE, d MMMM"))
+        return n == 0 ? date : "\(date) · \(n) \(pairs(n))"
+    }
+
+    private func format(_ pattern: String) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ru_RU")
+        f.dateFormat = pattern
+        return f.string(from: day)
+    }
+
+    private func upperFirst(_ s: String) -> String { s.prefix(1).uppercased() + s.dropFirst() }
+
+    private func pairs(_ n: Int) -> String {
+        let m10 = n % 10, m100 = n % 100
+        if m10 == 1 && m100 != 11 { return "пара" }
+        if (2...4).contains(m10) && !(12...14).contains(m100) { return "пары" }
+        return "пар"
     }
 }
 
@@ -175,7 +253,7 @@ struct LessonRowView: View {
     let now: Date
 
     var body: some View {
-        let ongoing = lesson.start <= now && now < lesson.end
+        let ongoing = !lesson.cancelled && lesson.start <= now && now < lesson.end
         HStack(alignment: .top, spacing: 6) {
             RoundedRectangle(cornerRadius: 1.5)
                 .fill(kindColor(lesson.k))
@@ -183,13 +261,14 @@ struct LessonRowView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(lesson.t)
                     .font(.system(size: 15, weight: ongoing ? .semibold : .regular))
+                    .strikethrough(lesson.cancelled)
                     .lineLimit(2)
-                Text("\(hm(lesson.start)) · \(lesson.r)")
+                Text("\(hm(lesson.start)) · \(lesson.cancelled ? "отменена" : lesson.r)")
                     .font(.footnote)
                     .foregroundStyle(ongoing ? watchAccent : .secondary)
                     .lineLimit(1)
             }
         }
-        .opacity(lesson.end <= now ? 0.45 : 1)
+        .opacity(lesson.end <= now || lesson.cancelled ? 0.45 : 1)
     }
 }
