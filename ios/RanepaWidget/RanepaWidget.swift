@@ -153,6 +153,13 @@ struct RanepaWidgetView: View {
 }
 
 @main
+struct RanepaWidgets: WidgetBundle {
+    var body: some Widget {
+        RanepaWidget()
+        LessonLiveActivity()
+    }
+}
+
 struct RanepaWidget: Widget {
     let kind = "RanepaWidget"
 

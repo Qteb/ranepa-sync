@@ -17,6 +17,7 @@
 		3718681EF7940AF6C4779D92 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4348500FAC7C6238257A9A08 /* Foundation.framework */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		4B842FBAAC5E5179CB48DBC5 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = ED936B796C337ED27A305164 /* PrivacyInfo.xcprivacy */; };
+		4ECCE4808261B93FF17F1BEE /* LessonLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 516D8B097811A89A3203B202 /* LessonLiveActivity.swift */; };
 		5EAD9C0B78D5A4F7E5114993 /* Lessons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64EB2A692DABD0633AD83EB2 /* Lessons.swift */; };
 		5F295302ED320DAE2B168AD3 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4A7541867347A4F986B6FDC7 /* Foundation.framework */; };
 		679A9FB602C8E16CE32BFB6D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 06620D9EE17542A7E4D831D5 /* Assets.xcassets */; };
@@ -26,11 +27,14 @@
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		81B4656935032D66ED359688 /* WatchBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDE9E34E16B3AC9A8FBE9C09 /* WatchBridge.swift */; };
+		845F8871D70E202510912BE9 /* LessonActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9142531886826CA94D39AAB4 /* LessonActivity.swift */; };
 		84B4DC2ACC3D5A08B80EA88D /* RanepaWatchWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E8B7359EB5B405880F2E6B87 /* RanepaWatchWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		8DEA67C2C714326FC65F45BC /* RanepaWatchWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C405D0B23903225A3226795 /* RanepaWatchWidget.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		B6D69AABB11B42B8D187BE5C /* LiveActivityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = D98B19ACEF1728E13DCCC481 /* LiveActivityBridge.swift */; };
+		BFD926805EED855E15AF2B1C /* LessonActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9142531886826CA94D39AAB4 /* LessonActivity.swift */; };
 		D3ABCAF2AD94559D6B5700B4 /* RanepaWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE81657DB80548F5D1AEE5CE /* RanepaWatchApp.swift */; };
 		DB8F7D7530571A9B00DF02E2 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = BD56DD3E2FC30F16E1350BE7 /* PrivacyInfo.xcprivacy */; };
 		F83F6DC5B6FC86CC6C90C1F9 /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DFE05A405E8AD93DB830EFE /* Pods_RunnerTests.framework */; };
@@ -127,6 +131,7 @@
 		4348500FAC7C6238257A9A08 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		4A7541867347A4F986B6FDC7 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		4C405D0B23903225A3226795 /* RanepaWatchWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RanepaWatchWidget.swift; sourceTree = "<group>"; };
+		516D8B097811A89A3203B202 /* LessonLiveActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LessonLiveActivity.swift; sourceTree = "<group>"; };
 		5CD29B75943F35398ED05BA2 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		64EB2A692DABD0633AD83EB2 /* Lessons.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Lessons.swift; sourceTree = "<group>"; };
 		6F7FF11DF793AC1E06A56646 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
@@ -141,6 +146,7 @@
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		7DFE05A405E8AD93DB830EFE /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		890FF071A6BD1C56560CEF3D /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
+		9142531886826CA94D39AAB4 /* LessonActivity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LessonActivity.swift; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Runner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Runner.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -157,6 +163,7 @@
 		CDE9E34E16B3AC9A8FBE9C09 /* WatchBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchBridge.swift; sourceTree = "<group>"; };
 		CE61A85BC99713A9FC4DE294 /* Runner.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		D2501BE0DE1253998462EF05 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		D98B19ACEF1728E13DCCC481 /* LiveActivityBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LiveActivityBridge.swift; sourceTree = "<group>"; };
 		E8B7359EB5B405880F2E6B87 /* RanepaWatchWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RanepaWatchWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		EB62BCEBB9EDF418AE448574 /* RanepaWidget.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RanepaWidget.swift; sourceTree = "<group>"; };
 		ED936B796C337ED27A305164 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -286,6 +293,7 @@
 			isa = PBXGroup;
 			children = (
 				64EB2A692DABD0633AD83EB2 /* Lessons.swift */,
+				9142531886826CA94D39AAB4 /* LessonActivity.swift */,
 			);
 			name = Shared;
 			path = Shared;
@@ -346,6 +354,7 @@
 				CE61A85BC99713A9FC4DE294 /* Runner.entitlements */,
 				ED936B796C337ED27A305164 /* PrivacyInfo.xcprivacy */,
 				CDE9E34E16B3AC9A8FBE9C09 /* WatchBridge.swift */,
+				D98B19ACEF1728E13DCCC481 /* LiveActivityBridge.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -357,6 +366,7 @@
 				D2501BE0DE1253998462EF05 /* Info.plist */,
 				704A3B6981A7CEB21CAA7B1C /* RanepaWidget.entitlements */,
 				6FA41B0D31771D7F302A974A /* PrivacyInfo.xcprivacy */,
+				516D8B097811A89A3203B202 /* LessonLiveActivity.swift */,
 			);
 			name = RanepaWidget;
 			path = RanepaWidget;
@@ -672,6 +682,8 @@
 			files = (
 				22857814371CCD05DA5ED71A /* RanepaWidget.swift in Sources */,
 				5EAD9C0B78D5A4F7E5114993 /* Lessons.swift in Sources */,
+				845F8871D70E202510912BE9 /* LessonActivity.swift in Sources */,
+				4ECCE4808261B93FF17F1BEE /* LessonLiveActivity.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -701,6 +713,8 @@
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				81B4656935032D66ED359688 /* WatchBridge.swift in Sources */,
+				BFD926805EED855E15AF2B1C /* LessonActivity.swift in Sources */,
+				B6D69AABB11B42B8D187BE5C /* LiveActivityBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

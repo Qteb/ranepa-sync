@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -177,6 +179,19 @@ class _AccountSheet extends StatelessWidget {
                     onChanged: state.setCalendarExport,
                   ),
                 ),
+                // Live Activity есть только на iOS.
+                if (Platform.isIOS)
+                  CupertinoListTile(
+                    leading: const Glyph(
+                      CupertinoIcons.timer,
+                      CupertinoColors.systemGreen,
+                    ),
+                    title: const Text('Пара на экране блокировки'),
+                    trailing: CupertinoSwitch(
+                      value: state.liveActivity,
+                      onChanged: state.setLiveActivity,
+                    ),
+                  ),
                 CupertinoListTile(
                   leading: const Glyph(
                     CupertinoIcons.moon_fill,

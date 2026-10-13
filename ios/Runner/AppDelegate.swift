@@ -14,6 +14,7 @@ import workmanager_apple
     WorkmanagerPlugin.setPluginRegistrantCallback { registry in
       GeneratedPluginRegistrant.register(with: registry)
       WatchBridge.register(with: registry.registrar(forPlugin: "WatchBridge")!)
+      LiveActivityBridge.register(with: registry.registrar(forPlugin: "LiveActivityBridge")!)
     }
     WorkmanagerPlugin.registerPeriodicTask(
       withIdentifier: "com.qteb.ranepaTimetable.refresh",
@@ -25,5 +26,6 @@ import workmanager_apple
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     WatchBridge.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "WatchBridge")!)
+    LiveActivityBridge.register(with: engineBridge.pluginRegistry.registrar(forPlugin: "LiveActivityBridge")!)
   }
 }

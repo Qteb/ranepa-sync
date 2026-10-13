@@ -64,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
     state.addListener(_onState);
     state.refresh(SyncTrigger.open);
+    state.showLiveActivity();
     // Системный запрос — только если пользователь ещё не отвечал.
     state.checkNotifications(request: true);
   }
@@ -84,6 +85,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     await state.reloadFromDisk();
     // Уведомления могли включить или выключить в настройках телефона.
     await state.checkNotifications();
+    state.showLiveActivity();
     state.refresh(SyncTrigger.open);
   }
 

@@ -11,6 +11,7 @@ import 'services/background.dart';
 import 'services/calendar_export.dart';
 import 'services/demo.dart';
 import 'services/home_widget_bridge.dart';
+import 'services/live_activity.dart';
 import 'services/notifications.dart';
 import 'services/remote_config.dart';
 import 'services/sync.dart';
@@ -46,6 +47,7 @@ class AppState extends ChangeNotifier {
   int get reminderMinutes =>
       _prefs.getInt(Keys.reminderMinutes) ?? defaultReminderMinutes;
   bool get calendarExport => _prefs.getBool(Keys.calendarExport) ?? false;
+  bool get liveActivity => _prefs.getBool(Keys.liveActivity) ?? true;
   ThemeMode get themeMode =>
       ThemeMode.values[_prefs.getInt('themeMode') ?? ThemeMode.system.index];
 
@@ -200,6 +202,16 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<void> setLiveActivity(bool enabled) async {
+    await _prefs.setBool(Keys.liveActivity, enabled);
+    notifyListeners();
+    await updateLiveActivity(lessons, enabled: enabled);
+  }
+
+  /// При открытии приложения: запустить iOS разрешает только сейчас.
+  Future<void> showLiveActivity() =>
+      updateLiveActivity(lessons, enabled: loggedIn && liveActivity);
+
   Future<void> setThemeMode(ThemeMode mode) async {
     await _prefs.setInt('themeMode', mode.index);
     notifyListeners();
@@ -215,6 +227,7 @@ class AppState extends ChangeNotifier {
       () => scheduleReminders(const [], 0),
       if (calendarExport) removeCalendar,
       () => updateHomeWidget(const []),
+      () => updateLiveActivity(const [], enabled: false),
     ]) {
       try {
         await step();

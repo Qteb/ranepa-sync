@@ -10,6 +10,7 @@ import 'calendar_export.dart';
 import 'changes.dart';
 import 'demo.dart';
 import 'home_widget_bridge.dart';
+import 'live_activity.dart';
 import 'notifications.dart';
 import 'remote_config.dart';
 
@@ -57,6 +58,7 @@ abstract final class Keys {
   static const lastAttemptAt = 'lastAttemptAt';
   static const backoffUntil = 'backoffUntil';
   static const backoffFailures = 'backoffFailures';
+  static const liveActivity = 'liveActivity';
   static const demo = 'demo';
   static const demoRevision = 'demoRevision';
   static const demoShift = 'demoShift';
@@ -349,6 +351,10 @@ Future<String?> applySideEffects(
       await scheduleKeepAlive(DateTime.fromMillisecondsSinceEpoch(fetchedAt));
     }
     await updateHomeWidget(lessons);
+    await updateLiveActivity(
+      lessons,
+      enabled: prefs.getBool(Keys.liveActivity) ?? true,
+    );
     if (prefs.getBool(Keys.calendarExport) ?? false) {
       final start = prefs.getInt(Keys.rangeStart);
       final from = start == null
