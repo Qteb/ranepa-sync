@@ -22,7 +22,7 @@ class LegendScreen extends StatelessWidget {
   static const _gestures = [
     (CupertinoIcons.arrow_down, 'Потяни вниз', 'Обновить расписание'),
     (CupertinoIcons.arrow_left_right, 'Листай влево и вправо', 'Другой день'),
-    (CupertinoIcons.calendar, 'Листай полосу с датами', 'Соседние дни'),
+    (CupertinoIcons.calendar, 'Листай полосу с датами', 'Другая неделя'),
     (
       CupertinoIcons.hand_point_right,
       'Нажми на пару',

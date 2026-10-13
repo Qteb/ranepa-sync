@@ -3,7 +3,6 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 
 import '../app_state.dart';
 import '../format.dart';
@@ -34,12 +33,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late PageController _pages;
   late DateTime _selected;
 
-  /// Месяц посередине полосы дней, для заголовка.
-  DateTime? _month;
-
-  /// Сегодняшний день виден в полосе: иначе нужна кнопка «Сегодня».
-  bool _todayInStrip = true;
-  final _carousel = GlobalKey<_DayCarouselState>();
+  /// Идёт программный переход к дню: промежуточные страницы не выбираются.
+  bool _jumping = false;
   Timer? _ticker;
   String? _shownError;
 
@@ -165,10 +160,47 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       setState(() => _selected = target);
       return;
     }
-    _pages.animateToPage(
-      _indexOf(day),
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
+    // Как в Календаре: к дальнему дню — один сдвиг страницы, без
+    // пролистывания всех промежуточных дней.
+    final target = _indexOf(day);
+    final current = _pages.page?.round() ?? target;
+    if (target == current) return;
+    setState(() => _selected = _dayAt(target));
+    _jumping = true;
+    if ((target - current).abs() > 1) {
+      _pages.jumpToPage(target > current ? target - 1 : target + 1);
+    }
+    _pages
+        .animateToPage(
+          target,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        )
+        .whenComplete(() => _jumping = false);
+  }
+
+  /// Месяцы, в которые попадает загруженное расписание.
+  List<DateTime> get _months {
+    final last = _dayAt(_dayCount - 1);
+    return [
+      for (
+        var m = DateTime(_firstDay.year, _firstDay.month);
+        !m.isAfter(last);
+        m = DateTime(m.year, m.month + 1)
+      )
+        m,
+    ];
+  }
+
+  /// Пролистали месяц: сегодня, если это текущий месяц, иначе 1-е число.
+  void _goToMonth(DateTime month) {
+    final now = currentTime();
+    _goTo(
+      month.year == now.year && month.month == now.month
+          ? now
+          : month.isBefore(_firstDay)
+          ? _firstDay
+          : month,
     );
   }
 
@@ -238,27 +270,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            _monthTitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.36,
-                              color: label,
-                            ),
+                          child: _MonthTitle(
+                            months: _months,
+                            selected: _selected,
+                            onSwipe: _goToMonth,
                           ),
                         ),
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 200),
-                          child: isToday && _todayInStrip
+                          child: isToday
                               ? const SizedBox.shrink()
                               : _TodayButton(
-                                  onPressed: () {
-                                    _goTo(currentTime());
-                                    _carousel.currentState?.show(currentTime());
-                                  },
+                                  onPressed: () => _goTo(currentTime()),
                                 ),
                         ),
                         const SizedBox(width: 8),
@@ -284,22 +307,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ),
                   ),
                 ),
-                _DayCarousel(
-                  key: _carousel,
+                _WeekPager(
                   selected: _selected,
                   firstDay: _firstDay,
-                  count: _dayCount,
+                  weeks: _dayCount ~/ 7,
                   hasLessons: (d) =>
                       state.lessonsOn(d).any((l) => !l.cancelled),
                   onSelect: _goTo,
-                  onView: (month, todayVisible) {
-                    if (month != _month || todayVisible != _todayInStrip) {
-                      setState(() {
-                        _month = month;
-                        _todayInStrip = todayVisible;
-                      });
-                    }
-                  },
                 ),
                 MediaQuery.withClampedTextScaling(
                   maxScaleFactor: 1.4,
@@ -349,7 +363,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   child: PageView.builder(
                     controller: _pages,
                     itemCount: _dayCount,
-                    onPageChanged: (i) => setState(() => _selected = _dayAt(i)),
+                    onPageChanged: (i) {
+                      if (!_jumping) setState(() => _selected = _dayAt(i));
+                    },
                     itemBuilder: (context, i) {
                       final day = _dayAt(i);
                       return _DayView(
@@ -383,13 +399,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ],
       ),
     );
-  }
-
-  /// Месяц, который сейчас виден в полосе дней; год — если не текущий.
-  String get _monthTitle {
-    final month = _month ?? _selected;
-    final name = monthsNominative[month.month - 1];
-    return month.year == currentTime().year ? name : '$name ${month.year}';
   }
 }
 
@@ -479,152 +488,81 @@ class _StatusBar extends StatelessWidget {
   }
 }
 
-/// Дни каруселью: полоса едет за пальцем и останавливается ровно на дне.
-/// Листание не меняет выбранный день, выбирают нажатием. Если выбранный день
-/// ушёл за край (листали пары или нажали «Сегодня»), полоса показывает его
-/// неделю.
-class _DayCarousel extends StatefulWidget {
-  const _DayCarousel({
-    super.key,
+/// Название месяца листается пальцем, как в Календаре: соседний месяц
+/// выезжает следом, полоса дней переходит к нему.
+class _MonthTitle extends StatefulWidget {
+  const _MonthTitle({
+    required this.months,
     required this.selected,
-    required this.firstDay,
-    required this.count,
-    required this.hasLessons,
-    required this.onSelect,
-    required this.onView,
+    required this.onSwipe,
   });
 
+  final List<DateTime> months;
   final DateTime selected;
-  final DateTime firstDay;
-  final int count;
-  final bool Function(DateTime) hasLessons;
-  final void Function(DateTime) onSelect;
-
-  /// Месяц дня посередине полосы (для заголовка) и виден ли сегодняшний день.
-  final void Function(DateTime month, bool todayVisible) onView;
+  final void Function(DateTime month) onSwipe;
 
   @override
-  State<_DayCarousel> createState() => _DayCarouselState();
+  State<_MonthTitle> createState() => _MonthTitleState();
 }
 
-class _DayCarouselState extends State<_DayCarousel> {
-  ScrollController? _scroll;
-  double _cell = 0;
+class _MonthTitleState extends State<_MonthTitle> {
+  late final _pages = PageController(initialPage: _indexOf(widget.selected));
+  bool _following = false;
 
-  int _indexOf(DateTime day) =>
-      dateOnly(day)
-          .difference(widget.firstDay)
-          .inDays
-          .clamp(0, widget.count - 1);
-
-  double _weekOffset(int index) => (index - index % 7) * _cell;
+  int _indexOf(DateTime day) => widget.months
+      .indexWhere((m) => m.year == day.year && m.month == day.month)
+      .clamp(0, widget.months.length - 1);
 
   @override
-  void didUpdateWidget(_DayCarousel old) {
+  void didUpdateWidget(_MonthTitle old) {
     super.didUpdateWidget(old);
-    final scroll = _scroll;
-    if (scroll == null || !scroll.hasClients || _cell == 0) return;
-    if (sameDay(old.selected, widget.selected)) return;
-    show(widget.selected);
-  }
-
-  /// Показать неделю дня, если он за краем полосы.
-  void show(DateTime day) {
-    final scroll = _scroll;
-    if (scroll == null || !scroll.hasClients || _cell == 0) return;
-    final index = _indexOf(day);
-    final first = scroll.offset / _cell;
-    if (index < first - 0.5 || index > first + 6.5) {
-      scroll.animateTo(
-        _weekOffset(index),
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-      );
-    }
-  }
-
-  void _report() {
-    final scroll = _scroll;
-    if (scroll == null || !scroll.hasClients || _cell == 0) return;
-    final middle = ((scroll.offset / _cell) + 3).round().clamp(
-      0,
-      widget.count - 1,
-    );
-    final day = widget.firstDay.add(Duration(days: middle));
-    final first = scroll.offset / _cell;
-    final today = _indexOf(currentTime());
-    widget.onView(
-      DateTime(day.year, day.month),
-      today > first - 0.5 && today < first + 6.5,
-    );
+    final index = _indexOf(widget.selected);
+    if (!_pages.hasClients || _pages.page?.round() == index) return;
+    _following = true;
+    _pages
+        .animateToPage(
+          index,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        )
+        .whenComplete(() => _following = false);
   }
 
   @override
   void dispose() {
-    _scroll?.dispose();
+    _pages.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
-    // Семь дней в ряд: крупнее ×1.3 цифры не помещаются.
-    return MediaQuery.withClampedTextScaling(
-      maxScaleFactor: 1.3,
-      child: Builder(
-        builder: (context) {
-          final scaler = MediaQuery.textScalerOf(context);
-          final height = scaler.scale(16) + 4 + scaler.scale(34) + 7 + 12;
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              final cell = constraints.maxWidth / 7;
-              if (_scroll == null || cell != _cell) {
-                final old = _scroll;
-                _cell = cell;
-                _scroll = ScrollController(
-                  initialScrollOffset: _weekOffset(_indexOf(widget.selected)),
-                )..addListener(_report);
-                if (old != null) {
-                  WidgetsBinding.instance.addPostFrameCallback(
-                    (_) => old.dispose(),
-                  );
-                }
-                WidgetsBinding.instance.addPostFrameCallback((_) => _report());
-              }
-              return SizedBox(
-                height: height,
-                child: ListView.builder(
-                  controller: _scroll,
-                  scrollDirection: Axis.horizontal,
-                  physics: _DaySnapPhysics(cell: cell),
-                  itemExtent: cell,
-                  itemCount: widget.count,
-                  itemBuilder: (context, i) {
-                    final day = widget.firstDay.add(Duration(days: i));
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Column(
-                        children: [
-                          ExcludeSemantics(
-                            child: Text(
-                              weekdaysShort[day.weekday - 1],
-                              style: TextStyle(fontSize: 12, color: secondary),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          _Day(
-                            day: day,
-                            selected: sameDay(day, widget.selected),
-                            dot: widget.hasLessons(day),
-                            onTap: () => widget.onSelect(day),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
+    final label = CupertinoColors.label.resolveFrom(context);
+    final style = TextStyle(
+      fontSize: 28,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.36,
+      color: label,
+    );
+    final now = currentTime();
+    return SizedBox(
+      height: MediaQuery.textScalerOf(context).scale(36),
+      child: PageView.builder(
+        controller: _pages,
+        itemCount: widget.months.length,
+        onPageChanged: (i) {
+          if (!_following) widget.onSwipe(widget.months[i]);
+        },
+        itemBuilder: (context, i) {
+          final month = widget.months[i];
+          final name = monthsNominative[month.month - 1];
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              month.year == now.year ? name : '$name ${month.year}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: style,
+            ),
           );
         },
       ),
@@ -632,44 +570,151 @@ class _DayCarouselState extends State<_DayCarousel> {
   }
 }
 
-/// Останавливает прокрутку на границе дня, с инерцией, как у пикера iOS.
-class _DaySnapPhysics extends ScrollPhysics {
-  const _DaySnapPhysics({required this.cell, super.parent});
+/// Полоса недель как в Календаре: листается неделями за пальцем, выбор
+/// остаётся на том же дне недели. Если выбранный день ушёл в другую неделю
+/// (листали пары, «Сегодня»), полоса перелистывается сама.
+class _WeekPager extends StatefulWidget {
+  const _WeekPager({
+    required this.selected,
+    required this.firstDay,
+    required this.weeks,
+    required this.hasLessons,
+    required this.onSelect,
+  });
 
-  final double cell;
+  final DateTime selected;
+
+  /// Понедельник первой недели.
+  final DateTime firstDay;
+  final int weeks;
+  final bool Function(DateTime) hasLessons;
+  final void Function(DateTime) onSelect;
 
   @override
-  _DaySnapPhysics applyTo(ScrollPhysics? ancestor) => _DaySnapPhysics(
-    cell: cell,
-    parent: buildParent(const BouncingScrollPhysics().applyTo(ancestor)),
-  );
+  State<_WeekPager> createState() => _WeekPagerState();
+}
+
+class _WeekPagerState extends State<_WeekPager> {
+  late final _pages = PageController(initialPage: _weekOf(widget.selected));
+
+  /// Полоса догоняет выбранный день: промежуточные недели не выбираются.
+  bool _following = false;
+
+  int _weekOf(DateTime day) =>
+      (dateOnly(day).difference(widget.firstDay).inDays ~/ 7).clamp(
+        0,
+        widget.weeks - 1,
+      );
 
   @override
-  Simulation? createBallisticSimulation(
-    ScrollMetrics position,
-    double velocity,
-  ) {
-    if (position.outOfRange || cell == 0) {
-      return super.createBallisticSimulation(position, velocity);
+  void didUpdateWidget(_WeekPager old) {
+    super.didUpdateWidget(old);
+    final week = _weekOf(widget.selected);
+    final current = _pages.hasClients ? _pages.page?.round() : null;
+    if (current == null || current == week) return;
+    _following = true;
+    if ((week - current).abs() > 1) {
+      _pages.jumpToPage(week > current ? week - 1 : week + 1);
     }
-    final projected = FrictionSimulation(
-      0.135,
-      position.pixels,
-      velocity,
-    ).finalX;
-    final target = ((projected / cell).round() * cell).clamp(
-      position.minScrollExtent,
-      position.maxScrollExtent,
+    _pages
+        .animateToPage(
+          week,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        )
+        .whenComplete(() => _following = false);
+  }
+
+  /// Свайп недели: тот же день недели в новой неделе.
+  void _onPage(int week) {
+    if (_following || week == _weekOf(widget.selected)) return;
+    widget.onSelect(
+      widget.firstDay.add(
+        Duration(days: week * 7 + widget.selected.weekday - 1),
+      ),
     );
-    if ((target - position.pixels).abs() < toleranceFor(position).distance) {
-      return null;
+  }
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Семь дней в ряд: крупнее ×1.3 цифры не помещаются.
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      child: Builder(
+        builder: (context) {
+          final scaler = MediaQuery.textScalerOf(context);
+          final height = scaler.scale(16) + 4 + scaler.scale(34) + 7 + 14;
+          return SizedBox(
+            height: height,
+            child: PageView.builder(
+              controller: _pages,
+              itemCount: widget.weeks,
+              onPageChanged: _onPage,
+              itemBuilder: (context, week) =>
+                  _week(context, widget.firstDay.add(Duration(days: week * 7))),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _week(BuildContext context, DateTime monday) {
+    Widget cell(int i) {
+      final day = monday.add(Duration(days: i));
+      return Expanded(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            children: [
+              ExcludeSemantics(
+                child: Text(
+                  weekdaysShort[i],
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              _Day(
+                day: day,
+                selected: sameDay(day, widget.selected),
+                dot: widget.hasLessons(day),
+                onTap: () => widget.onSelect(day),
+              ),
+            ],
+          ),
+        ),
+      );
     }
-    return ScrollSpringSimulation(
-      spring,
-      position.pixels,
-      target,
-      velocity,
-      tolerance: toleranceFor(position),
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        children: [
+          for (var i = 0; i < 5; i++) cell(i),
+          // Выходные на общей подложке: видно, где кончается неделя.
+          Expanded(
+            flex: 2,
+            child: DecoratedBox(
+              decoration: ShapeDecoration(
+                color: CupertinoColors.tertiarySystemFill.resolveFrom(context),
+                shape: RoundedSuperellipseBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Row(children: [cell(5), cell(6)]),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
