@@ -32,6 +32,9 @@ final Duration _clockShift = () {
   return at == null ? Duration.zero : at.difference(DateTime.now());
 }();
 
+/// Сборка для скриншотов App Store: демо выглядит как обычный аккаунт.
+const screenshotMode = bool.hasEnvironment('DEMO_AT');
+
 /// Текущее время приложения. Без DEMO_AT — обычное DateTime.now().
 DateTime currentTime() => DateTime.now().add(_clockShift);
 

@@ -349,8 +349,7 @@ Future<String?> applySideEffects(
       await scheduleKeepAlive(DateTime.fromMillisecondsSinceEpoch(fetchedAt));
     }
     await updateHomeWidget(lessons);
-    // Выдуманные пары не должны попасть в настоящий календарь.
-    if ((prefs.getBool(Keys.calendarExport) ?? false) && !isDemo(prefs)) {
+    if (prefs.getBool(Keys.calendarExport) ?? false) {
       final start = prefs.getInt(Keys.rangeStart);
       final from = start == null
           ? mondayOf(currentTime())

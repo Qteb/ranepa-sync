@@ -18,17 +18,27 @@ void showLessonSheet(BuildContext context, Lesson lesson) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: CupertinoColors.systemGroupedBackground.resolveFrom(
-      context,
-    ),
+    // Фон рисует сам лист: цвет, вычисленный здесь, не сменится вместе
+    // с темой, пока лист открыт.
+    backgroundColor: const Color(0x00000000),
     barrierColor: const Color(0x47000000),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
     ),
     clipBehavior: Clip.antiAlias,
-    builder: (context) => DefaultTextStyle(
-      style: CupertinoTheme.of(context).textTheme.textStyle,
-      child: _LessonSheet(lesson: lesson),
+    // Как у системных листов: в тёмной теме цвета «приподнятые», серые,
+    // иначе лист сливается с затемнённым экраном под ним.
+    builder: (context) => CupertinoUserInterfaceLevel(
+      data: CupertinoUserInterfaceLevelData.elevated,
+      child: Builder(
+        builder: (context) => ColoredBox(
+          color: CupertinoColors.systemGroupedBackground.resolveFrom(context),
+          child: DefaultTextStyle(
+            style: CupertinoTheme.of(context).textTheme.textStyle,
+            child: _LessonSheet(lesson: lesson),
+          ),
+        ),
+      ),
     ),
   );
 }

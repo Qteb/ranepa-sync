@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import WidgetKit
 
 private let appGroup = "group.com.qteb.ranepatimetable"
@@ -72,7 +73,12 @@ struct Provider: TimelineProvider {
     }
 }
 
-private let accent = Color(red: 0.56, green: 0.11, blue: 0.18)
+// Как акцент приложения: в тёмной теме светлее, иначе тонет в фоне.
+private let accent = Color(UIColor { traits in
+    traits.userInterfaceStyle == .dark
+        ? UIColor(red: 0.90, green: 0.45, blue: 0.50, alpha: 1)
+        : UIColor(red: 0.56, green: 0.11, blue: 0.18, alpha: 1)
+})
 
 /// Цвет типа пары — как в приложении (lib/widgets/lesson_colors.dart).
 private func kindColor(_ kind: String) -> Color {
