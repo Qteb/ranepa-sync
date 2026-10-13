@@ -8,6 +8,7 @@ import '../services/tips.dart';
 import '../widgets/copy.dart';
 import '../widgets/lesson_colors.dart';
 import '../widgets/mail.dart';
+import '../widgets/settings.dart';
 import '../widgets/tip_card.dart';
 
 /// Подробности пары листом высотой по содержимому, как карточка места
@@ -25,7 +26,7 @@ void showLessonSheet(BuildContext context, Lesson lesson) {
     backgroundColor: const Color(0x00000000),
     barrierColor: const Color(0x47000000),
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(sheetRadius)),
     ),
     clipBehavior: Clip.antiAlias,
     // Как у системных листов: в тёмной теме цвета «приподнятые», серые,
@@ -71,7 +72,8 @@ class _LessonSheet extends StatelessWidget {
           children: [
             const _Grabber(),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 2, 12, 4),
+              // Крестик в 20 pt от верха и края листа: язычок занимает 15.
+              padding: const EdgeInsets.fromLTRB(20, 5, 20, 4),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -131,7 +133,11 @@ class _LessonSheet extends StatelessWidget {
                     ),
                   ),
                   // Справа на уровне названия, как в карточке места в Картах.
-                  const _CloseButton(),
+                  BarCircleButton(
+                    icon: CupertinoIcons.xmark,
+                    label: 'Закрыть',
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
                 ],
               ),
             ),
@@ -151,7 +157,8 @@ class _LessonSheet extends StatelessWidget {
                       ),
               ),
             ),
-            CupertinoListSection.insetGrouped(
+            const SizedBox(height: 20),
+            SettingsSection(
               children: [
                 if (lesson.location.isNotEmpty)
                   _Row(
@@ -178,14 +185,14 @@ class _LessonSheet extends StatelessWidget {
               ],
             ),
             if (lesson.comment.isNotEmpty)
-              CupertinoListSection.insetGrouped(
-                header: const Text('Комментарий'),
+              SettingsSection(
+                header: 'Комментарий',
                 children: [
                   _Row(icon: CupertinoIcons.text_bubble, title: lesson.comment),
                 ],
               ),
             if (lesson.lmsLink.isNotEmpty)
-              CupertinoListSection.insetGrouped(
+              SettingsSection(
                 children: [
                   _Row(
                     icon: CupertinoIcons.book,
@@ -204,7 +211,6 @@ class _LessonSheet extends StatelessWidget {
                   ),
                 ],
               ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -252,8 +258,7 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) => CopyOnLongPress(
     text: copy ?? title,
-    child: CupertinoListTile(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+    child: SettingsRow(
       leading: Icon(
         icon,
         size: 22,
@@ -268,38 +273,6 @@ class _Row extends StatelessWidget {
       ),
       trailing: trailing,
       onTap: onTap,
-    ),
-  );
-}
-
-/// Кнопка закрытия листа, как в Картах: серый круг с крестиком,
-/// зона нажатия 44×44.
-class _CloseButton extends StatelessWidget {
-  const _CloseButton();
-
-  @override
-  Widget build(BuildContext context) => CupertinoButton(
-    padding: EdgeInsets.zero,
-    minimumSize: const Size.square(44),
-    onPressed: () => Navigator.of(context).pop(),
-    child: Semantics(
-      button: true,
-      label: 'Закрыть',
-      child: Container(
-        width: 30,
-        height: 30,
-        decoration: BoxDecoration(
-          color: CupertinoColors.tertiarySystemFill.resolveFrom(context),
-          shape: BoxShape.circle,
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          CupertinoIcons.xmark,
-          size: 14,
-          weight: 700,
-          color: CupertinoColors.secondaryLabel.resolveFrom(context),
-        ),
-      ),
     ),
   );
 }

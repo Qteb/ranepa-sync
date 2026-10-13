@@ -9,6 +9,7 @@ import 'package:markdown/markdown.dart' as md;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../links.dart';
+import '../widgets/settings.dart';
 
 /// Политика конфиденциальности: свежая версия из репозитория, без сети —
 /// копия из приложения. Показывается русская часть, до `---`.
@@ -62,10 +63,8 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
 
   @override
   Widget build(BuildContext context) => CupertinoPageScaffold(
-    navigationBar: CupertinoNavigationBar(
-      automaticallyImplyLeading: false,
-      transitionBetweenRoutes: false,
-      border: null,
+    navigationBar: SettingsBar(
+      plain: true,
       leading: widget.leading,
       middle: const Text('Конфиденциальность'),
     ),

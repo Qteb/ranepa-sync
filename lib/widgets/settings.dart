@@ -247,23 +247,36 @@ class ExternalLinkMark extends StatelessWidget {
   );
 }
 
-/// Круглая кнопка панели навигации, как в iOS 26: «Назад», «Закрыть».
+/// Скругление листов и окон, как в iOS 26.
+const sheetRadius = 36.0;
+
+/// Отступ кнопок от краёв листа: одинаковый сверху и сбоку.
+const _barInset = 20.0;
+
+/// Круглая кнопка листа, как в iOS 26: «Назад», «Закрыть». 44 pt.
 class BarCircleButton extends StatelessWidget {
   const BarCircleButton({
     super.key,
     required this.icon,
     required this.label,
     required this.onPressed,
+    this.plain = false,
   });
 
   /// Кнопка «Назад» для экранов внутри листа: Flutter её там не ставит.
-  const BarCircleButton.back({super.key, required this.onPressed})
-    : icon = CupertinoIcons.chevron_back,
-      label = 'Назад';
+  const BarCircleButton.back({
+    super.key,
+    required this.onPressed,
+    this.plain = false,
+  }) : icon = CupertinoIcons.chevron_back,
+       label = 'Назад';
 
   final IconData icon;
   final String label;
   final VoidCallback onPressed;
+
+  /// Экран с обычным (не серым) фоном: кнопка серая, а не белая.
+  final bool plain;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -275,18 +288,20 @@ class BarCircleButton extends StatelessWidget {
       minimumSize: const Size.square(44),
       onPressed: onPressed,
       child: Container(
-        width: 36,
-        height: 36,
+        width: 44,
+        height: 44,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
-            context,
-          ),
+          color:
+              (plain
+                      ? CupertinoColors.tertiarySystemFill
+                      : CupertinoColors.secondarySystemGroupedBackground)
+                  .resolveFrom(context),
         ),
         child: Icon(
           icon,
-          size: 18,
+          size: 20,
           color: CupertinoColors.label.resolveFrom(context),
         ),
       ),
@@ -294,18 +309,65 @@ class BarCircleButton extends StatelessWidget {
   );
 }
 
-/// Панель навигации экранов настроек: без линии снизу, фон как у списка.
-CupertinoNavigationBar settingsBar(
-  BuildContext context, {
-  Widget? leading,
-  Widget? middle,
-  Widget? trailing,
-}) => CupertinoNavigationBar(
-  automaticallyImplyLeading: false,
-  transitionBetweenRoutes: false,
-  border: null,
-  backgroundColor: CupertinoColors.systemGroupedBackground.resolveFrom(context),
-  leading: leading,
-  middle: middle,
-  trailing: trailing,
-);
+/// Верх листа как в iOS 26: круглые кнопки 44 pt в 20 pt от краёв,
+/// заголовок по центру между ними, без линии снизу.
+class SettingsBar extends StatelessWidget
+    implements ObstructingPreferredSizeWidget {
+  const SettingsBar({
+    super.key,
+    this.leading,
+    this.middle,
+    this.trailing,
+    this.plain = false,
+  });
+
+  final Widget? leading;
+  final Widget? middle;
+  final Widget? trailing;
+
+  /// Фон обычный, а не серый, как у списков.
+  final bool plain;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(_barInset + 44 + 8);
+
+  @override
+  bool shouldFullyObstruct(BuildContext context) => true;
+
+  @override
+  Widget build(BuildContext context) => ColoredBox(
+    color:
+        (plain
+                ? CupertinoColors.systemBackground
+                : CupertinoColors.systemGroupedBackground)
+            .resolveFrom(context),
+    child: Padding(
+      padding: EdgeInsets.fromLTRB(
+        _barInset,
+        MediaQuery.paddingOf(context).top + _barInset,
+        _barInset,
+        8,
+      ),
+      child: SizedBox(
+        height: 44,
+        child: NavigationToolbar(
+          leading: leading,
+          trailing: trailing,
+          middleSpacing: 12,
+          middle: middle == null
+              ? null
+              : DefaultTextStyle(
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: CupertinoColors.label.resolveFrom(context),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  child: middle!,
+                ),
+        ),
+      ),
+    ),
+  );
+}

@@ -28,14 +28,21 @@ Future<void> showAccountSheet(BuildContext context, AppState state) {
     useNestedNavigation: true,
     // Лист iOS не задаёт стиль текста по умолчанию — без этого Flutter
     // подчёркивает текст жёлтым.
-    scrollableBuilder: (context, controller) => DefaultTextStyle(
-      style: CupertinoTheme.of(context).textTheme.textStyle,
-      child: _AccountSheet(
-        state: state,
-        controller: controller,
-        // Через корневой навигатор: pop из вложенного оставляет главный
-        // экран уменьшенным и затемнённым, как будто лист ещё открыт.
-        close: CupertinoSheetRoute.popSheet,
+    // Углы скруглены сильнее стандартных 12 pt Flutter, как у листов
+    // iOS 26.
+    scrollableBuilder: (context, controller) => ClipRSuperellipse(
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(sheetRadius),
+      ),
+      child: DefaultTextStyle(
+        style: CupertinoTheme.of(context).textTheme.textStyle,
+        child: _AccountSheet(
+          state: state,
+          controller: controller,
+          // Через корневой навигатор: pop из вложенного оставляет главный
+          // экран уменьшенным и затемнённым, как будто лист ещё открыт.
+          close: CupertinoSheetRoute.popSheet,
+        ),
       ),
     ),
   );
@@ -75,8 +82,8 @@ Future<void> _showAccountPanel(BuildContext context, AppState state) {
             maxWidth: 620,
             maxHeight: height - 120 < 860 ? height - 120 : 860,
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+          child: ClipRSuperellipse(
+            borderRadius: BorderRadius.circular(sheetRadius),
             // Цвета «приподнятые», как у системных окон в тёмной теме.
             child: CupertinoUserInterfaceLevel(
               data: CupertinoUserInterfaceLevelData.elevated,
@@ -134,8 +141,7 @@ class _AccountSheet extends StatelessWidget {
       builder: (context, _) => CupertinoPageScaffold(
         backgroundColor: CupertinoColors.systemGroupedBackground,
         // Без заголовка, как лист аккаунта в iOS 26: профиль и так виден.
-        navigationBar: settingsBar(
-          context,
+        navigationBar: SettingsBar(
           trailing: BarCircleButton(
             icon: CupertinoIcons.xmark,
             label: 'Закрыть',

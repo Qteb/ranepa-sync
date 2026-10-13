@@ -227,7 +227,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    final label = CupertinoColors.label.resolveFrom(context);
     final isToday = sameDay(_selected, currentTime());
     final width = MediaQuery.sizeOf(context).width;
     if (width >= _wideFrom) {
@@ -315,24 +314,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       state.lessonsOn(d).any((l) => !l.cancelled),
                   onSelect: _goTo,
                 ),
-                MediaQuery.withClampedTextScaling(
-                  maxScaleFactor: 1.4,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
-                    child: Text(
-                      '${relativeDayName(_selected)}, '
-                      '${_selected.day} ${monthsGenitive[_selected.month - 1]}',
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: label,
-                      ),
-                    ),
-                  ),
-                ),
+                const SizedBox(height: 8),
                 // Подсказки по одной; появляются, когда расписание уже есть.
                 ListenableBuilder(
                   listenable: Tips.instance,

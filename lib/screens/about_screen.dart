@@ -34,8 +34,7 @@ class AboutScreen extends StatelessWidget {
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground,
-      navigationBar: settingsBar(
-        context,
+      navigationBar: SettingsBar(
         leading: const _BackButton(),
         middle: const Text('О приложении'),
       ),
@@ -104,8 +103,9 @@ class AboutScreen extends StatelessWidget {
                       trailing: const SettingsChevron(),
                       onTap: () => Navigator.of(context).push(
                         CupertinoPageRoute<void>(
-                          builder: (_) =>
-                              const PrivacyScreen(leading: _BackButton()),
+                          builder: (_) => const PrivacyScreen(
+                            leading: _BackButton(plain: true),
+                          ),
                         ),
                       ),
                     ),
@@ -185,8 +185,7 @@ class _LicensesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => CupertinoPageScaffold(
     backgroundColor: CupertinoColors.systemGroupedBackground,
-    navigationBar: settingsBar(
-      context,
+    navigationBar: SettingsBar(
       leading: const _BackButton(),
       middle: const Text('Лицензии'),
     ),
@@ -239,11 +238,9 @@ class _LicenseText extends StatelessWidget {
         .map((e) => e.paragraphs.map((p) => p.text).join('\n\n'))
         .join('\n\n————\n\n');
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        automaticallyImplyLeading: false,
-        transitionBetweenRoutes: false,
-        border: null,
-        leading: const _BackButton(),
+      navigationBar: SettingsBar(
+        plain: true,
+        leading: const _BackButton(plain: true),
         middle: Text(package),
       ),
       child: SafeArea(
@@ -264,11 +261,15 @@ class _LicenseText extends StatelessWidget {
 
 /// Внутри листа Flutter не подставляет кнопку «Назад» сам.
 class _BackButton extends StatelessWidget {
-  const _BackButton();
+  const _BackButton({this.plain = false});
+
+  final bool plain;
 
   @override
-  Widget build(BuildContext context) =>
-      BarCircleButton.back(onPressed: () => Navigator.of(context).pop());
+  Widget build(BuildContext context) => BarCircleButton.back(
+    plain: plain,
+    onPressed: () => Navigator.of(context).pop(),
+  );
 }
 
 /// Плашка с логотипом GitHub в стиле остальных иконок настроек.

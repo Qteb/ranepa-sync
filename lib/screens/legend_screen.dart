@@ -41,8 +41,7 @@ class LegendScreen extends StatelessWidget {
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground,
-      navigationBar: settingsBar(
-        context,
+      navigationBar: SettingsBar(
         leading: leading,
         middle: const Text('Обозначения'),
       ),
