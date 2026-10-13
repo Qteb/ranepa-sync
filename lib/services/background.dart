@@ -15,18 +15,21 @@ import 'sync.dart';
 /// с регистрацией в AppDelegate.swift.
 const backgroundTaskId = 'com.qteb.ranepaTimetable.refresh';
 
-/// Раз в 4 часа: refresh-токен ЛК живёт сутки и продлевается при каждом
-/// обновлении, так что сессия с запасом не истекает. На iOS это лишь
-/// пожелание — реальное время запуска выбирает система.
-const backgroundInterval = Duration(hours: 4);
+/// Примерно раз в 4 часа: refresh-токен ЛК живёт сутки и продлевается при
+/// каждом обновлении, так что сессия с запасом не истекает. На Android задача
+/// запускается в случайный момент окна 3:50–4:10, чтобы телефоны не ходили
+/// в ЛК одновременно. На iOS время запуска выбирает система
+/// (не раньше чем через 4 часа, см. AppDelegate.swift).
+const _period = Duration(hours: 4, minutes: 10);
+const _flex = Duration(minutes: 20);
 
 Future<void> initBackground() => Workmanager().initialize(backgroundDispatcher);
 
 Future<void> scheduleBackgroundRefresh() => Workmanager().registerPeriodicTask(
   backgroundTaskId,
   backgroundTaskId,
-  frequency: backgroundInterval,
-  initialDelay: backgroundInterval,
+  frequency: _period,
+  flexInterval: _flex,
   constraints: Constraints(networkType: NetworkType.connected),
   existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
 );
@@ -36,7 +39,7 @@ Future<void> cancelBackgroundRefresh() => Workmanager().cancelAll();
 /// Точка входа фоновой задачи: отдельный изолят без UI.
 @pragma('vm:entry-point')
 void backgroundDispatcher() {
-  Workmanager().executeTask((task, _) async {
+  Workmanager().executeTask((task, input) async {
     WidgetsFlutterBinding.ensureInitialized();
     tzdata.initializeTimeZones();
     await HomeWidget.setAppGroupId(appGroupId);
@@ -47,11 +50,22 @@ void backgroundDispatcher() {
 
     String outcome;
     try {
-      final result = await syncSchedule(prefs);
+      final result = await syncSchedule(
+        prefs,
+        input?['debug'] == true ? SyncTrigger.debug : SyncTrigger.background,
+      );
       await showScheduleChanges(result.changes);
-      outcome = result.changes.isEmpty
-          ? 'без изменений'
-          : 'изменений: ${result.changes.length}';
+      outcome = switch (result.skipped) {
+        null when result.changes.isEmpty => 'без изменений',
+        null => 'изменений: ${result.changes.length}',
+        SkipReason.paused => 'обновление остановлено',
+        SkipReason.backoff => 'пауза после ошибки ЛК',
+        SkipReason.quietHours => 'ночь, пропущено',
+        SkipReason.tooSoon => 'рано, пропущено',
+        SkipReason.notNeeded => 'нет пар, пропущено',
+      };
+      // Пока обновление остановлено, напоминать об истекающей сессии незачем.
+      if (result.skipped == SkipReason.paused) await cancelKeepAlive();
     } on NeedLoginException {
       await prefs.setBool(Keys.loggedIn, false);
       await cancelKeepAlive();

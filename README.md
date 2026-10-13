@@ -34,9 +34,19 @@
   (`lib/ranepa_client.dart`).
 - **Обновление.** Скрытый `HeadlessInAppWebView` открывает ЛК с сохранёнными
   cookie и токенами, страница сама обновляет токен. Обновление запускается при
-  открытии приложения, если данные старше 3 часов, жестом «потянуть вниз» и в
+  открытии приложения, если данные старше 4 часов, жестом «потянуть вниз» и в
   фоне.
-- **Фон.** `workmanager`: на Android — WorkManager раз в 4 часа при наличии сети,
+- **Нагрузка на ЛК.** Месяц вперёд (5 недель) грузится при входе и первым
+  обновлением за день, остальные обновления берут только текущую неделю
+  (с пятницы — и следующую). Фон не ходит в ЛК с 00:00 до 07:00, а по
+  воскресеньям и на каникулах делает только ежедневную загрузку. Ответ
+  429/5xx ставит все обновления на паузу 8 → 16 → 24 часа (или по
+  `Retry-After`). Ручное обновление не чаще раза в 2 минуты.
+- **Удалённый конфиг.** Раз в сутки приложение читает `config.json` из ветки
+  [`config`](https://github.com/Qteb/ranepa-sync/tree/config) (GitHub,
+  запасной адрес — jsDelivr). Через него можно остановить обращения к ЛК
+  или сделать их реже без новой сборки (`lib/services/remote_config.dart`).
+- **Фон.** `workmanager`: на Android — WorkManager раз в 3:50–4:10 при наличии сети,
   на iOS — `BGAppRefreshTask`, время запуска выбирает система. Access-токен ЛК
   живёт час, refresh-токен — сутки и выдаётся заново при каждом обновлении,
   поэтому пока фоновое обновление работает, повторно входить не нужно
@@ -77,6 +87,7 @@ flutter build apk                # APK для Android
 | Команда разработчика (`DEVELOPMENT_TEAM`) | `ios/Runner.xcodeproj/project.pbxproj` или Xcode → Signing & Capabilities у таргетов `Runner` и `RanepaWidgetExtension` |
 | Bundle ID `com.qteb.ranepaTimetable` | `ios/Runner.xcodeproj/project.pbxproj` |
 | App Group `group.com.qteb.ranepatimetable` | `ios/Runner/Runner.entitlements`, `ios/RanepaWidget/RanepaWidget.entitlements`, `ios/RanepaWidget/RanepaWidget.swift`, `lib/services/home_widget_bridge.dart` |
+| Удалённый конфиг `Qteb/ranepa-sync@config` | `lib/services/remote_config.dart` |
 | Фоновая задача `com.qteb.ranepaTimetable.refresh` | `ios/Runner/Info.plist`, `ios/Runner/AppDelegate.swift`, `lib/services/background.dart` |
 | Android `applicationId` `com.qteb.ranepa_sync` | `android/app/build.gradle.kts`, пакет Kotlin в `android/app/src/main/kotlin/com/qteb/ranepa_sync` |
 

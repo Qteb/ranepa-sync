@@ -1,6 +1,6 @@
 # Политика конфиденциальности «Расписание РАНХиГС»
 
-Дата вступления в силу: 12 октября 2026 г.
+Дата вступления в силу: 13 октября 2026 г.
 
 «Расписание РАНХиГС» — неофициальное приложение. Оно не связано с РАНХиГС и не поддерживается академией.
 
@@ -32,7 +32,11 @@
 
 ## Фоновое обновление
 
-Приложение примерно раз в 4 часа обновляет расписание в фоне. Время запуска выбирает система iOS. Запросы идут только на сайт личного кабинета РАНХиГС — так же, как при ручном обновлении. Каждое обновление продлевает сессию личного кабинета, поэтому входить заново не нужно.
+Приложение примерно раз в 4 часа обновляет расписание в фоне. Время запуска выбирает система телефона. Ночью, по воскресеньям и на каникулах обновлений меньше. Запросы идут только на сайт личного кабинета РАНХиГС — так же, как при ручном обновлении. Каждое обновление продлевает сессию личного кабинета, поэтому входить заново не нужно.
+
+## Настройки обновления
+
+Раз в сутки приложение скачивает небольшой файл с настройками обновления с GitHub (raw.githubusercontent.com, запасной адрес — cdn.jsdelivr.net). Через него разработчик может сделать обновления реже или остановить их. В запросе нет никаких данных о вас или вашем расписании, но GitHub и jsDelivr, как любые сайты, видят IP-адрес устройства. Их правила: https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement и https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net
 
 ## Разрешения
 
@@ -67,7 +71,7 @@
 
 # Privacy Policy — "Расписание РАНХиГС" (RANEPA Timetable)
 
-Effective date: October 12, 2026
+Effective date: October 13, 2026
 
 This is an unofficial app. It is not affiliated with or endorsed by RANEPA.
 
@@ -99,7 +103,11 @@ This data stays on your device and is never transmitted elsewhere.
 
 ## Background updates
 
-About every 4 hours the app updates your timetable in the background; iOS decides exactly when. Requests go only to the RANEPA student portal, the same as a manual refresh. Each update extends your portal session, so you don't need to sign in again.
+About every 4 hours the app updates your timetable in the background; your phone's system decides exactly when. There are fewer updates at night, on Sundays and during holidays. Requests go only to the RANEPA student portal, the same as a manual refresh. Each update extends your portal session, so you don't need to sign in again.
+
+## Update settings
+
+Once a day the app downloads a small update settings file from GitHub (raw.githubusercontent.com, with cdn.jsdelivr.net as a fallback). It lets the developer make updates less frequent or pause them. The request contains no data about you or your timetable, but like any website, GitHub and jsDelivr see your device's IP address. Their policies: https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement and https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net
 
 ## Permissions
 

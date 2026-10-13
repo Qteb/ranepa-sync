@@ -11,12 +11,10 @@ import 'services/background.dart';
 import 'services/calendar_export.dart';
 import 'services/home_widget_bridge.dart';
 import 'services/notifications.dart';
+import 'services/remote_config.dart';
 import 'services/sync.dart';
 
-export 'services/sync.dart' show fetchWeeks;
-
-/// Кэш старше этого обновляется автоматически при открытии приложения.
-const staleAfter = Duration(hours: 3);
+export 'services/sync.dart' show SyncTrigger, fetchWeeks;
 
 class AppState extends ChangeNotifier {
   AppState(this._prefs) {
@@ -66,8 +64,11 @@ class AppState extends ChangeNotifier {
   String? get lastBackgroundResult =>
       _prefs.getString(Keys.lastBackgroundResult);
 
-  bool get isStale =>
-      fetchedAt == null || DateTime.now().difference(fetchedAt!) > staleAfter;
+  /// Обновление остановлено конфигом или стоит на паузе после ошибки ЛК.
+  bool get syncPaused => syncPausedFor(_prefs);
+
+  /// Пояснение из удалённого конфига, если обновление остановлено.
+  String? get pausedMessage => RemoteConfig.cached(_prefs).message;
 
   DateTime get rangeEnd => (rangeStart ?? mondayOf(DateTime.now())).add(
     const Duration(days: 7 * fetchWeeks),
@@ -110,15 +111,25 @@ class AppState extends ChangeNotifier {
     await requestNotificationPermission();
   }
 
-  Future<void> refresh() async {
+  /// [SyncTrigger.open] — при открытии, если данные устарели;
+  /// [SyncTrigger.manual] — жестом «потянуть вниз».
+  Future<void> refresh([SyncTrigger trigger = SyncTrigger.manual]) async {
     if (loading || !loggedIn) return;
     loading = true;
     error = null;
     notifyListeners();
     try {
-      final sync = await syncSchedule(_prefs);
+      final sync = await syncSchedule(_prefs, trigger);
+      // Данные только что обновлялись — запрос не нужен, но жест должен
+      // выглядеть как обычное обновление.
+      if (sync.skipped == SkipReason.tooSoon) {
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }
       pendingChanges = sync.changes;
       error = sync.sideEffectError;
+      if (sync.skipped == SkipReason.paused && trigger == SyncTrigger.manual) {
+        error = pausedMessage;
+      }
     } on NeedLoginException catch (e) {
       await _prefs.setBool(Keys.loggedIn, false);
       await cancelBackgroundRefresh();

@@ -94,6 +94,9 @@ class RanepaClient {
     supportZoom: false,
     builtInZoomControls: false,
     displayZoomControls: false,
+    // Android WebView по умолчанию шлёт имя пакета в X-Requested-With;
+    // пустой список отключает заголовок, как в обычном браузере.
+    requestedWithHeaderOriginAllowList: {},
   );
 
   static void attach(
@@ -121,11 +124,13 @@ class RanepaClient {
   static bool isLoginPage(Uri? url) => url?.path.contains('/login') ?? false;
 
   /// Скачивает [weeks] недель начиная с [monday] в уже авторизованной странице.
+  /// Группа, программа и ФИО запрашиваются только при [withProfile].
   static Future<FetchResult> fetch(
     InAppWebViewController controller,
     ScheduleTemplate template,
     DateTime monday,
     int weeks, {
+    bool withProfile = true,
     bool withPhoto = false,
   }) async {
     final urls = [
@@ -144,7 +149,9 @@ async function get(url) {
   const r = await fetch(url, { headers: Object.assign({}, headers, auth) });
   const ct = r.headers.get('content-type') || '';
   if (r.status === 401) throw new Error('auth');
-  if (!r.ok || ct.indexOf('json') === -1) throw new Error('http ' + r.status);
+  if (!r.ok || ct.indexOf('json') === -1) {
+    throw new Error('http ' + r.status + ' ' + (r.headers.get('retry-after') || ''));
+  }
   return r.json();
 }
 try {
@@ -152,12 +159,12 @@ try {
   for (const u of urls) days.push(...((await get(u)).days || []));
   // Профиль — необязательная часть: ошибка не должна ломать расписание.
   const out = { days: days };
-  try {
+  if (withProfile) try {
     const sg = ((await get(groupsUrl)).items || [])[0] || {};
     out.group = sg.academic_group;
     out.program = sg.edu_program_title;
   } catch (e) {}
-  try {
+  if (withProfile) try {
     const p = (await get(profileUrl)).item || {};
     out.name = [p.last_name, p.first_name, p.middle_name].filter(Boolean).join(' ');
   } catch (e) {}
@@ -175,6 +182,7 @@ try {
         'groupsUrl': studentGroupsUrl,
         'profileUrl': profileUrl,
         'photoUrl': photoUrl,
+        'withProfile': withProfile,
         'withPhoto': withPhoto,
       },
     );
@@ -184,7 +192,13 @@ try {
     final data = jsonDecode(result.value as String) as Map<String, dynamic>;
     if (data['error'] == 'auth') throw NeedLoginException();
     if (data['error'] != null) {
-      throw RanepaException('Сайт ответил ошибкой: ${data['error']}');
+      final error = data['error'] as String;
+      final http = RegExp(r'^http (\d+) ?(.*)$').firstMatch(error);
+      final status = http == null ? null : int.parse(http.group(1)!);
+      if (status != null && ServerBusyException.matches(status)) {
+        throw ServerBusyException(status, int.tryParse(http!.group(2)!));
+      }
+      throw RanepaException('Сайт ответил ошибкой: $error');
     }
     return FetchResult(
       days: data['days'] as List<dynamic>,
@@ -200,6 +214,7 @@ try {
   static Future<FetchResult> refresh(
     DateTime monday,
     int weeks, {
+    bool withProfile = true,
     bool withPhoto = false,
   }) async {
     final ready = Completer<ScheduleTemplate>();
@@ -223,6 +238,27 @@ try {
       },
       onLoadStop: (c, url) => checkLogin(url),
       onUpdateVisitedHistory: (c, url, _) => checkLogin(url),
+      // Нет сети или TLS не прошёл — тоже не ждём минуту.
+      onReceivedError: (c, request, error) {
+        // Отмена — это переход на другую страницу (например, на вход), не сбой.
+        if ((request.isForMainFrame ?? false) &&
+            error.type != WebResourceErrorType.CANCELLED &&
+            !ready.isCompleted) {
+          ready.completeError(
+            RanepaException('Нет связи с ЛК: ${error.description}'),
+          );
+        }
+      },
+      // Сама страница ЛК не открылась из-за перегрузки — не ждём минуту.
+      onReceivedHttpError: (c, request, response) {
+        final status = response.statusCode;
+        if ((request.isForMainFrame ?? false) &&
+            status != null &&
+            ServerBusyException.matches(status) &&
+            !ready.isCompleted) {
+          ready.completeError(ServerBusyException(status, null));
+        }
+      },
     );
     await view.run();
     try {
@@ -236,6 +272,7 @@ try {
         template,
         monday,
         weeks,
+        withProfile: withProfile,
         withPhoto: withPhoto,
       );
     } finally {
@@ -313,4 +350,17 @@ class RanepaException implements Exception {
 
 class NeedLoginException extends RanepaException {
   NeedLoginException() : super('Сессия истекла, войди в ЛК заново');
+}
+
+/// ЛК перегружен или лежит (429, 5xx): обновления ставятся на паузу.
+class ServerBusyException extends RanepaException {
+  ServerBusyException(this.status, this.retryAfterSeconds)
+    : super('ЛК сейчас недоступен, попробую позже');
+
+  static bool matches(int status) => status == 429 || status >= 500;
+
+  final int status;
+
+  /// Значение Retry-After, если сервер его прислал в секундах.
+  final int? retryAfterSeconds;
 }

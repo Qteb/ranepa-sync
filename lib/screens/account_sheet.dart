@@ -289,6 +289,7 @@ class _DebugSection extends StatelessWidget {
         onTap: () => Workmanager().registerOneOffTask(
           'debug-${DateTime.now().millisecondsSinceEpoch}',
           backgroundTaskId,
+          inputData: {'debug': true},
         ),
       ),
       CupertinoListTile(

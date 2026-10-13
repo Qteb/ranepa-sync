@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       (_) => setState(() {}),
     );
     state.addListener(_onState);
-    if (state.isStale) state.refresh();
+    state.refresh(SyncTrigger.open);
   }
 
   @override
@@ -74,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (lifecycle != AppLifecycleState.resumed) return;
     // Пока приложение было свёрнуто, расписание могла обновить фоновая задача.
     await state.reloadFromDisk();
-    if (state.isStale) state.refresh();
+    state.refresh(SyncTrigger.open);
   }
 
   void _onState() {
@@ -121,6 +121,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String get _status {
     final at = state.fetchedAt;
     if (at == null) return 'Расписание ещё не загружено';
+    if (state.syncPaused) {
+      // Без объяснений про ЛК: по дате видно, насколько данные старые.
+      final day = sameDay(at, DateTime.now())
+          ? ''
+          : '${at.day}.${at.month.toString().padLeft(2, '0')}, ';
+      return 'Расписание от $day${hm(at)}';
+    }
     final day = sameDay(at, DateTime.now())
         ? 'сегодня'
         : '${at.day}.${at.month.toString().padLeft(2, '0')}';
