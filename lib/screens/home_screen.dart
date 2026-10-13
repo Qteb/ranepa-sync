@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../format.dart';
 import '../models.dart';
+import '../services/tips.dart';
 import '../widgets/avatar.dart';
 import '../widgets/banner.dart';
 import '../widgets/lesson_colors.dart';
+import '../widgets/tip_card.dart';
 import 'account_sheet.dart';
 import 'lesson_sheet.dart';
 
@@ -34,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _pullToRefresh() async {
     setState(() => _pulling = true);
+    Tips.instance.done(Tip.refresh);
     try {
       await state.refresh();
     } finally {
@@ -217,7 +220,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     button: true,
                     label: 'Аккаунт и настройки',
                     child: GestureDetector(
-                      onTap: () => showAccountSheet(context, state),
+                      onTap: () {
+                        Tips.instance.done(Tip.account);
+                        showAccountSheet(context, state);
+                      },
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 6),
                         child: Avatar(state: state, size: 36),
@@ -233,6 +239,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               lastDay: _dayAt(_dayCount - 1),
               hasLessons: (d) => state.lessonsOn(d).any((l) => !l.cancelled),
               onSelect: _goTo,
+            ),
+            // Подсказки по одной; появляются, когда расписание уже есть.
+            ListenableBuilder(
+              listenable: Tips.instance,
+              builder: (context, _) {
+                final tip = Tips.instance.nextOnHome;
+                return AnimatedSize(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeOut,
+                  child: tip == null || state.lessons.isEmpty
+                      ? const SizedBox(width: double.infinity)
+                      : Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                          child: TipCard(
+                            tip: tip,
+                            icon: tip == Tip.refresh
+                                ? CupertinoIcons.arrow_down_circle
+                                : CupertinoIcons.person_crop_circle,
+                          ),
+                        ),
+                );
+              },
             ),
             Expanded(
               child: PageView.builder(

@@ -15,6 +15,7 @@ import 'screens/onboarding_screen.dart';
 import 'services/background.dart';
 import 'services/home_widget_bridge.dart';
 import 'services/notifications.dart';
+import 'services/tips.dart';
 
 // Бордовый в цвет фирменного стиля академии.
 const _seed = Color(0xFF8E1B2E);
@@ -31,7 +32,9 @@ Future<void> main() async {
   await HomeWidget.setAppGroupId(appGroupId);
   await initNotifications();
   await initBackground();
-  final state = AppState(await SharedPreferences.getInstance());
+  final prefs = await SharedPreferences.getInstance();
+  Tips.instance.init(prefs);
+  final state = AppState(prefs);
   // Задача могла не зарегистрироваться (обновление со старой версии).
   if (state.loggedIn) unawaited(scheduleBackgroundRefresh());
   runApp(RanepaApp(state: state));

@@ -4,9 +4,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../format.dart';
 import '../models.dart';
+import '../services/tips.dart';
 import '../widgets/copy.dart';
 import '../widgets/lesson_colors.dart';
 import '../widgets/mail.dart';
+import '../widgets/tip_card.dart';
 
 /// Подробности пары листом высотой по содержимому, как карточка места
 /// в Картах: язычок сверху, закрывается свайпом вниз, тапом мимо или
@@ -115,6 +117,22 @@ class _LessonSheet extends StatelessWidget {
                   // Справа на уровне названия, как в карточке места в Картах.
                   const _CloseButton(),
                 ],
+              ),
+            ),
+            ListenableBuilder(
+              listenable: Tips.instance,
+              builder: (context, _) => AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOut,
+                child: Tips.instance.isDone(Tip.copy)
+                    ? const SizedBox(width: double.infinity)
+                    : const Padding(
+                        padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: TipCard(
+                          tip: Tip.copy,
+                          icon: CupertinoIcons.doc_on_doc,
+                        ),
+                      ),
               ),
             ),
             CupertinoListSection.insetGrouped(

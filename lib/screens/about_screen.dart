@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../links.dart';
 import '../widgets/mail.dart';
+import 'legend_screen.dart';
 import 'privacy_screen.dart';
 import '../widgets/settings.dart';
 
@@ -91,6 +92,20 @@ class AboutScreen extends StatelessWidget {
                 CupertinoListSection.insetGrouped(
                   header: const Text('Информация'),
                   children: [
+                    CupertinoListTile(
+                      leading: const Glyph(
+                        CupertinoIcons.square_list_fill,
+                        CupertinoColors.systemIndigo,
+                      ),
+                      title: const Text('Обозначения'),
+                      trailing: const CupertinoListTileChevron(),
+                      onTap: () => Navigator.of(context).push(
+                        CupertinoPageRoute<void>(
+                          builder: (_) =>
+                              const LegendScreen(leading: _BackButton('Назад')),
+                        ),
+                      ),
+                    ),
                     CupertinoListTile(
                       leading: const Glyph(
                         CupertinoIcons.lock_fill,

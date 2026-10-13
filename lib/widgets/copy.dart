@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
+import '../services/tips.dart';
+
 /// Долгое нажатие показывает меню «Скопировать», как в «Контактах» iOS.
 /// Пока меню открыто, элемент подсвечен; отдельного уведомления нет —
 /// подтверждением служит выбранная команда.
@@ -55,6 +57,7 @@ class _CopyOnLongPressState extends State<CopyOnLongPress> {
                 text: 'Скопировать',
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: widget.text));
+                  Tips.instance.done(Tip.copy);
                   _close();
                 },
               ),
