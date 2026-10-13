@@ -152,7 +152,7 @@ class _AccountSheet extends StatelessWidget {
 
   String _backgroundFooter(AppState state) {
     if (state.demo) {
-      return 'Демо-режим: студент и расписание выдуманы, приложение не '
+      return 'Демо-режим: профиль и расписание выдуманы, приложение не '
           'обращается к ЛК. Календарь в демо не используется.';
     }
     final calendar = state.calendarExport

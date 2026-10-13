@@ -5,7 +5,7 @@ import '../format.dart';
 import '../ranepa_client.dart';
 import 'sync.dart';
 
-/// Демо-режим: выдуманные студент и расписание без обращений к ЛК.
+/// Демо-режим: Наташа Ростова и выдуманное расписание без обращений к ЛК.
 /// Нужен для App Review (у проверяющего нет аккаунта в ЛК), скриншотов
 /// и проверки без интернета. Включается долгим нажатием на логотип
 /// на стартовом экране.
@@ -13,17 +13,19 @@ bool isDemo(SharedPreferences prefs) => prefs.getBool(Keys.demo) ?? false;
 
 const demoGroup = 'ГМУ-ОБ25-03';
 const demoProgram = 'Государственное и муниципальное управление';
-const demoName = 'Орлова Дарья Игоревна';
+const demoName = 'Ростова Наталья Ильинична';
 
 /// Схематичный портрет вместо фото из ЛК.
 const demoAvatarSvg =
     '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'
-    '<rect width="100" height="100" fill="#B9CCF2"/>'
-    '<path d="M14 100c2-19 17-29 36-29s34 10 36 29z" fill="#4F6FD0"/>'
+    '<rect width="100" height="100" fill="#F3C6D3"/>'
+    '<path d="M14 100c2-19 17-29 36-29s34 10 36 29z" fill="#D9637E"/>'
+    '<path d="M29 44c0-15 9-25 21-25s21 10 21 25v28c-6 3-12 3-17 1V60H46'
+    'v13c-5 2-11 2-17-1z" fill="#5A3A2B"/>'
     '<rect x="43" y="56" width="14" height="16" rx="6" fill="#E3AE8A"/>'
     '<circle cx="50" cy="44" r="19" fill="#F2C6A2"/>'
-    '<path d="M30 50c-5-19 5-31 20-31s26 11 21 31c-1-9-5-14-11-16'
-    'c-6 5-17 7-28 9z" fill="#4A3327"/>'
+    '<path d="M31 43c0-13 8-21 19-21s19 8 19 21c-7-2-12-7-14-12'
+    'c-5 6-14 10-24 12z" fill="#5A3A2B"/>'
     '<circle cx="43" cy="47" r="2" fill="#3A2A20"/>'
     '<circle cx="57" cy="47" r="2" fill="#3A2A20"/>'
     '<path d="M45 54q5 4 10 0" stroke="#3A2A20" stroke-width="2" '
