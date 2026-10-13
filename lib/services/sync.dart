@@ -8,6 +8,7 @@ import '../models.dart';
 import '../ranepa_client.dart';
 import 'calendar_export.dart';
 import 'changes.dart';
+import 'demo.dart';
 import 'home_widget_bridge.dart';
 import 'notifications.dart';
 import 'remote_config.dart';
@@ -56,6 +57,9 @@ abstract final class Keys {
   static const lastAttemptAt = 'lastAttemptAt';
   static const backoffUntil = 'backoffUntil';
   static const backoffFailures = 'backoffFailures';
+  static const demo = 'demo';
+  static const demoRevision = 'demoRevision';
+  static const demoShift = 'demoShift';
 
   /// Всё, что относится к сессии и удаляется при выходе.
   static const session = [
@@ -75,6 +79,9 @@ abstract final class Keys {
     lastAttemptAt,
     backoffUntil,
     backoffFailures,
+    demo,
+    demoRevision,
+    demoShift,
   ];
 }
 
@@ -137,7 +144,7 @@ Duration _since(SharedPreferences prefs, String key, DateTime now) {
 /// Обновление стоит на паузе: выключено конфигом или после ошибки сервера.
 bool syncPausedFor(SharedPreferences prefs) =>
     !RemoteConfig.cached(prefs).sync ||
-    (_time(prefs, Keys.backoffUntil)?.isAfter(DateTime.now()) ?? false);
+    (_time(prefs, Keys.backoffUntil)?.isAfter(currentTime()) ?? false);
 
 /// Решает, идти ли в ЛК и сколько грузить, и загружает расписание через
 /// скрытый WebView. Месяц — первым обновлением за день, иначе текущую
@@ -147,8 +154,9 @@ Future<SyncResult> syncSchedule(
   SyncTrigger trigger, {
   DateTime? now,
 }) async {
+  if (isDemo(prefs)) return syncDemo(prefs, trigger);
   final config = await RemoteConfig.load(prefs);
-  now ??= DateTime.now();
+  now ??= currentTime();
   if (!config.sync) return SyncResult.skipped(SkipReason.paused);
   if (_time(prefs, Keys.backoffUntil)?.isAfter(now) ?? false) {
     return SyncResult.skipped(SkipReason.backoff);
@@ -222,7 +230,7 @@ Future<void> _startBackoff(
   await prefs.setInt(Keys.backoffFailures, failures);
   await prefs.setInt(
     Keys.backoffUntil,
-    DateTime.now().add(pause).millisecondsSinceEpoch,
+    currentTime().add(pause).millisecondsSinceEpoch,
   );
 }
 
@@ -232,7 +240,7 @@ const _photoMaxAge = Duration(days: 7);
 bool _photoStale(SharedPreferences prefs) {
   final at = prefs.getInt(Keys.photoFetchedAt);
   return at == null ||
-      DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(at)) >
+      currentTime().difference(DateTime.fromMillisecondsSinceEpoch(at)) >
           _photoMaxAge;
 }
 
@@ -285,23 +293,23 @@ Future<SyncResult> saveSchedule(
           : await prefs.setString(Keys.photo, photo);
       await prefs.setInt(
         Keys.photoFetchedAt,
-        DateTime.now().millisecondsSinceEpoch,
+        currentTime().millisecondsSinceEpoch,
       );
     } catch (_) {
       // Битое фото — останутся инициалы, попробуем в следующий раз.
     }
   }
-  await prefs.setInt(Keys.fetchedAt, DateTime.now().millisecondsSinceEpoch);
+  await prefs.setInt(Keys.fetchedAt, currentTime().millisecondsSinceEpoch);
   if (full) {
     await prefs.setInt(Keys.rangeStart, monday.millisecondsSinceEpoch);
-    await prefs.setInt(Keys.lastFullAt, DateTime.now().millisecondsSinceEpoch);
+    await prefs.setInt(Keys.lastFullAt, currentTime().millisecondsSinceEpoch);
   }
   await prefs.setBool(Keys.loggedIn, true);
   await prefs.remove(Keys.sessionExpiredNotified);
 
   return SyncResult(
     changes: hadCache
-        ? describeChanges(before, after, now: DateTime.now())
+        ? describeChanges(before, after, now: currentTime())
         : const [],
     sideEffectError: await applySideEffects(prefs, after),
   );
@@ -336,14 +344,16 @@ Future<String?> applySideEffects(
     await scheduleReminders(lessons, minutes);
     // После scheduleReminders: тот снимает все запланированные уведомления.
     final fetchedAt = prefs.getInt(Keys.fetchedAt);
-    if (fetchedAt != null) {
+    // В демо сессии ЛК нет — напоминать о ней незачем.
+    if (fetchedAt != null && !isDemo(prefs)) {
       await scheduleKeepAlive(DateTime.fromMillisecondsSinceEpoch(fetchedAt));
     }
     await updateHomeWidget(lessons);
-    if (prefs.getBool(Keys.calendarExport) ?? false) {
+    // Выдуманные пары не должны попасть в настоящий календарь.
+    if ((prefs.getBool(Keys.calendarExport) ?? false) && !isDemo(prefs)) {
       final start = prefs.getInt(Keys.rangeStart);
       final from = start == null
-          ? mondayOf(DateTime.now())
+          ? mondayOf(currentTime())
           : DateTime.fromMillisecondsSinceEpoch(start);
       return await exportToCalendar(
         lessons,

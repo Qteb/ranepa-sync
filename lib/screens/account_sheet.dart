@@ -95,8 +95,9 @@ class _AccountSheet extends StatelessWidget {
                   ),
                   title: const Text('Календарь iPhone'),
                   trailing: CupertinoSwitch(
-                    value: state.calendarExport,
-                    onChanged: state.setCalendarExport,
+                    value: state.calendarExport && !state.demo,
+                    // Выдуманные пары в настоящий календарь не пишем.
+                    onChanged: state.demo ? null : state.setCalendarExport,
                   ),
                 ),
                 CupertinoListTile(
@@ -132,9 +133,9 @@ class _AccountSheet extends StatelessWidget {
             CupertinoListSection.insetGrouped(
               children: [
                 CupertinoListTile(
-                  title: const Center(
+                  title: Center(
                     child: Text(
-                      'Выйти из ЛК',
+                      state.demo ? 'Выйти из демо' : 'Выйти из ЛК',
                       style: TextStyle(color: CupertinoColors.systemRed),
                     ),
                   ),
@@ -150,6 +151,10 @@ class _AccountSheet extends StatelessWidget {
   }
 
   String _backgroundFooter(AppState state) {
+    if (state.demo) {
+      return 'Демо-режим: студент и расписание выдуманы, приложение не '
+          'обращается к ЛК. Календарь в демо не используется.';
+    }
     final calendar = state.calendarExport
         ? 'Пары добавляются в отдельный календарь «$calendarName». '
         : '';
@@ -157,7 +162,7 @@ class _AccountSheet extends StatelessWidget {
     final last = at == null
         ? 'В фоне ещё не обновлялось.'
         : 'Последнее фоновое обновление — '
-              '${sameDay(at, DateTime.now()) ? 'сегодня' : '${at.day}.${at.month.toString().padLeft(2, '0')}'}'
+              '${sameDay(at, currentTime()) ? 'сегодня' : '${at.day}.${at.month.toString().padLeft(2, '0')}'}'
               ' в ${hm(at)}.';
     final off = state.notificationsEnabled == false
         ? 'Уведомления выключены — об изменениях в расписании ты не узнаешь. '
@@ -243,15 +248,17 @@ class _AccountSheet extends StatelessWidget {
     final ok = await showCupertinoModalPopup<bool>(
       context: context,
       builder: (c) => CupertinoActionSheet(
-        message: const Text(
-          'Расписание, напоминания и календарь «РАНХиГС» будут удалены '
-          'с этого iPhone.',
+        message: Text(
+          state.demo
+              ? 'Демо-расписание и напоминания будут удалены.'
+              : 'Расписание, напоминания и календарь «РАНХиГС» будут удалены '
+                    'с этого iPhone.',
         ),
         actions: [
           CupertinoActionSheetAction(
             isDestructiveAction: true,
             onPressed: () => Navigator.pop(c, true),
-            child: const Text('Выйти из ЛК'),
+            child: Text(state.demo ? 'Выйти из демо' : 'Выйти из ЛК'),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(

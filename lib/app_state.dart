@@ -9,6 +9,7 @@ import 'models.dart';
 import 'ranepa_client.dart';
 import 'services/background.dart';
 import 'services/calendar_export.dart';
+import 'services/demo.dart';
 import 'services/home_widget_bridge.dart';
 import 'services/notifications.dart';
 import 'services/remote_config.dart';
@@ -39,6 +40,9 @@ class AppState extends ChangeNotifier {
   bool? notificationsEnabled;
 
   bool get loggedIn => _prefs.getBool(Keys.loggedIn) ?? false;
+
+  /// Выдуманный студент вместо ЛК, см. services/demo.dart.
+  bool get demo => isDemo(_prefs);
   int get reminderMinutes =>
       _prefs.getInt(Keys.reminderMinutes) ?? defaultReminderMinutes;
   bool get calendarExport => _prefs.getBool(Keys.calendarExport) ?? false;
@@ -75,7 +79,7 @@ class AppState extends ChangeNotifier {
   /// Пояснение из удалённого конфига, если обновление остановлено.
   String? get pausedMessage => RemoteConfig.cached(_prefs).message;
 
-  DateTime get rangeEnd => (rangeStart ?? mondayOf(DateTime.now())).add(
+  DateTime get rangeEnd => (rangeStart ?? mondayOf(currentTime())).add(
     const Duration(days: 7 * fetchWeeks),
   );
 
@@ -111,9 +115,15 @@ class AppState extends ChangeNotifier {
     _loadCache();
     error = sync.sideEffectError;
     notifyListeners();
-    await scheduleBackgroundRefresh();
+    if (!demo) await scheduleBackgroundRefresh();
     // Разрешение нужно и для уведомлений об изменениях, не только для напоминаний.
     await checkNotifications(request: true);
+  }
+
+  /// Вход в демо долгим нажатием на логотип стартового экрана.
+  Future<void> startDemo() async {
+    await _prefs.setBool(Keys.demo, true);
+    await completeLogin(await demoFetch(_prefs), mondayOf(currentTime()));
   }
 
   /// Перечитывает разрешение на уведомления (пользователь мог поменять его в

@@ -25,6 +25,16 @@ const monthsGenitive = [
   'декабря',
 ];
 
+/// Время для скриншотов: `--dart-define=DEMO_AT=2026-10-13T11:05` переводит
+/// часы приложения в эту точку, дальше они идут как обычно.
+final Duration _clockShift = () {
+  final at = DateTime.tryParse(const String.fromEnvironment('DEMO_AT'));
+  return at == null ? Duration.zero : at.difference(DateTime.now());
+}();
+
+/// Текущее время приложения. Без DEMO_AT — обычное DateTime.now().
+DateTime currentTime() => DateTime.now().add(_clockShift);
+
 String _two(int v) => v.toString().padLeft(2, '0');
 
 String hm(DateTime t) => '${_two(t.hour)}:${_two(t.minute)}';
@@ -44,7 +54,7 @@ bool sameDay(DateTime a, DateTime b) =>
 
 /// «Сегодня», «Завтра», «Вчера» или день недели.
 String relativeDayName(DateTime d) {
-  final diff = dateOnly(d).difference(dateOnly(DateTime.now())).inDays;
+  final diff = dateOnly(d).difference(dateOnly(currentTime())).inDays;
   return switch (diff) {
     0 => 'Сегодня',
     1 => 'Завтра',
@@ -63,7 +73,7 @@ String duration(Duration d) {
 
 /// «сегодня в 12:20», «завтра в 09:00», «в среду в 09:00».
 String whenLabel(DateTime t) {
-  final diff = dateOnly(t).difference(dateOnly(DateTime.now())).inDays;
+  final diff = dateOnly(t).difference(dateOnly(currentTime())).inDays;
   final day = switch (diff) {
     0 => 'сегодня',
     1 => 'завтра',

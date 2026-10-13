@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../app_state.dart';
+import '../services/demo.dart';
 
 /// Фото из ЛК, а если его нет — инициалы «Имя Фамилия» на сером круге,
-/// как у контактов в iOS.
+/// как у контактов в iOS. В демо — схематичный портрет.
 class Avatar extends StatelessWidget {
   const Avatar({super.key, required this.state, required this.size});
 
@@ -25,6 +27,8 @@ class Avatar extends StatelessWidget {
         dimension: size,
         child: photo != null
             ? Image.memory(photo, fit: BoxFit.cover, gaplessPlayback: true)
+            : state.demo
+            ? SvgPicture.string(demoAvatarSvg)
             : ColoredBox(
                 color: CupertinoColors.systemGrey4.resolveFrom(context),
                 child: Center(

@@ -47,6 +47,7 @@ void backgroundDispatcher() {
     final prefs = await SharedPreferences.getInstance();
     await prefs.reload();
     if (!(prefs.getBool(Keys.loggedIn) ?? false)) return true;
+    if (prefs.getBool(Keys.demo) ?? false) return true;
 
     String outcome;
     try {

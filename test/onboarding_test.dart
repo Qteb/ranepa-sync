@@ -5,7 +5,9 @@ import 'package:ranepa_sync/screens/onboarding_screen.dart';
 void main() {
   testWidgets('стартовый экран ссылается на открытый код', (tester) async {
     await tester.pumpWidget(
-      CupertinoApp(home: OnboardingScreen(onLogin: () {})),
+      CupertinoApp(
+        home: OnboardingScreen(onLogin: () {}, onDemo: () {}),
+      ),
     );
     expect(
       find.text(

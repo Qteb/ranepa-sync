@@ -1,14 +1,23 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../links.dart';
 
 /// Стартовый экран до входа: что это за приложение и куда уходит пароль.
 class OnboardingScreen extends StatelessWidget {
-  const OnboardingScreen({super.key, required this.onLogin, this.error});
+  const OnboardingScreen({
+    super.key,
+    required this.onLogin,
+    required this.onDemo,
+    this.error,
+  });
 
   final VoidCallback onLogin;
+
+  /// Долгое нажатие на логотип: демо без ЛК для App Review и скриншотов.
+  final VoidCallback onDemo;
   final String? error;
 
   @override
@@ -23,9 +32,19 @@ class OnboardingScreen extends StatelessWidget {
             children: [
               const Spacer(),
               Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: Image.asset('assets/icon.png', width: 88, height: 88),
+                child: GestureDetector(
+                  onLongPress: () {
+                    HapticFeedback.mediumImpact();
+                    onDemo();
+                  },
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: Image.asset(
+                      'assets/icon.png',
+                      width: 88,
+                      height: 88,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),

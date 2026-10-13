@@ -52,8 +52,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _firstDay = mondayOf(DateTime.now());
-    _selected = dateOnly(DateTime.now());
+    _firstDay = mondayOf(currentTime());
+    _selected = dateOnly(currentTime());
     _pages = PageController(initialPage: _indexOf(_selected));
     // Перерисовка раз в минуту: «идёт сейчас» и «ещё N мин».
     _ticker = Timer.periodic(
@@ -131,12 +131,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (at == null) return 'Расписание ещё не загружено';
     if (state.syncPaused) {
       // Без объяснений про ЛК: по дате видно, насколько данные старые.
-      final day = sameDay(at, DateTime.now())
+      final day = sameDay(at, currentTime())
           ? ''
           : '${at.day}.${at.month.toString().padLeft(2, '0')}, ';
       return 'Расписание от $day${hm(at)}';
     }
-    final day = sameDay(at, DateTime.now())
+    final day = sameDay(at, currentTime())
         ? 'сегодня'
         : '${at.day}.${at.month.toString().padLeft(2, '0')}';
     return 'Обновлено $day в ${hm(at)}';
@@ -151,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final label = CupertinoColors.label.resolveFrom(context);
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
-    final isToday = sameDay(_selected, DateTime.now());
+    final isToday = sameDay(_selected, currentTime());
     return Scaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground.resolveFrom(
         context,
@@ -170,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ? null
                     : CupertinoButton(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        onPressed: () => _goTo(DateTime.now()),
+                        onPressed: () => _goTo(currentTime()),
                         child: const Text('Сегодня'),
                       ),
               ),
@@ -274,8 +274,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     day: day,
                     lessons: state.lessonsOn(day),
                     next: _nextAfter(
-                      sameDay(day, DateTime.now())
-                          ? DateTime.now()
+                      sameDay(day, currentTime())
+                          ? currentTime()
                           : dateOnly(day).add(const Duration(days: 1)),
                     ),
                     status: _status,
@@ -379,7 +379,7 @@ class _Day extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = CupertinoTheme.of(context).primaryColor;
-    final today = sameDay(day, DateTime.now());
+    final today = sameDay(day, currentTime());
     final label = CupertinoColors.label.resolveFrom(context);
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
     final Color fill = selected
@@ -452,7 +452,7 @@ class _DayView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
-    final isToday = sameDay(day, DateTime.now());
+    final isToday = sameDay(day, currentTime());
     final active = lessons.where((l) => !l.cancelled).toList();
 
     // Обновление как UIRefreshControl: пока идёт загрузка, список остаётся
@@ -527,7 +527,7 @@ class _NowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final now = currentTime();
     final accent = CupertinoTheme.of(context).primaryColor;
     final label = CupertinoColors.label.resolveFrom(context);
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
@@ -679,7 +679,7 @@ class _TimelineRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final now = currentTime();
     final ongoing =
         !lesson.cancelled &&
         !now.isBefore(lesson.start) &&

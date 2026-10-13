@@ -36,7 +36,7 @@ Future<void> main() async {
   Tips.instance.init(prefs);
   final state = AppState(prefs);
   // Задача могла не зарегистрироваться (обновление со старой версии).
-  if (state.loggedIn) unawaited(scheduleBackgroundRefresh());
+  if (state.loggedIn && !state.demo) unawaited(scheduleBackgroundRefresh());
   runApp(RanepaApp(state: state));
 }
 
@@ -119,6 +119,7 @@ class _AuthFlowState extends State<AuthFlow> {
           : OnboardingScreen(
               error: widget.state.error,
               onLogin: () => setState(() => _login = true),
+              onDemo: widget.state.startDemo,
             ),
     );
   }
