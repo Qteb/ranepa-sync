@@ -10,6 +10,7 @@ import '../app_state.dart';
 import '../format.dart';
 import '../services/background.dart';
 import '../services/calendar_export.dart';
+import '../services/notifications.dart';
 import '../widgets/avatar.dart';
 import '../widgets/copy.dart';
 import '../widgets/settings.dart';
@@ -204,7 +205,7 @@ class _AccountSheet extends StatelessWidget {
                 ),
               ],
             ),
-            if (kDebugMode && !state.demo && !recordingMode)
+            if ((kDebugMode || testTools) && !recordingMode && !screenshotMode)
               _DebugSection(state: state),
             CupertinoListSection.insetGrouped(
               children: [
@@ -439,6 +440,24 @@ class _DebugSection extends StatelessWidget {
     ),
     children: [
       CupertinoListTile(
+        title: const Text('Ускоренный день'),
+        subtitle: const Text('Демо: 4 пары по 4 мин, первая через 3 мин'),
+        onTap: () => _startFastDay(context),
+      ),
+      CupertinoListTile(
+        title: const Text('Уведомление об изменении'),
+        subtitle: const Text('Показать сразу, как после обновления'),
+        onTap: () => showScheduleChanges(const [
+          'Математика, ср 14.10: перенесли с 12:20 на 14:00',
+        ]),
+      ),
+      if (Platform.isIOS)
+        CupertinoListTile(
+          title: const Text('Обновить Live Activity'),
+          subtitle: const Text('Запустить или обновить по сегодняшним парам'),
+          onTap: state.showLiveActivity,
+        ),
+      CupertinoListTile(
         title: const Text('Запустить фоновое обновление'),
         subtitle: const Text('Сверни приложение сразу после нажатия'),
         onTap: () => Workmanager().registerOneOffTask(
@@ -457,4 +476,32 @@ class _DebugSection extends StatelessWidget {
       ),
     ],
   );
+
+  Future<void> _startFastDay(BuildContext context) async {
+    if (state.loggedIn && !state.demo) {
+      final ok = await showCupertinoDialog<bool>(
+        context: context,
+        builder: (c) => CupertinoAlertDialog(
+          title: const Text('Ускоренный день'),
+          content: const Text(
+            'Это демо-режим: выйдешь из ЛК, потом нужно будет войти заново.',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Отмена'),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () => Navigator.pop(c, true),
+              child: const Text('Выйти и начать'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    if (context.mounted) CupertinoSheetRoute.popSheet(context);
+    await state.startFastDay();
+  }
 }

@@ -36,6 +36,10 @@ const demoAvatarSvg =
 const _slots = [(9, 0), (10, 40), (12, 20), (14, 0), (15, 40)];
 const _pairLength = Duration(minutes: 80);
 
+/// «Ускоренный день»: пары и перемены в минутах, а не в часах.
+const fastLength = Duration(minutes: 4);
+const fastBreak = Duration(minutes: 2);
+
 const _lecture = 'Лекция';
 const _seminar = 'Практическое занятие';
 const _lab = 'Лабораторная работа';
@@ -114,7 +118,15 @@ Duration _todayShift(DateTime now) {
 /// Расписание на [fetchWeeks] недель вокруг [now]. Сегодня — со сдвигом
 /// [shift] (в воскресенье — расписание вторника). Нечётная [revision] меняет
 /// аудиторию первой пары завтра — так видно уведомление об изменении.
-FetchResult demoResult(DateTime now, {int revision = 0, Duration? shift}) {
+///
+/// [fastFrom] — «ускоренный день» для проверки на устройстве: сегодня пары
+/// по [fastLength] с переменами [fastBreak], первая начинается в [fastFrom].
+FetchResult demoResult(
+  DateTime now, {
+  int revision = 0,
+  Duration? shift,
+  DateTime? fastFrom,
+}) {
   final today = dateOnly(now);
   final monday = mondayOf(now);
   final moscow = tz.getLocation('Europe/Moscow');
@@ -139,7 +151,13 @@ FetchResult demoResult(DateTime now, {int revision = 0, Duration? shift}) {
     for (final (n, (slot, subject, type, room)) in plan.indexed) {
       final (h, m) = _slots[slot];
       var start = day.add(Duration(hours: h, minutes: m));
-      if (isToday) start = start.add(shift);
+      var length = _pairLength;
+      if (isToday && fastFrom != null) {
+        start = fastFrom.add((fastLength + fastBreak) * n);
+        length = fastLength;
+      } else if (isToday) {
+        start = start.add(shift);
+      }
       final (name, lecturer, email) = _subjects[subject];
       var place = room < 0 ? _remote : _rooms[room];
       if (revision.isOdd && sameDay(day, nextDay) && n == 0) {
@@ -153,7 +171,7 @@ FetchResult demoResult(DateTime now, {int revision = 0, Duration? shift}) {
           : type;
       discs.add({
         'start_date': stamp(start),
-        'end_date': stamp(start.add(_pairLength)),
+        'end_date': stamp(start.add(length)),
         'disc': name,
         'type': kind,
         'room': place,
@@ -198,7 +216,13 @@ Future<FetchResult> demoFetch(
     shift = _todayShift(now);
     await prefs.setString(Keys.demoShift, '$day|${shift.inMinutes}');
   }
-  return demoResult(now, revision: revision, shift: shift);
+  final fast = prefs.getInt(Keys.demoFastFrom);
+  return demoResult(
+    now,
+    revision: revision,
+    shift: shift,
+    fastFrom: fast == null ? null : DateTime.fromMillisecondsSinceEpoch(fast),
+  );
 }
 
 /// Обновление в демо: без сети. Расписание пересобирается раз в день,

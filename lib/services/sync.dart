@@ -62,6 +62,7 @@ abstract final class Keys {
   static const demo = 'demo';
   static const demoRevision = 'demoRevision';
   static const demoShift = 'demoShift';
+  static const demoFastFrom = 'demoFastFrom';
 
   /// Всё, что относится к сессии и удаляется при выходе.
   static const session = [
@@ -84,6 +85,7 @@ abstract final class Keys {
     demo,
     demoRevision,
     demoShift,
+    demoFastFrom,
   ];
 }
 

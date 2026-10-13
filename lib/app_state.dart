@@ -128,6 +128,20 @@ class AppState extends ChangeNotifier {
     await completeLogin(await demoFetch(_prefs), mondayOf(currentTime()));
   }
 
+  /// Отладка: демо, где сегодня 4 пары по 4 минуты, первая — через
+  /// 3 минуты. Напоминания — за 1 минуту. Чтобы за 20 минут проверить
+  /// напоминания, Live Activity, виджеты и часы.
+  Future<void> startFastDay() async {
+    if (loggedIn) await logout();
+    await _prefs.setInt(
+      Keys.demoFastFrom,
+      currentTime().add(const Duration(minutes: 3)).millisecondsSinceEpoch,
+    );
+    await _prefs.setInt(Keys.reminderMinutes, 1);
+    await startDemo();
+    await showLiveActivity();
+  }
+
   /// Перечитывает разрешение на уведомления (пользователь мог поменять его в
   /// настройках). С [request] — показывает системный запрос, если ещё не
   /// спрашивали.

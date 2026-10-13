@@ -42,6 +42,10 @@ Duration get clockShift => _clockShift;
 /// но выглядит как релизная.
 const recordingMode = bool.fromEnvironment('RECORDING');
 
+/// Тестовая сборка для своего iPhone (`--dart-define=TEST_TOOLS=true`):
+/// релизная, но с разделом «Отладка». См. tool/install_device.sh.
+const testTools = bool.fromEnvironment('TEST_TOOLS');
+
 /// Текущее время приложения. Без DEMO_AT — обычное DateTime.now().
 DateTime currentTime() => DateTime.now().add(_clockShift);
 
