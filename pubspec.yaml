@@ -45,6 +45,8 @@ dependencies:
   eventide: ^2.4.1
   workmanager: ^0.10.10
   package_info_plus: ^10.2.2
+  markdown: ^7.3.1
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +66,8 @@ dev_dependencies:
 flutter:
   assets:
     - assets/icon.png
+    # Копия политики на случай, если GitHub недоступен.
+    - PRIVACY.md
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

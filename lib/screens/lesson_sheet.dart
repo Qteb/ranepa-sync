@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../format.dart';
 import '../models.dart';
+import '../widgets/mail.dart';
 
 /// Подробности пары листом, как карточка события в Календаре iOS.
 void showLessonSheet(BuildContext context, Lesson lesson) {
@@ -98,8 +99,7 @@ class _LessonSheet extends StatelessWidget {
                   icon: CupertinoIcons.mail,
                   title: lesson.email,
                   color: accent,
-                  onTap: () =>
-                      launchUrl(Uri(scheme: 'mailto', path: lesson.email)),
+                  onTap: () => openMail(context, lesson.email),
                 ),
               if (lesson.groups.isNotEmpty)
                 _Row(
