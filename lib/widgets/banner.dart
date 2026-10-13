@@ -78,10 +78,14 @@ class _BannerState extends State<_Banner> {
   Widget build(BuildContext context) {
     final label = CupertinoColors.label.resolveFrom(context);
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
+    // Под листом iOS MediaQuery обнуляет верхний отступ, поэтому берём
+    // отступ экрана напрямую — иначе баннер залезает под Dynamic Island.
+    final view = View.of(context);
+    final top = view.padding.top / view.devicePixelRatio;
     return Positioned(
       left: 8,
       right: 8,
-      top: MediaQuery.paddingOf(context).top + 4,
+      top: top + 4,
       child: AnimatedSlide(
         offset: _visible ? Offset.zero : const Offset(0, -1.6),
         duration: const Duration(milliseconds: 300),

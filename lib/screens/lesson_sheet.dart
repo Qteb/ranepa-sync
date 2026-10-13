@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../format.dart';
 import '../models.dart';
+import '../widgets/copy.dart';
 import '../widgets/mail.dart';
 
 /// Подробности пары листом, как карточка события в Календаре iOS.
@@ -51,15 +52,18 @@ class _LessonSheet extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  lesson.subject,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: label,
-                    decoration: lesson.cancelled
-                        ? TextDecoration.lineThrough
-                        : null,
+                GestureDetector(
+                  onTap: () => copyText(context, lesson.subject),
+                  child: Text(
+                    lesson.subject,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: label,
+                      decoration: lesson.cancelled
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -100,6 +104,7 @@ class _LessonSheet extends StatelessWidget {
                   title: lesson.email,
                   color: accent,
                   onTap: () => openMail(context, lesson.email),
+                  copy: lesson.email,
                 ),
               if (lesson.groups.isNotEmpty)
                 _Row(
@@ -131,6 +136,7 @@ class _LessonSheet extends StatelessWidget {
                     Uri.parse(lesson.lmsLink),
                     mode: LaunchMode.externalApplication,
                   ),
+                  copy: lesson.lmsLink,
                 ),
               ],
             ),
@@ -148,6 +154,7 @@ class _Row extends StatelessWidget {
     this.color,
     this.trailing,
     this.onTap,
+    this.copy,
   });
 
   final IconData icon;
@@ -156,22 +163,32 @@ class _Row extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback? onTap;
 
+  /// Что копировать: по нажатию, если у строки нет своего действия,
+  /// иначе долгим нажатием. По умолчанию — сам текст строки.
+  final String? copy;
+
   @override
-  Widget build(BuildContext context) => CupertinoListTile(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-    leading: Icon(
-      icon,
-      size: 22,
-      color: CupertinoColors.secondaryLabel.resolveFrom(context),
-    ),
-    title: Text(
-      title,
-      maxLines: 4,
-      style: TextStyle(
-        color: color ?? CupertinoColors.label.resolveFrom(context),
+  Widget build(BuildContext context) {
+    void copyRow() => copyText(context, copy ?? title);
+    return GestureDetector(
+      onLongPress: onTap == null ? null : copyRow,
+      child: CupertinoListTile(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        leading: Icon(
+          icon,
+          size: 22,
+          color: CupertinoColors.secondaryLabel.resolveFrom(context),
+        ),
+        title: Text(
+          title,
+          maxLines: 4,
+          style: TextStyle(
+            color: color ?? CupertinoColors.label.resolveFrom(context),
+          ),
+        ),
+        trailing: trailing,
+        onTap: onTap ?? copyRow,
       ),
-    ),
-    trailing: trailing,
-    onTap: onTap,
-  );
+    );
+  }
 }

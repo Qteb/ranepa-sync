@@ -8,6 +8,7 @@ import '../format.dart';
 import '../services/background.dart';
 import '../services/calendar_export.dart';
 import '../widgets/avatar.dart';
+import '../widgets/copy.dart';
 import '../widgets/settings.dart';
 import 'about_screen.dart';
 
@@ -250,10 +251,13 @@ class _Profile extends StatelessWidget {
           const SizedBox(height: 4),
           for (final line in [state.group, state.program])
             if (line != null && line.isNotEmpty)
-              Text(
-                line,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 15, color: secondary),
+              GestureDetector(
+                onTap: () => copyText(context, line),
+                child: Text(
+                  line,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 15, color: secondary),
+                ),
               ),
         ],
       ),
