@@ -66,47 +66,33 @@ private struct Phase {
     let ongoing: Bool
     /// Следующая после неё.
     let after: Lesson?
-    /// Это последний кадр без обновления от приложения: iOS перерисовывает
-    /// активность сама только один раз (по staleDate). Таймер к концу пары
-    /// застрял бы на «0:00», поэтому показываем время окончания.
-    let frozen: Bool
 
     init(_ state: LessonActivityAttributes.ContentState, stale: Bool) {
         switch (state.isCurrent, stale) {
         case (true, false):  // идёт пара
-            lesson = state.lesson; ongoing = true; after = state.next; frozen = false
+            lesson = state.lesson; ongoing = true; after = state.next
         case (true, true):   // пара закончилась — перемена или конец дня
-            lesson = state.next; ongoing = false; after = nil; frozen = false
+            lesson = state.next; ongoing = false; after = nil
         case (false, false): // перемена до ближайшей
-            lesson = state.lesson; ongoing = false; after = state.next; frozen = false
+            lesson = state.lesson; ongoing = false; after = state.next
         case (false, true):  // ближайшая началась
-            lesson = state.lesson; ongoing = true; after = state.next; frozen = true
+            lesson = state.lesson; ongoing = true; after = state.next
         }
     }
 }
 
-/// До конца идущей пары или до начала ближайшей. Идёт сам, без обновлений.
+/// Время окончания идущей пары или начала ближайшей. Не отсчёт: iOS
+/// перерисовывает активность без приложения ненадёжно, и отсчёт после
+/// конца пары застревал на «0:00». Время верно в любой момент.
 @available(iOS 16.2, *)
 private struct CountdownText: View {
     let phase: Phase
 
     var body: some View {
         if let lesson = phase.lesson {
-            if phase.ongoing && phase.frozen {
-                Text(hm(lesson.end))
-            } else if phase.ongoing {
-                Text(timerInterval: lesson.start...lesson.end, countsDown: true)
-                    .monospacedDigit()
-                    .multilineTextAlignment(.trailing)
-            } else if lesson.start > Date() {
-                // Не .timer: на заблокированном экране iOS заменяет его
-                // словами («2 минуты»). Интервал всегда идёт как 1:15.
-                Text(timerInterval: Date()...lesson.start, countsDown: true)
-                    .monospacedDigit()
-                    .multilineTextAlignment(.trailing)
-            } else {
-                Text(hm(lesson.start))
-            }
+            Text(hm(phase.ongoing ? lesson.end : lesson.start))
+                .monospacedDigit()
+                .multilineTextAlignment(.trailing)
         } else {
             Text("")
         }
@@ -161,7 +147,7 @@ private struct TimerColumn: View {
     var body: some View {
         if phase.lesson != nil {
             VStack(alignment: .trailing, spacing: 0) {
-                Text(phase.ongoing ? (phase.frozen ? "идёт до" : "до конца") : "начало через")
+                Text(phase.ongoing ? "идёт до" : "начало в")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                 CountdownText(phase: phase)
