@@ -26,6 +26,10 @@ Future<void> updateHomeWidget(List<Lesson> lessons) async {
         },
   ];
   await HomeWidget.saveWidgetData<String>('lessons', jsonEncode(items));
+  await HomeWidget.saveWidgetData<double>(
+    'nowShift',
+    clockShift.inSeconds.toDouble(),
+  );
   await HomeWidget.updateWidget(
     iOSName: iOSWidgetName,
     androidName: androidWidgetName,

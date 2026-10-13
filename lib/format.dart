@@ -35,6 +35,9 @@ final Duration _clockShift = () {
 /// Сборка для скриншотов App Store: демо выглядит как обычный аккаунт.
 const screenshotMode = bool.hasEnvironment('DEMO_AT');
 
+/// Сдвиг часов для скриншотов; ноль в обычной сборке. Его же получает виджет.
+Duration get clockShift => _clockShift;
+
 /// Текущее время приложения. Без DEMO_AT — обычное DateTime.now().
 DateTime currentTime() => DateTime.now().add(_clockShift);
 

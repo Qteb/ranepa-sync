@@ -25,22 +25,41 @@ private func loadLessons() -> [LessonItem] {
     return items.sorted { $0.s < $1.s }
 }
 
+/// Сдвиг часов виджета. Ненулевой только в сборке для скриншотов
+/// (DEMO_AT во Flutter).
+private func clockShift() -> TimeInterval {
+    UserDefaults(suiteName: appGroup)?.double(forKey: "nowShift") ?? 0
+}
+
 struct LessonsEntry: TimelineEntry {
-    let date: Date
+    /// Когда WidgetKit показывает запись — по настоящим часам.
+    let shown: Date
     let lessons: [LessonItem]
+    let shift: TimeInterval
+
+    init(date: Date, lessons: [LessonItem], shift: TimeInterval = clockShift()) {
+        self.shown = date.addingTimeInterval(-shift)
+        self.lessons = lessons
+        self.shift = shift
+    }
+
+    var date: Date { shown }
+
+    /// Время, которое видит виджет: с учётом сдвига для скриншотов.
+    var now: Date { shown.addingTimeInterval(shift) }
 
     /// Ближайший учебный день начиная с момента записи и его оставшиеся пары.
     var day: (date: Date, lessons: [LessonItem])? {
         let cal = Calendar.current
-        guard let first = lessons.first(where: { $0.end > date }) else { return nil }
-        let items = lessons.filter { $0.end > date && cal.isDate($0.start, inSameDayAs: first.start) }
+        guard let first = lessons.first(where: { $0.end > now }) else { return nil }
+        let items = lessons.filter { $0.end > now && cal.isDate($0.start, inSameDayAs: first.start) }
         return (first.start, items)
     }
 }
 
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> LessonsEntry {
-        let now = Date()
+        let now = Date().addingTimeInterval(clockShift())
         return LessonsEntry(date: now, lessons: [
             LessonItem(s: now.timeIntervalSince1970 + 600, e: now.timeIntervalSince1970 + 6000,
                        t: "Микроэкономика", k: "лекция", r: "Ауд. 101"),
@@ -52,12 +71,12 @@ struct Provider: TimelineProvider {
     func getSnapshot(in context: Context, completion: @escaping (LessonsEntry) -> Void) {
         let lessons = loadLessons()
         completion(lessons.isEmpty && context.isPreview ? placeholder(in: context)
-                                                        : LessonsEntry(date: Date(), lessons: lessons))
+                                                        : LessonsEntry(date: Date().addingTimeInterval(clockShift()), lessons: lessons))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<LessonsEntry>) -> Void) {
         let lessons = loadLessons()
-        let now = Date()
+        let now = Date().addingTimeInterval(clockShift())
         let cal = Calendar.current
         // Новая запись к концу каждой пары и к каждой полуночи: виджет сам
         // убирает прошедшее, даже если приложение давно не открывали.
@@ -158,11 +177,11 @@ struct RanepaWidgetView: View {
     private var home: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let day = entry.day {
-                Text(dayLabel(day.date, from: entry.date))
+                Text(dayLabel(day.date, from: entry.now))
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(accent)
                 ForEach(day.lessons.prefix(maxRows), id: \.self) {
-                    LessonRow(lesson: $0, now: entry.date, compact: family == .systemSmall)
+                    LessonRow(lesson: $0, now: entry.now, compact: family == .systemSmall)
                 }
                 if day.lessons.count > maxRows {
                     Text("ещё \(day.lessons.count - maxRows)")
