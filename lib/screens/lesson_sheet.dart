@@ -17,11 +17,11 @@ void showLessonSheet(BuildContext context, Lesson lesson) {
   );
 }
 
-/// Тип занятия для заголовка листа: «лекция» → «Лекция».
-String _kindTitle(String kind) => switch (kind) {
-  '' => 'Пара',
-  'лаба' => 'Лабораторная',
-  _ => capitalize(kind),
+/// Тип занятия над названием: «лекция» → «ЛЕКЦИЯ».
+String _kindLabel(String kind) => switch (kind) {
+  '' => 'ПАРА',
+  'лаба' => 'ЛАБОРАТОРНАЯ',
+  _ => kind.toUpperCase(),
 };
 
 class _LessonSheet extends StatelessWidget {
@@ -38,34 +38,41 @@ class _LessonSheet extends StatelessWidget {
 
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground,
+      // Карточку только смотрят, поэтому закрывается крестиком, а не
+      // «Готово», как карточка события в Календаре.
       navigationBar: CupertinoNavigationBar(
         automaticallyImplyLeading: false,
         transitionBetweenRoutes: false,
-        middle: Text(_kindTitle(lesson.kind)),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text(
-            'Готово',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ),
+        border: null,
+        backgroundColor: CupertinoColors.systemGroupedBackground,
+        trailing: const _CloseButton(),
       ),
       child: ListView(
         controller: controller,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Text(
+                  _kindLabel(lesson.kind),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                    color: accent,
+                  ),
+                ),
+                const SizedBox(height: 2),
                 GestureDetector(
                   onTap: () => copyText(context, lesson.subject),
                   child: Text(
                     lesson.subject,
                     style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      height: 1.15,
                       color: label,
                       decoration: lesson.cancelled
                           ? TextDecoration.lineThrough
@@ -193,4 +200,34 @@ class _Row extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Круглая кнопка закрытия листа, как в системных приложениях iOS.
+class _CloseButton extends StatelessWidget {
+  const _CloseButton();
+
+  @override
+  Widget build(BuildContext context) => CupertinoButton(
+    padding: EdgeInsets.zero,
+    minimumSize: const Size.square(44),
+    onPressed: () => Navigator.of(context).pop(),
+    child: Semantics(
+      label: 'Закрыть',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: CupertinoColors.tertiarySystemFill.resolveFrom(context),
+          shape: BoxShape.circle,
+        ),
+        child: SizedBox.square(
+          dimension: 30,
+          child: Icon(
+            CupertinoIcons.xmark,
+            size: 14,
+            weight: 700,
+            color: CupertinoColors.secondaryLabel.resolveFrom(context),
+          ),
+        ),
+      ),
+    ),
+  );
 }
