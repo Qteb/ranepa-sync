@@ -16,27 +16,11 @@ struct LessonLiveActivity: Widget {
         } dynamicIsland: { context in
             let phase = Phase(context.state, stale: context.isStale)
             return DynamicIsland {
+                // Всё в нижней области: боковые у «острова» узкие, таймер
+                // в них не помещается. Раскладка та же, что на экране
+                // блокировки: слева что, справа сколько, внизу — потом.
                 DynamicIslandExpandedRegion(.bottom) {
-                    // Всё в нижней области: по краям «остров» скруглён
-                    // и обрезает подписи в боковых.
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack {
-                            CaptionLabel(phase: phase)
-                            Spacer()
-                            CountdownText(phase: phase).font(.system(size: 17, weight: .semibold))
-                        }
-                        if let lesson = phase.lesson {
-                            Text(lesson.title).font(.system(size: 17, weight: .semibold)).lineLimit(1)
-                            Text("\(hm(lesson.start))–\(hm(lesson.end)) · \(lesson.fullRoom)")
-                                .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                            ProgressBar(phase: phase).padding(.vertical, 4)
-                            if let next = phase.after { NextLine(next: next, withRoom: false) }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 8)
+                    LockScreenView(phase: phase).padding(.horizontal, 6)
                 }
             } compactLeading: {
                 if let lesson = phase.lesson {
@@ -53,7 +37,7 @@ struct LessonLiveActivity: Widget {
             } compactTrailing: {
                 CountdownText(phase: phase)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(liveAccent)
+                    .foregroundStyle(phase.lesson.map { kindColor($0.kind) } ?? .white)
                     .frame(maxWidth: 64)
             } minimal: {
                 if let lesson = phase.lesson {
@@ -95,12 +79,6 @@ private struct Phase {
             lesson = state.lesson; ongoing = true; after = state.next
         }
     }
-
-    var caption: String {
-        guard let lesson else { return "ПАРЫ ЗАКОНЧИЛИСЬ" }
-        let kind = lesson.kind.isEmpty ? "" : " · \(lesson.kind.uppercased())"
-        return (ongoing ? "СЕЙЧАС" : "ДАЛЕЕ") + kind
-    }
 }
 
 /// До конца идущей пары или до начала ближайшей. Идёт сам, без обновлений.
@@ -125,89 +103,110 @@ private struct CountdownText: View {
     }
 }
 
-/// «СЕЙЧАС · СЕМИНАР» с иконкой типа.
+/// Иконка типа в цветном круге — главный знак карточки.
 @available(iOS 16.2, *)
-private struct CaptionLabel: View {
-    let phase: Phase
+private struct KindBadge: View {
+    let kind: String
+    let size: CGFloat
 
     var body: some View {
-        HStack(spacing: 5) {
-            if let lesson = phase.lesson { KindIcon(kind: lesson.kind, size: 13) }
-            Text(phase.caption)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(liveAccent)
-                .lineLimit(1)
-        }
+        Image(systemName: kindSymbol(kind))
+            .font(.system(size: size * 0.45, weight: .semibold))
+            .foregroundStyle(kindColor(kind))
+            .frame(width: size, height: size)
+            .background(kindColor(kind).opacity(0.25), in: Circle())
     }
 }
 
-/// «Дальше 12:20 · 🏃 Физкультура».
+/// Название пары и «Лекция · 5 - 201».
 @available(iOS 16.2, *)
-private struct NextLine: View {
-    let next: LessonActivityAttributes.Lesson
-    let withRoom: Bool
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Text("Дальше \(hm(next.start)) ·")
-            KindIcon(kind: next.kind, size: 11)
-            Text(withRoom ? "\(next.title) · \(next.room)" : next.title)
-        }
-        .font(.system(size: 13))
-        .foregroundStyle(.secondary)
-        .lineLimit(1)
-    }
-}
-
-@available(iOS 16.2, *)
-private struct ProgressBar: View {
+private struct TitleColumn: View {
     let phase: Phase
+    let fullRoom: Bool
 
     var body: some View {
-        if let lesson = phase.lesson, phase.ongoing {
-            ProgressView(timerInterval: lesson.start...lesson.end, countsDown: false) {
-                EmptyView()
-            } currentValueLabel: {
-                EmptyView()
+        VStack(alignment: .leading, spacing: 1) {
+            if let lesson = phase.lesson {
+                Text(lesson.title)
+                    .font(.system(size: 17, weight: .semibold))
+                    .lineLimit(1)
+                Text([capitalized(lesson.kind), fullRoom ? lesson.fullRoom : lesson.room]
+                        .filter { !$0.isEmpty }.joined(separator: " · "))
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            } else {
+                Text("На сегодня всё").font(.system(size: 17, weight: .semibold))
             }
-            .tint(liveAccent)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// «до конца 54:12» / «начало через 1:15».
+@available(iOS 16.2, *)
+private struct TimerColumn: View {
+    let phase: Phase
+
+    var body: some View {
+        if phase.lesson != nil {
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(phase.ongoing ? "до конца" : "начало через")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                CountdownText(phase: phase)
+                    .font(.system(size: 28, weight: .semibold))
+                    .frame(maxWidth: 110, alignment: .trailing)
+            }
         }
     }
 }
+
+/// Прогресс идущей пары (или тонкий разделитель) и строка «Потом …».
+@available(iOS 16.2, *)
+private struct FooterRows: View {
+    let phase: Phase
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let lesson = phase.lesson, phase.ongoing {
+                ProgressView(timerInterval: lesson.start...lesson.end, countsDown: false) {
+                    EmptyView()
+                } currentValueLabel: {
+                    EmptyView()
+                }
+                .tint(kindColor(lesson.kind))
+            } else if phase.after != nil {
+                Rectangle().fill(.white.opacity(0.15)).frame(height: 1)
+            }
+            if let next = phase.after {
+                HStack {
+                    Text("Потом \(next.kind.isEmpty ? next.title.lowercased() : next.kind) · \(next.room)")
+                        .lineLimit(1)
+                    Spacer(minLength: 8)
+                    Text(hm(next.start))
+                }
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+private func capitalized(_ s: String) -> String { s.prefix(1).uppercased() + s.dropFirst() }
 
 @available(iOS 16.2, *)
 private struct LockScreenView: View {
     let phase: Phase
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                CaptionLabel(phase: phase)
-                Spacer()
-                if !phase.ongoing, phase.lesson != nil {
-                    Text("через ").font(.system(size: 15)).foregroundStyle(.secondary)
-                        + Text(phase.lesson!.start, style: .timer)
-                        .font(.system(size: 20, weight: .semibold))
-                } else {
-                    CountdownText(phase: phase).font(.system(size: 20, weight: .semibold))
-                }
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                if let lesson = phase.lesson { KindBadge(kind: lesson.kind, size: 40) }
+                TitleColumn(phase: phase, fullRoom: false)
+                TimerColumn(phase: phase)
             }
-            if let lesson = phase.lesson {
-                // Тип уже в иконке у подписи — полоска не нужна.
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(lesson.title).font(.system(size: 16, weight: .semibold)).lineLimit(1)
-                    Text("\(hm(lesson.start))–\(hm(lesson.end)) · \(lesson.room)")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                ProgressBar(phase: phase).padding(.top, 4)
-                if let next = phase.after {
-                    NextLine(next: next, withRoom: true).padding(.top, 2)
-                }
-            } else {
-                Text("На сегодня всё").font(.system(size: 16, weight: .semibold))
-            }
+            FooterRows(phase: phase)
         }
         .foregroundStyle(.white)
     }
