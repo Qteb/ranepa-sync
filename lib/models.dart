@@ -1,10 +1,22 @@
 import 'package:timezone/timezone.dart' as tz;
 
-const _typeShort = {
-  'Лекционные занятия': 'лекция',
-  'Практические занятия': 'семинар',
-  'Лабораторные занятия': 'лаба',
-};
+/// Тип занятия из ЛК → короткое название. Физкультура в ЛК — обычное
+/// практическое занятие, её узнаём по названию предмета. Типы сессии
+/// (консультации, экзамены, зачёты) ищем по словам: точных названий в ЛК
+/// мы пока не видели.
+String _kindOf(String type, String subject) {
+  final t = type.toLowerCase();
+  if (subject.toLowerCase().contains('физической культур')) {
+    return 'физкультура';
+  }
+  if (t.contains('лекц')) return 'лекция';
+  if (t.contains('практ') || t.contains('семин')) return 'семинар';
+  if (t.contains('лаборатор')) return 'лабораторная';
+  if (t.contains('консульт')) return 'консультация';
+  if (t.contains('экзамен')) return 'экзамен';
+  if (t.contains('зач')) return 'зачёт';
+  return t;
+}
 
 class Lesson {
   Lesson({
@@ -76,14 +88,14 @@ List<Lesson> parseLessons(List<dynamic> days) {
   final lessons = <Lesson>[];
   for (final day in days) {
     for (final disc in (day['discs'] as List? ?? [])) {
-      final kind = _str(disc['type']);
+      final subject = _str(disc['disc']);
       final groups = disc['groups'];
       lessons.add(
         Lesson(
           start: _moscow(disc['start_date']),
           end: _moscow(disc['end_date']),
-          subject: _str(disc['disc']),
-          kind: _typeShort[kind] ?? kind.toLowerCase(),
+          subject: subject,
+          kind: _kindOf(_str(disc['type']), subject),
           room: _str(disc['room']),
           lecturer: _str(disc['lecturer']),
           email: _str(disc['sam_email']),

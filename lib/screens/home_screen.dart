@@ -8,6 +8,7 @@ import '../format.dart';
 import '../models.dart';
 import '../widgets/avatar.dart';
 import '../widgets/banner.dart';
+import '../widgets/lesson_colors.dart';
 import 'account_sheet.dart';
 import 'lesson_sheet.dart';
 
@@ -521,7 +522,7 @@ class _NowCard extends StatelessWidget {
       trailing =
           'ещё ${duration(current.end.difference(now) + const Duration(minutes: 1))}';
       title = current.subject;
-      subtitle = _details(current);
+      subtitle = _details(current, context).toPlainText();
       progress =
           now.difference(current.start).inSeconds /
           current.end.difference(current.start).inSeconds;
@@ -536,7 +537,8 @@ class _NowCard extends StatelessWidget {
           ? 'через ${duration(wait + const Duration(minutes: 1))}'
           : 'в ${hm(upcoming.start)}';
       title = upcoming.subject;
-      subtitle = '${timeRange(upcoming)} · ${_details(upcoming)}';
+      subtitle =
+          '${timeRange(upcoming)} · ${_details(upcoming, context).toPlainText()}';
       tapTarget = upcoming;
     } else {
       caption = today.isEmpty ? 'СЕГОДНЯ ПАР НЕТ' : 'ПАРЫ ЗАКОНЧИЛИСЬ';
@@ -620,16 +622,26 @@ class _NowCard extends StatelessWidget {
   }
 }
 
-String _details(Lesson l) => [
-  if (l.kind.isNotEmpty) capitalize(l.kind),
-  if (l.location.isNotEmpty) l.isRemote ? 'дистанционно' : l.shortLocation,
-].join(' · ');
-
-Color kindColor(String kind, BuildContext context) => switch (kind) {
-  'лекция' => CupertinoTheme.of(context).primaryColor,
-  'семинар' => CupertinoColors.systemOrange.resolveFrom(context),
-  _ => CupertinoColors.systemTeal.resolveFrom(context),
-};
+/// Подпись под названием: тип цветом типа, остальное серым.
+TextSpan _details(Lesson l, BuildContext context) {
+  final rest = [
+    if (l.location.isNotEmpty) l.isRemote ? 'дистанционно' : l.shortLocation,
+    if (l.cancelled) 'отменена',
+  ].join(' · ');
+  return TextSpan(
+    children: [
+      if (l.kind.isNotEmpty)
+        TextSpan(
+          text: capitalize(l.kind),
+          style: TextStyle(
+            color: LessonColors.of(l.kind).text.resolveFrom(context),
+          ),
+        ),
+      if (l.kind.isNotEmpty && rest.isNotEmpty) const TextSpan(text: ' · '),
+      TextSpan(text: rest),
+    ],
+  );
+}
 
 /// Пара в ленте: время столбиком слева, цветная полоска, название.
 class _TimelineRow extends StatelessWidget {
@@ -648,10 +660,6 @@ class _TimelineRow extends StatelessWidget {
     final accent = CupertinoTheme.of(context).primaryColor;
     final label = CupertinoColors.label.resolveFrom(context);
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
-    final details = [
-      _details(lesson),
-      if (lesson.cancelled) 'отменена',
-    ].where((s) => s.isNotEmpty).join(' · ');
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -690,7 +698,8 @@ class _TimelineRow extends StatelessWidget {
                 Container(
                   width: 3,
                   decoration: BoxDecoration(
-                    color: kindColor(lesson.kind, context),
+                    color: LessonColors.of(lesson.kind).bar
+                        .resolveFrom(context),
                     borderRadius: BorderRadius.circular(1.5),
                   ),
                 ),
@@ -712,8 +721,8 @@ class _TimelineRow extends StatelessWidget {
                               : null,
                         ),
                       ),
-                      Text(
-                        details,
+                      Text.rich(
+                        _details(lesson, context),
                         style: TextStyle(fontSize: 15, color: secondary),
                       ),
                     ],

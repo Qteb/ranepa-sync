@@ -74,6 +74,19 @@ struct Provider: TimelineProvider {
 
 private let accent = Color(red: 0.56, green: 0.11, blue: 0.18)
 
+/// Цвет типа пары — как в приложении (lib/widgets/lesson_colors.dart).
+private func kindColor(_ kind: String) -> Color {
+    switch kind {
+    case "лекция": return .blue
+    case "семинар": return .green
+    case "физкультура": return .orange
+    case "лабораторная": return .purple
+    case "консультация": return .teal
+    case "экзамен", "зачёт": return .pink
+    default: return .gray
+    }
+}
+
 private func dayLabel(_ date: Date, from now: Date) -> String {
     let cal = Calendar.current
     if cal.isDate(date, inSameDayAs: now) { return "Сегодня" }
@@ -101,7 +114,7 @@ struct LessonRow: View {
         let ongoing = lesson.start <= now && now < lesson.end
         HStack(alignment: .top, spacing: 6) {
             RoundedRectangle(cornerRadius: 2)
-                .fill(lesson.k == "лекция" ? accent : Color.orange)
+                .fill(kindColor(lesson.k))
                 .frame(width: 3)
             VStack(alignment: .leading, spacing: 1) {
                 Text(lesson.t)

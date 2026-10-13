@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../format.dart';
 import '../models.dart';
 import '../widgets/copy.dart';
+import '../widgets/lesson_colors.dart';
 import '../widgets/mail.dart';
 
 /// Подробности пары листом высотой по содержимому, как карточка места
@@ -33,7 +34,6 @@ void showLessonSheet(BuildContext context, Lesson lesson) {
 /// Тип занятия над названием: «лекция» → «ЛЕКЦИЯ».
 String _kindLabel(String kind) => switch (kind) {
   '' => 'ПАРА',
-  'лаба' => 'ЛАБОРАТОРНАЯ',
   _ => kind.toUpperCase(),
 };
 
@@ -71,7 +71,8 @@ class _LessonSheet extends StatelessWidget {
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.3,
-                            color: accent,
+                            color: LessonColors.of(lesson.kind).text
+                                .resolveFrom(context),
                           ),
                         ),
                         const SizedBox(height: 2),
