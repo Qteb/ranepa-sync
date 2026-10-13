@@ -1,0 +1,11 @@
+# После правки config.json сбрасывает кэш jsDelivr, иначе запасной адрес
+# отдаёт старую версию до 12 часов.
+name: Purge jsDelivr cache
+on:
+  push:
+    branches: [config]
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS https://purge.jsdelivr.net/gh/Qteb/ranepa-sync@config/config.json

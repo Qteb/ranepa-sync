@@ -1,0 +1,6 @@
+{
+  "sync": true,
+  "minIntervalHours": 4,
+  "manualCooldownMinutes": 2,
+  "message": null
+}
