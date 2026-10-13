@@ -100,13 +100,18 @@ const _reminderDetails = NotificationDetails(
   iOS: DarwinNotificationDetails(threadIdentifier: 'lessons'),
 );
 
-/// «Семинар через 15 мин» / «Математика» / «01:11 · 1 - 2262, корпус 1».
-String _reminderTitle(Lesson lesson, int minutes) =>
-    '${capitalize(lesson.kind.isEmpty ? 'пара' : lesson.kind)} '
-    'через ${duration(Duration(minutes: minutes))}';
+/// Как в карточке Live Activity: название, под ним «Лекция · аудитория»,
+/// затем когда. «Математика» / «Лекция · 5 - 201, корпус 5» /
+/// «Через 15 мин, в 01:38».
+String _reminderTitle(Lesson lesson, int minutes) => lesson.subject;
 
-String _reminderBody(Lesson lesson) =>
-    '${lesson.subject}\n${hm(lesson.start)} · ${lesson.placeLabel}';
+String _reminderBody(Lesson lesson, int minutes) => [
+  [
+    if (lesson.kind.isNotEmpty) capitalize(lesson.kind),
+    lesson.placeLabel,
+  ].join(' · '),
+  'Через ${duration(Duration(minutes: minutes))}, в ${hm(lesson.start)}',
+].join('\n');
 
 /// Отладка: напоминание о [lesson] через 5 секунд — успеть заблокировать
 /// телефон. Такое же, как настоящее, и так же открывает карточку пары.
@@ -114,7 +119,7 @@ Future<void> showTestReminder(Lesson lesson, int minutes) =>
     _plugin.zonedSchedule(
       id: 999,
       title: _reminderTitle(lesson, minutes),
-      body: _reminderBody(lesson),
+      body: _reminderBody(lesson, minutes),
       scheduledDate: tz.TZDateTime.now(tz.UTC).add(const Duration(seconds: 5)),
       notificationDetails: _reminderDetails,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -140,7 +145,7 @@ Future<void> scheduleReminders(List<Lesson> lessons, int minutes) async {
     await _plugin.zonedSchedule(
       id: id++,
       title: _reminderTitle(lesson, minutes),
-      body: _reminderBody(lesson),
+      body: _reminderBody(lesson, minutes),
       scheduledDate: tz.TZDateTime.from(at, tz.UTC),
       notificationDetails: _reminderDetails,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
