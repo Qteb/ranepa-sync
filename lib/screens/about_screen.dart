@@ -34,9 +34,10 @@ class AboutScreen extends StatelessWidget {
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground,
-      navigationBar: const CupertinoNavigationBar(
-        leading: _BackButton('Аккаунт'),
-        middle: Text('О приложении'),
+      navigationBar: settingsBar(
+        context,
+        leading: const _BackButton(),
+        middle: const Text('О приложении'),
       ),
       child: DefaultTextStyle(
         style: CupertinoTheme.of(context).textTheme.textStyle,
@@ -50,7 +51,7 @@ class AboutScreen extends StatelessWidget {
             return ListView(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
                   child: Column(
                     children: [
                       ClipRRect(
@@ -78,50 +79,55 @@ class AboutScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                CupertinoListSection.insetGrouped(
-                  header: const Text('Открытый код'),
+                SettingsSection(
                   children: [
-                    CupertinoListTile(
-                      leading: const _GitHubGlyph(),
-                      title: const Text('GitHub'),
-                      trailing: const ExternalLinkMark(),
-                      onTap: _openRepo,
-                    ),
-                  ],
-                ),
-                CupertinoListSection.insetGrouped(
-                  header: const Text('Информация'),
-                  children: [
-                    CupertinoListTile(
+                    SettingsRow(
                       leading: const Glyph(
                         CupertinoIcons.square_list_fill,
                         CupertinoColors.systemIndigo,
                       ),
                       title: const Text('Обозначения'),
-                      trailing: const CupertinoListTileChevron(),
+                      trailing: const SettingsChevron(),
                       onTap: () => Navigator.of(context).push(
                         CupertinoPageRoute<void>(
                           builder: (_) =>
-                              const LegendScreen(leading: _BackButton('Назад')),
+                              const LegendScreen(leading: _BackButton()),
                         ),
                       ),
                     ),
-                    CupertinoListTile(
+                    SettingsRow(
                       leading: const Glyph(
                         CupertinoIcons.lock_fill,
                         CupertinoColors.systemBlue,
                       ),
                       title: const Text('Конфиденциальность'),
-                      trailing: const CupertinoListTileChevron(),
+                      trailing: const SettingsChevron(),
                       onTap: () => Navigator.of(context).push(
                         CupertinoPageRoute<void>(
-                          builder: (_) => const PrivacyScreen(
-                            leading: _BackButton('Назад'),
-                          ),
+                          builder: (_) =>
+                              const PrivacyScreen(leading: _BackButton()),
                         ),
                       ),
                     ),
-                    CupertinoListTile(
+                    SettingsRow(
+                      leading: const Glyph(
+                        CupertinoIcons.doc_text_fill,
+                        CupertinoColors.systemGrey,
+                      ),
+                      title: const Text('Лицензии'),
+                      trailing: const SettingsChevron(),
+                      onTap: () => Navigator.of(context).push(
+                        CupertinoPageRoute<void>(
+                          builder: (_) => const _LicensesScreen(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                // Ссылки, которые открываются вне приложения.
+                SettingsSection(
+                  children: [
+                    SettingsRow(
                       leading: const Glyph(
                         CupertinoIcons.mail_solid,
                         CupertinoColors.systemOrange,
@@ -134,23 +140,16 @@ class AboutScreen extends StatelessWidget {
                         subject: 'Расписание студента $version',
                       ),
                     ),
-                    CupertinoListTile(
-                      leading: const Glyph(
-                        CupertinoIcons.doc_text_fill,
-                        CupertinoColors.systemGrey,
-                      ),
-                      title: const Text('Лицензии'),
-                      trailing: const CupertinoListTileChevron(),
-                      onTap: () => Navigator.of(context).push(
-                        CupertinoPageRoute<void>(
-                          builder: (_) => const _LicensesScreen(),
-                        ),
-                      ),
+                    SettingsRow(
+                      leading: const _GitHubGlyph(),
+                      title: const Text('Исходный код на GitHub'),
+                      trailing: const ExternalLinkMark(),
+                      onTap: _openRepo,
                     ),
                   ],
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(32, 4, 32, 32),
+                  padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
                   child: Text(
                     'Неофициальное приложение.\nНе связано с РАНХиГС.',
                     textAlign: TextAlign.center,
@@ -186,9 +185,10 @@ class _LicensesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => CupertinoPageScaffold(
     backgroundColor: CupertinoColors.systemGroupedBackground,
-    navigationBar: const CupertinoNavigationBar(
-      leading: _BackButton('Назад'),
-      middle: Text('Лицензии'),
+    navigationBar: settingsBar(
+      context,
+      leading: const _BackButton(),
+      middle: const Text('Лицензии'),
     ),
     child: DefaultTextStyle(
       style: CupertinoTheme.of(context).textTheme.textStyle,
@@ -201,13 +201,15 @@ class _LicensesScreen extends StatelessWidget {
           }
           return ListView(
             children: [
-              CupertinoListSection.insetGrouped(
+              const SizedBox(height: 8),
+              SettingsSection(
+                icons: false,
                 children: [
                   for (final MapEntry(key: name, value: entries)
                       in packages.entries)
-                    CupertinoListTile(
+                    SettingsRow(
                       title: Text(name),
-                      trailing: const CupertinoListTileChevron(),
+                      trailing: const SettingsChevron(),
                       onTap: () => Navigator.of(context).push(
                         CupertinoPageRoute<void>(
                           builder: (_) =>
@@ -238,7 +240,10 @@ class _LicenseText extends StatelessWidget {
         .join('\n\n————\n\n');
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        leading: const _BackButton('Лицензии'),
+        automaticallyImplyLeading: false,
+        transitionBetweenRoutes: false,
+        border: null,
+        leading: const _BackButton(),
         middle: Text(package),
       ),
       child: SafeArea(
@@ -259,15 +264,11 @@ class _LicenseText extends StatelessWidget {
 
 /// Внутри листа Flutter не подставляет кнопку «Назад» сам.
 class _BackButton extends StatelessWidget {
-  const _BackButton(this.previousPageTitle);
-
-  final String previousPageTitle;
+  const _BackButton();
 
   @override
-  Widget build(BuildContext context) => CupertinoNavigationBarBackButton(
-    previousPageTitle: previousPageTitle,
-    onPressed: () => Navigator.of(context).pop(),
-  );
+  Widget build(BuildContext context) =>
+      BarCircleButton.back(onPressed: () => Navigator.of(context).pop());
 }
 
 /// Плашка с логотипом GitHub в стиле остальных иконок настроек.
@@ -289,14 +290,14 @@ class _GitHubGlyph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
+    decoration: ShapeDecoration(
       color: const Color(0xFF1F2328),
-      borderRadius: BorderRadius.circular(7),
+      shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(8)),
     ),
     child: SizedBox.square(
-      dimension: 29,
+      dimension: 30,
       child: Padding(
-        padding: const EdgeInsets.all(5),
+        padding: const EdgeInsets.all(6),
         child: SvgPicture.string(_mark),
       ),
     ),

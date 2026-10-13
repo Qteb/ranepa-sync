@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 
 import '../app_state.dart';
 import '../format.dart';
@@ -31,6 +33,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late DateTime _firstDay;
   late PageController _pages;
   late DateTime _selected;
+
+  /// Месяц посередине полосы дней, для заголовка.
+  DateTime? _month;
+
+  /// Сегодняшний день виден в полосе: иначе нужна кнопка «Сегодня».
+  bool _todayInStrip = true;
+  final _carousel = GlobalKey<_DayCarouselState>();
   Timer? _ticker;
   String? _shownError;
 
@@ -187,7 +196,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final label = CupertinoColors.label.resolveFrom(context);
-    final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
     final isToday = sameDay(_selected, currentTime());
     final width = MediaQuery.sizeOf(context).width;
     if (width >= _wideFrom) {
@@ -204,232 +212,464 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         width: width,
       );
     }
+    final scaler = MediaQuery.textScalerOf(context);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    // Строка «Обновлено…» внизу, над полосой «домой», как в Почте.
+    final statusHeight =
+        scaler.clamp(maxScaleFactor: 1.3).scale(16) + 16 + bottomInset;
     return Scaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground.resolveFrom(
         context,
       ),
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Строка навигации: «Сегодня», когда ушли с сегодняшнего дня.
-            SizedBox(
-              height: 44,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: isToday
-                    ? null
-                    : CupertinoButton(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        onPressed: () => _goTo(currentTime()),
-                        child: const Text('Сегодня'),
-                      ),
-              ),
-            ),
-            // Дата мелкими заглавными, под ней крупно «Сегодня» / «Завтра».
-            // Большой заголовок растёт со шрифтом меньше остального, как
-            // в системных приложениях.
-            MediaQuery.withClampedTextScaling(
-              maxScaleFactor: 1.4,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  '${weekdaysLong[_selected.weekday - 1]}, '
-                                          '${_selected.day} ${monthsGenitive[_selected.month - 1]}'
-                                      .toUpperCase(),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: secondary,
-                                  ),
-                                ),
-                              ),
-                              if (state.loading && !_pulling) ...[
-                                const SizedBox(width: 6),
-                                const CupertinoActivityIndicator(radius: 6),
-                              ],
-                            ],
-                          ),
-                          Text(
-                            relativeDayName(_selected),
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Как в Календаре: месяц, «Сегодня» и аватар в одну строку.
+                // Шапка растёт со шрифтом меньше остального, как в системных
+                // приложениях.
+                MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: 1.4,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _monthTitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 34,
+                              fontSize: 28,
                               fontWeight: FontWeight.w700,
-                              letterSpacing: 0.37,
+                              letterSpacing: 0.36,
                               color: label,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Semantics(
-                      button: true,
-                      label: 'Аккаунт и настройки',
-                      child: GestureDetector(
-                        onTap: () {
-                          Tips.instance.done(Tip.account);
-                          showAccountSheet(context, state);
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Avatar(state: state, size: 36),
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            _WeekStrip(
-              selected: _selected,
-              firstDay: _firstDay,
-              lastDay: _dayAt(_dayCount - 1),
-              hasLessons: (d) => state.lessonsOn(d).any((l) => !l.cancelled),
-              onSelect: _goTo,
-            ),
-            // Подсказки по одной; появляются, когда расписание уже есть.
-            ListenableBuilder(
-              listenable: Tips.instance,
-              builder: (context, _) {
-                final tip = Tips.instance.nextOnHome;
-                return AnimatedSize(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOut,
-                  child: tip == null || state.lessons.isEmpty
-                      ? const SizedBox(width: double.infinity)
-                      : Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                          child: MediaQuery.withClampedTextScaling(
-                            // Подсказка над лентой не должна вытеснять пары.
-                            maxScaleFactor: 1.3,
-                            child: TipCard(
-                              tip: tip,
-                              icon: tip == Tip.refresh
-                                  ? CupertinoIcons.arrow_down_circle
-                                  : CupertinoIcons.person_crop_circle,
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: isToday && _todayInStrip
+                              ? const SizedBox.shrink()
+                              : _TodayButton(
+                                  onPressed: () {
+                                    _goTo(currentTime());
+                                    _carousel.currentState?.show(currentTime());
+                                  },
+                                ),
+                        ),
+                        const SizedBox(width: 8),
+                        Semantics(
+                          button: true,
+                          label: 'Аккаунт и настройки',
+                          child: GestureDetector(
+                            onTap: () {
+                              Tips.instance.done(Tip.account);
+                              showAccountSheet(context, state);
+                            },
+                            // Высота как у кнопки «Сегодня»: шапка не
+                            // прыгает, когда та появляется.
+                            child: SizedBox(
+                              height: 44,
+                              child: Center(
+                                child: Avatar(state: state, size: 36),
+                              ),
                             ),
                           ),
                         ),
-                );
-              },
-            ),
-            Expanded(
-              child: PageView.builder(
-                controller: _pages,
-                itemCount: _dayCount,
-                onPageChanged: (i) => setState(() => _selected = _dayAt(i)),
-                itemBuilder: (context, i) {
-                  final day = _dayAt(i);
-                  return _DayView(
-                    onRefresh: _pullToRefresh,
-                    day: day,
-                    lessons: state.lessonsOn(day),
-                    next: _nextAfter(
-                      sameDay(day, currentTime())
-                          ? currentTime()
-                          : dateOnly(day).add(const Duration(days: 1)),
+                      ],
                     ),
-                    status: _status,
-                  );
-                },
+                  ),
+                ),
+                _DayCarousel(
+                  key: _carousel,
+                  selected: _selected,
+                  firstDay: _firstDay,
+                  count: _dayCount,
+                  hasLessons: (d) =>
+                      state.lessonsOn(d).any((l) => !l.cancelled),
+                  onSelect: _goTo,
+                  onView: (month, todayVisible) {
+                    if (month != _month || todayVisible != _todayInStrip) {
+                      setState(() {
+                        _month = month;
+                        _todayInStrip = todayVisible;
+                      });
+                    }
+                  },
+                ),
+                MediaQuery.withClampedTextScaling(
+                  maxScaleFactor: 1.4,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+                    child: Text(
+                      '${relativeDayName(_selected)}, '
+                      '${_selected.day} ${monthsGenitive[_selected.month - 1]}',
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: label,
+                      ),
+                    ),
+                  ),
+                ),
+                // Подсказки по одной; появляются, когда расписание уже есть.
+                ListenableBuilder(
+                  listenable: Tips.instance,
+                  builder: (context, _) {
+                    final tip = Tips.instance.nextOnHome;
+                    return AnimatedSize(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOut,
+                      child: tip == null || state.lessons.isEmpty
+                          ? const SizedBox(width: double.infinity)
+                          : Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                              child: MediaQuery.withClampedTextScaling(
+                                // Подсказка над лентой не должна вытеснять пары.
+                                maxScaleFactor: 1.3,
+                                child: TipCard(
+                                  tip: tip,
+                                  icon: tip == Tip.refresh
+                                      ? CupertinoIcons.arrow_down_circle
+                                      : CupertinoIcons.person_crop_circle,
+                                ),
+                              ),
+                            ),
+                    );
+                  },
+                ),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pages,
+                    itemCount: _dayCount,
+                    onPageChanged: (i) => setState(() => _selected = _dayAt(i)),
+                    itemBuilder: (context, i) {
+                      final day = _dayAt(i);
+                      return _DayView(
+                        onRefresh: _pullToRefresh,
+                        day: day,
+                        lessons: state.lessonsOn(day),
+                        next: _nextAfter(
+                          sameDay(day, currentTime())
+                              ? currentTime()
+                              : dateOnly(day).add(const Duration(days: 1)),
+                        ),
+                        bottomInset: statusHeight,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: statusHeight,
+            child: _StatusBar(
+              text: _status,
+              loading: state.loading && !_pulling,
+              bottomInset: bottomInset,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Месяц, который сейчас виден в полосе дней; год — если не текущий.
+  String get _monthTitle {
+    final month = _month ?? _selected;
+    final name = monthsNominative[month.month - 1];
+    return month.year == currentTime().year ? name : '$name ${month.year}';
+  }
+}
+
+/// «Сегодня» капсулой, как в Календаре; видна, когда ушли с сегодняшнего дня.
+class _TodayButton extends StatelessWidget {
+  const _TodayButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => CupertinoButton(
+    padding: EdgeInsets.zero,
+    minimumSize: const Size(44, 44),
+    onPressed: onPressed,
+    child: Container(
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      alignment: Alignment.center,
+      decoration: ShapeDecoration(
+        shape: const StadiumBorder(),
+        color: CupertinoColors.secondarySystemGroupedBackground.resolveFrom(
+          context,
+        ),
+      ),
+      child: Text(
+        'Сегодня',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: CupertinoTheme.of(context).primaryColor,
+        ),
+      ),
+    ),
+  );
+}
+
+/// Строка внизу экрана: когда обновлялось расписание или что оно обновляется.
+/// Лента прокручивается под ней, размытая, как под панелями iOS.
+class _StatusBar extends StatelessWidget {
+  const _StatusBar({
+    required this.text,
+    required this.loading,
+    required this.bottomInset,
+  });
+
+  final String text;
+  final bool loading;
+  final double bottomInset;
+
+  @override
+  Widget build(BuildContext context) {
+    final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
+    final background = CupertinoColors.systemGroupedBackground.resolveFrom(
+      context,
+    );
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: ColoredBox(
+          color: background.withValues(alpha: 0.8),
+          child: MediaQuery.withClampedTextScaling(
+            maxScaleFactor: 1.3,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, bottomInset + 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (loading) ...[
+                    const CupertinoActivityIndicator(radius: 6),
+                    const SizedBox(width: 6),
+                  ],
+                  Flexible(
+                    child: Text(
+                      loading ? 'Обновление…' : text,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, color: secondary),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Неделя как в Календаре iOS. Свайп по полосе листает недели.
-class _WeekStrip extends StatelessWidget {
-  const _WeekStrip({
+/// Дни каруселью: полоса едет за пальцем и останавливается ровно на дне.
+/// Листание не меняет выбранный день, выбирают нажатием. Если выбранный день
+/// ушёл за край (листали пары или нажали «Сегодня»), полоса показывает его
+/// неделю.
+class _DayCarousel extends StatefulWidget {
+  const _DayCarousel({
+    super.key,
     required this.selected,
     required this.firstDay,
-    required this.lastDay,
+    required this.count,
     required this.hasLessons,
     required this.onSelect,
+    required this.onView,
   });
 
   final DateTime selected;
   final DateTime firstDay;
-  final DateTime lastDay;
+  final int count;
   final bool Function(DateTime) hasLessons;
   final void Function(DateTime) onSelect;
 
+  /// Месяц дня посередине полосы (для заголовка) и виден ли сегодняшний день.
+  final void Function(DateTime month, bool todayVisible) onView;
+
+  @override
+  State<_DayCarousel> createState() => _DayCarouselState();
+}
+
+class _DayCarouselState extends State<_DayCarousel> {
+  ScrollController? _scroll;
+  double _cell = 0;
+
+  int _indexOf(DateTime day) =>
+      dateOnly(day)
+          .difference(widget.firstDay)
+          .inDays
+          .clamp(0, widget.count - 1);
+
+  double _weekOffset(int index) => (index - index % 7) * _cell;
+
+  @override
+  void didUpdateWidget(_DayCarousel old) {
+    super.didUpdateWidget(old);
+    final scroll = _scroll;
+    if (scroll == null || !scroll.hasClients || _cell == 0) return;
+    if (sameDay(old.selected, widget.selected)) return;
+    show(widget.selected);
+  }
+
+  /// Показать неделю дня, если он за краем полосы.
+  void show(DateTime day) {
+    final scroll = _scroll;
+    if (scroll == null || !scroll.hasClients || _cell == 0) return;
+    final index = _indexOf(day);
+    final first = scroll.offset / _cell;
+    if (index < first - 0.5 || index > first + 6.5) {
+      scroll.animateTo(
+        _weekOffset(index),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  void _report() {
+    final scroll = _scroll;
+    if (scroll == null || !scroll.hasClients || _cell == 0) return;
+    final middle = ((scroll.offset / _cell) + 3).round().clamp(
+      0,
+      widget.count - 1,
+    );
+    final day = widget.firstDay.add(Duration(days: middle));
+    final first = scroll.offset / _cell;
+    final today = _indexOf(currentTime());
+    widget.onView(
+      DateTime(day.year, day.month),
+      today > first - 0.5 && today < first + 6.5,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scroll?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final monday = mondayOf(selected);
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
-    void shift(int days) {
-      final target = selected.add(Duration(days: days));
-      if (!target.isBefore(firstDay) && !target.isAfter(lastDay)) {
-        onSelect(target);
-      }
-    }
-
     // Семь дней в ряд: крупнее ×1.3 цифры не помещаются.
     return MediaQuery.withClampedTextScaling(
       maxScaleFactor: 1.3,
-      child: GestureDetector(
-        onHorizontalDragEnd: (d) {
-          final v = d.primaryVelocity ?? 0;
-          if (v < -200) shift(7);
-          if (v > 200) shift(-7);
+      child: Builder(
+        builder: (context) {
+          final scaler = MediaQuery.textScalerOf(context);
+          final height = scaler.scale(16) + 4 + scaler.scale(34) + 7 + 12;
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final cell = constraints.maxWidth / 7;
+              if (_scroll == null || cell != _cell) {
+                final old = _scroll;
+                _cell = cell;
+                _scroll = ScrollController(
+                  initialScrollOffset: _weekOffset(_indexOf(widget.selected)),
+                )..addListener(_report);
+                if (old != null) {
+                  WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => old.dispose(),
+                  );
+                }
+                WidgetsBinding.instance.addPostFrameCallback((_) => _report());
+              }
+              return SizedBox(
+                height: height,
+                child: ListView.builder(
+                  controller: _scroll,
+                  scrollDirection: Axis.horizontal,
+                  physics: _DaySnapPhysics(cell: cell),
+                  itemExtent: cell,
+                  itemCount: widget.count,
+                  itemBuilder: (context, i) {
+                    final day = widget.firstDay.add(Duration(days: i));
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Column(
+                        children: [
+                          ExcludeSemantics(
+                            child: Text(
+                              weekdaysShort[day.weekday - 1],
+                              style: TextStyle(fontSize: 12, color: secondary),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          _Day(
+                            day: day,
+                            selected: sameDay(day, widget.selected),
+                            dot: widget.hasLessons(day),
+                            onTap: () => widget.onSelect(day),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          );
         },
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  for (var i = 0; i < 7; i++)
-                    Expanded(
-                      child: Text(
-                        weekdaysShort[i],
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, color: secondary),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  for (var i = 0; i < 7; i++)
-                    Expanded(
-                      child: _Day(
-                        day: monday.add(Duration(days: i)),
-                        selected: sameDay(
-                          monday.add(Duration(days: i)),
-                          selected,
-                        ),
-                        dot: hasLessons(monday.add(Duration(days: i))),
-                        onTap: () => onSelect(monday.add(Duration(days: i))),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-        ),
       ),
+    );
+  }
+}
+
+/// Останавливает прокрутку на границе дня, с инерцией, как у пикера iOS.
+class _DaySnapPhysics extends ScrollPhysics {
+  const _DaySnapPhysics({required this.cell, super.parent});
+
+  final double cell;
+
+  @override
+  _DaySnapPhysics applyTo(ScrollPhysics? ancestor) => _DaySnapPhysics(
+    cell: cell,
+    parent: buildParent(const BouncingScrollPhysics().applyTo(ancestor)),
+  );
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    if (position.outOfRange || cell == 0) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+    final projected = FrictionSimulation(
+      0.135,
+      position.pixels,
+      velocity,
+    ).finalX;
+    final target = ((projected / cell).round() * cell).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    if ((target - position.pixels).abs() < toleranceFor(position).distance) {
+      return null;
+    }
+    return ScrollSpringSimulation(
+      spring,
+      position.pixels,
+      target,
+      velocity,
+      tolerance: toleranceFor(position),
     );
   }
 }
@@ -519,7 +759,7 @@ class _DayView extends StatelessWidget {
     required this.day,
     required this.lessons,
     required this.next,
-    required this.status,
+    required this.bottomInset,
   });
 
   final Future<void> Function() onRefresh;
@@ -528,7 +768,9 @@ class _DayView extends StatelessWidget {
 
   /// Ближайшая пара после этого дня (или после «сейчас» для сегодня).
   final Lesson? next;
-  final String status;
+
+  /// Высота строки статуса внизу экрана: лента прокручивается под ней.
+  final double bottomInset;
 
   @override
   Widget build(BuildContext context) {
@@ -545,7 +787,7 @@ class _DayView extends StatelessWidget {
       slivers: [
         CupertinoSliverRefreshControl(onRefresh: onRefresh),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+          padding: EdgeInsets.fromLTRB(16, 4, 16, 24 + bottomInset),
           sliver: SliverList.list(
             children: [
               if (isToday) ...[
@@ -582,15 +824,6 @@ class _DayView extends StatelessWidget {
                 if (i > 0) _Gap(from: lessons[i - 1].end, to: lessons[i].start),
                 _TimelineRow(lesson: lessons[i]),
               ],
-              const SizedBox(height: 20),
-              Text(
-                status,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: CupertinoColors.tertiaryLabel.resolveFrom(context),
-                ),
-              ),
             ],
           ),
         ),

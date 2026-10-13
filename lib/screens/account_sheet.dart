@@ -133,17 +133,13 @@ class _AccountSheet extends StatelessWidget {
       listenable: state,
       builder: (context, _) => CupertinoPageScaffold(
         backgroundColor: CupertinoColors.systemGroupedBackground,
-        navigationBar: CupertinoNavigationBar(
-          automaticallyImplyLeading: false,
-          transitionBetweenRoutes: false,
-          middle: const Text('Аккаунт'),
-          trailing: CupertinoButton(
-            padding: EdgeInsets.zero,
+        // Без заголовка, как лист аккаунта в iOS 26: профиль и так виден.
+        navigationBar: settingsBar(
+          context,
+          trailing: BarCircleButton(
+            icon: CupertinoIcons.xmark,
+            label: 'Закрыть',
             onPressed: () => close(context),
-            child: const Text(
-              'Готово',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
           ),
         ),
         // Строки настроек с переключателями: при очень крупном шрифте
@@ -152,18 +148,19 @@ class _AccountSheet extends StatelessWidget {
           maxScaleFactor: 1.4,
           child: ListView(
             controller: controller,
+            padding: EdgeInsets.zero,
             children: [
               _Profile(state: state),
-              CupertinoListSection.insetGrouped(
-                footer: SectionFooter(_backgroundFooter(state)),
+              SettingsSection(
+                footer: _backgroundFooter(state),
                 children: [
-                  CupertinoListTile(
+                  SettingsRow(
                     leading: const Glyph(
                       CupertinoIcons.bell_fill,
                       CupertinoColors.systemRed,
                     ),
-                    title: const Text('Напоминание', maxLines: 2),
-                    additionalInfo: Text(
+                    title: const Text('Напоминание'),
+                    value: Text(
                       state.notificationsEnabled == false
                           ? 'Выключены'
                           : _reminderLabel(state.reminderMinutes),
@@ -173,12 +170,12 @@ class _AccountSheet extends StatelessWidget {
                         ? _explainNotificationsOff(context)
                         : _pickReminder(context),
                   ),
-                  CupertinoListTile(
+                  SettingsRow(
                     leading: const Glyph(
                       CupertinoIcons.calendar,
                       CupertinoColors.systemOrange,
                     ),
-                    title: const Text('Календарь iPhone', maxLines: 2),
+                    title: const Text('Календарь iPhone'),
                     trailing: CupertinoSwitch(
                       value: state.calendarExport,
                       onChanged: state.setCalendarExport,
@@ -186,27 +183,24 @@ class _AccountSheet extends StatelessWidget {
                   ),
                   // Live Activity есть только на iOS.
                   if (Platform.isIOS)
-                    CupertinoListTile(
+                    SettingsRow(
                       leading: const Glyph(
                         CupertinoIcons.timer,
                         CupertinoColors.systemGreen,
                       ),
-                      title: const Text(
-                        'Пара на экране блокировки',
-                        maxLines: 2,
-                      ),
+                      title: const Text('Пара на экране блокировки'),
                       trailing: CupertinoSwitch(
                         value: state.liveActivity,
                         onChanged: state.setLiveActivity,
                       ),
                     ),
-                  CupertinoListTile(
+                  SettingsRow(
                     leading: const Glyph(
                       CupertinoIcons.moon_fill,
                       CupertinoColors.systemIndigo,
                     ),
-                    title: const Text('Оформление', maxLines: 2),
-                    additionalInfo: Text(_themeLabels[state.themeMode]!),
+                    title: const Text('Оформление'),
+                    value: Text(_themeLabels[state.themeMode]!),
                     trailing: const _Chevron(),
                     onTap: () => _pickTheme(context),
                   ),
@@ -216,15 +210,15 @@ class _AccountSheet extends StatelessWidget {
                   !recordingMode &&
                   !screenshotMode)
                 _DebugSection(state: state),
-              CupertinoListSection.insetGrouped(
+              SettingsSection(
                 children: [
-                  CupertinoListTile(
+                  SettingsRow(
                     leading: const Glyph(
                       CupertinoIcons.info,
                       CupertinoColors.systemGrey,
                     ),
-                    title: const Text('О приложении', maxLines: 2),
-                    trailing: const CupertinoListTileChevron(),
+                    title: const Text('О приложении'),
+                    trailing: const SettingsChevron(),
                     onTap: () => Navigator.of(context).push(
                       CupertinoPageRoute<void>(
                         builder: (_) => const AboutScreen(),
@@ -233,9 +227,10 @@ class _AccountSheet extends StatelessWidget {
                   ),
                 ],
               ),
-              CupertinoListSection.insetGrouped(
+              SettingsSection(
+                icons: false,
                 children: [
-                  CupertinoListTile(
+                  SettingsRow(
                     title: Center(
                       child: Text(
                         state.demo && !screenshotMode
@@ -248,7 +243,7 @@ class _AccountSheet extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: MediaQuery.paddingOf(context).bottom + 8),
             ],
           ),
         ),
@@ -395,7 +390,7 @@ class _Profile extends StatelessWidget {
   Widget build(BuildContext context) {
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
       child: Column(
         children: [
           Avatar(state: state, size: 84),
@@ -443,18 +438,17 @@ class _DebugSection extends StatelessWidget {
   final AppState state;
 
   @override
-  Widget build(BuildContext context) => CupertinoListSection.insetGrouped(
-    header: const Text('Отладка'),
-    footer: SectionFooter(
-      'Последний результат: ${state.lastBackgroundResult ?? '—'}',
-    ),
+  Widget build(BuildContext context) => SettingsSection(
+    header: 'Отладка',
+    footer: 'Последний результат: ${state.lastBackgroundResult ?? '—'}',
+    icons: false,
     children: [
-      CupertinoListTile(
+      SettingsRow(
         title: const Text('Ускоренный день'),
         subtitle: const Text('Демо: 4 пары по 4 мин, первая через 3 мин'),
         onTap: () => _startFastDay(context),
       ),
-      CupertinoListTile(
+      SettingsRow(
         title: const Text('Напоминание о паре'),
         subtitle: const Text('Через 5 секунд — заблокируй телефон'),
         onTap: () {
@@ -469,7 +463,7 @@ class _DebugSection extends StatelessWidget {
           }
         },
       ),
-      CupertinoListTile(
+      SettingsRow(
         title: const Text('Уведомление об изменении'),
         subtitle: const Text('Показать сразу, как после обновления'),
         onTap: () => showScheduleChanges(const [
@@ -477,12 +471,12 @@ class _DebugSection extends StatelessWidget {
         ]),
       ),
       if (Platform.isIOS)
-        CupertinoListTile(
+        SettingsRow(
           title: const Text('Обновить Live Activity'),
           subtitle: const Text('Запустить или обновить по сегодняшним парам'),
           onTap: state.showLiveActivity,
         ),
-      CupertinoListTile(
+      SettingsRow(
         title: const Text('Запустить фоновое обновление'),
         subtitle: const Text('Сверни приложение сразу после нажатия'),
         onTap: () => Workmanager().registerOneOffTask(
@@ -491,7 +485,7 @@ class _DebugSection extends StatelessWidget {
           inputData: {'debug': true},
         ),
       ),
-      CupertinoListTile(
+      SettingsRow(
         title: const Text('Сымитировать изменение'),
         subtitle: const Text('Сдвигает ближайшую пару на час раньше'),
         onTap: () async {

@@ -22,7 +22,7 @@ class LegendScreen extends StatelessWidget {
   static const _gestures = [
     (CupertinoIcons.arrow_down, 'Потяни вниз', 'Обновить расписание'),
     (CupertinoIcons.arrow_left_right, 'Листай влево и вправо', 'Другой день'),
-    (CupertinoIcons.calendar, 'Листай полосу с датами', 'Другая неделя'),
+    (CupertinoIcons.calendar, 'Листай полосу с датами', 'Соседние дни'),
     (
       CupertinoIcons.hand_point_right,
       'Нажми на пару',
@@ -41,7 +41,8 @@ class LegendScreen extends StatelessWidget {
     final secondary = CupertinoColors.secondaryLabel.resolveFrom(context);
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground,
-      navigationBar: CupertinoNavigationBar(
+      navigationBar: settingsBar(
+        context,
         leading: leading,
         middle: const Text('Обозначения'),
       ),
@@ -49,16 +50,16 @@ class LegendScreen extends StatelessWidget {
         style: CupertinoTheme.of(context).textTheme.textStyle,
         child: ListView(
           children: [
-            CupertinoListSection.insetGrouped(
-              header: const Text('Типы пар'),
-              footer: const SectionFooter(
-                'Цвет полоски слева от пары совпадает с цветом иконки и типа '
-                'в подписи. Те же иконки — на экране блокировки, в Dynamic '
-                'Island и на часах.',
-              ),
+            const SizedBox(height: 8),
+            SettingsSection(
+              header: 'Типы пар',
+              footer:
+                  'Цвет полоски слева от пары совпадает с цветом иконки и типа '
+                  'в подписи. Те же иконки — на экране блокировки, в Dynamic '
+                  'Island и на часах.',
               children: [
                 for (final (kind, title, subtitle) in _kinds)
-                  CupertinoListTile(
+                  SettingsRow(
                     leading: Glyph(
                       LessonColors.iconOf(kind),
                       LessonColors.of(kind).bar.resolveFrom(context),
@@ -68,30 +69,31 @@ class LegendScreen extends StatelessWidget {
                   ),
               ],
             ),
-            CupertinoListSection.insetGrouped(
-              header: const Text('В ленте'),
+            SettingsSection(
+              header: 'В ленте',
+              icons: false,
               children: [
-                CupertinoListTile(
+                SettingsRow(
                   title: Text(
                     'Бледная пара',
                     style: TextStyle(color: secondary),
                   ),
-                  additionalInfo: const Text('Уже прошла'),
+                  value: const Text('Уже прошла'),
                 ),
-                CupertinoListTile(
+                SettingsRow(
                   title: const Text(
                     'Зачёркнутая пара',
                     style: TextStyle(decoration: TextDecoration.lineThrough),
                   ),
-                  additionalInfo: const Text('Отменена'),
+                  value: const Text('Отменена'),
                 ),
               ],
             ),
-            CupertinoListSection.insetGrouped(
-              header: const Text('Жесты'),
+            SettingsSection(
+              header: 'Жесты',
               children: [
                 for (final (icon, title, subtitle) in _gestures)
-                  CupertinoListTile(
+                  SettingsRow(
                     leading: Icon(
                       icon,
                       color: CupertinoTheme.of(context).primaryColor,
@@ -101,7 +103,7 @@ class LegendScreen extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 4),
           ],
         ),
       ),

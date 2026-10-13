@@ -63,6 +63,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
   @override
   Widget build(BuildContext context) => CupertinoPageScaffold(
     navigationBar: CupertinoNavigationBar(
+      automaticallyImplyLeading: false,
+      transitionBetweenRoutes: false,
+      border: null,
       leading: widget.leading,
       middle: const Text('Конфиденциальность'),
     ),
