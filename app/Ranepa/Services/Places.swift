@@ -7,6 +7,12 @@ import UIKit
 enum Places {
     /// Адрес в последних скобках строки аудитории.
     static func address(from room: String) -> String? {
+        // Физкультура: у стадиона и спорткомплекса в ЛК нет нормального адреса.
+        // Стадион — «территория перед 6 корпусом», бассейн и залы — корпус 2
+        // (ranepa.ru/sveden/objects).
+        let lower = room.lowercased()
+        if lower.contains("стадион") || lower.contains("кфк") { return "Вернадского, 82, стадион кампуса" }
+        if lower.contains("бассейн") || lower.contains("спорткомплекс") { return "Вернадского, 82, корпус 2" }
         guard let open = room.range(of: "(", options: .backwards),
               let close = room.range(of: ")", options: .backwards), open.upperBound < close.lowerBound
         else { return nil }
