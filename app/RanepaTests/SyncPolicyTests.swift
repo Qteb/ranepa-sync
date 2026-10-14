@@ -28,8 +28,9 @@ final class SyncPolicyTests: XCTestCase {
         XCTAssertEqual(skip(.manual, tuesday), .backoff)
     }
 
-    func testQuietHours() {
-        XCTAssertEqual(skip(.background, date(2026, 10, 13, 3)), .quietHours)
+    /// Ночью тоже ходим — иначе сессия ЛК истечёт.
+    func testNightStillRuns() {
+        XCTAssertNil(skip(.background, date(2026, 10, 13, 3)))
     }
 
     func testBackgroundInterval() {
@@ -42,31 +43,40 @@ final class SyncPolicyTests: XCTestCase {
     }
 
     func testIntervals() {
-        XCTAssertNil(Sync.interval(at: date(2026, 10, 13, 5, 59)))      // ночь
-        XCTAssertEqual(Sync.interval(at: date(2026, 10, 13, 6)), 3600)  // будни утром
+        XCTAssertEqual(Sync.interval(at: date(2026, 10, 13, 3)), 4 * 3600)       // ночь в будни
+        XCTAssertEqual(Sync.interval(at: date(2026, 10, 13, 6)), 3600)           // будни утром
         XCTAssertEqual(Sync.interval(at: date(2026, 10, 13, 22)), 3 * 3600)
-        XCTAssertEqual(Sync.interval(at: date(2026, 10, 17, 12)), 2 * 3600)  // суббота
-        XCTAssertNil(Sync.interval(at: date(2026, 10, 18, 12)))         // воскресенье днём
-        XCTAssertEqual(Sync.interval(at: date(2026, 10, 18, 19)), 3 * 3600)  // воскресенье вечером
+        XCTAssertEqual(Sync.interval(at: date(2026, 10, 17, 12)), 2 * 3600)      // суббота
+        XCTAssertEqual(Sync.interval(at: date(2026, 10, 17, 3)), 4 * 3600)       // ночь на субботу
+        XCTAssertEqual(Sync.interval(at: date(2026, 10, 18, 12)), 12 * 3600)     // воскресенье днём
+        XCTAssertEqual(Sync.interval(at: date(2026, 10, 18, 19)), 3 * 3600)      // воскресенье вечером
     }
 
-    func testNextRunSkipsQuietTime() {
-        // Вторник 23:30 → не ночью, а в среду в 6:00.
-        XCTAssertEqual(Sync.nextRun(after: date(2026, 10, 13, 23, 30)), date(2026, 10, 14, 6))
-        // Суббота 23:00 → воскресенье 18:00.
-        XCTAssertEqual(Sync.nextRun(after: date(2026, 10, 17, 23)), date(2026, 10, 18, 18))
-        // Будни днём — через час.
+    /// Пн–Сб — не реже раза в 4 часа, в воскресенье — раз в 12.
+    func testMaxGaps() {
+        var t = date(2026, 10, 12, 0)
+        let end = date(2026, 10, 19, 0)
+        while t < end {
+            let next = Sync.nextRun(after: t)
+            let limit: TimeInterval = t.isoWeekday == 7 || next.isoWeekday == 7 ? 12 * 3600 : 4 * 3600
+            XCTAssertLessThanOrEqual(next.timeIntervalSince(t), limit, "\(t)")
+            t = next
+        }
+    }
+
+    func testNextRun() {
         XCTAssertEqual(Sync.nextRun(after: tuesday), tuesday.addingTimeInterval(3600))
+        // Вторник 23:30 → ночью через 4 часа.
+        XCTAssertEqual(Sync.nextRun(after: date(2026, 10, 13, 23, 30)), date(2026, 10, 14, 3, 30))
+        // Воскресенье 14:00 → не ждать 12 часов, а в 18:00.
+        XCTAssertEqual(Sync.nextRun(after: date(2026, 10, 18, 14)), date(2026, 10, 18, 18))
     }
 
-    func testSundayDaytimeIsQuiet() {
-        lesson(on: date(2026, 10, 19, 0))
-        XCTAssertEqual(skip(.background, date(2026, 10, 18, 12)), .quietHours)
-        XCTAssertNil(skip(.background, date(2026, 10, 18, 19)))
-    }
-
-    func testHolidaysOnlyDailyFullLoad() {
-        XCTAssertEqual(skip(.background, tuesday), .notNeeded)
+    func testHolidaysEveryFourHours() {
+        d.setTime(tuesday.addingTimeInterval(-3 * 3600), Keys.lastAttemptAt)
+        XCTAssertEqual(skip(.background, tuesday), .tooSoon)
+        d.setTime(tuesday.addingTimeInterval(-4 * 3600), Keys.lastAttemptAt)
+        XCTAssertNil(skip(.background, tuesday))
     }
 
     func testBackgroundRunsWhenLessonsSoon() {

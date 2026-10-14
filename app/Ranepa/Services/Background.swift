@@ -1,8 +1,8 @@
 import BackgroundTasks
 import Foundation
 
-/// Фоновое обновление: в будни днём — раз в час, ночью и в воскресенье днём —
-/// никогда (`Sync.interval`). Система запускает задачу не раньше заданного
+/// Фоновое обновление: в будни днём — раз в час, Пн–Сб не реже раза в 4 часа,
+/// в воскресенье — раз в 12 (`Sync.interval`). Система запускает задачу не раньше заданного
 /// времени, а когда именно — решает сама. Каждое обновление продлевает
 /// сессию ЛК.
 enum Background {
@@ -33,7 +33,6 @@ enum Background {
             outcome = switch result.skipped {
             case nil: result.changes.isEmpty ? "без изменений" : "изменений: \(result.changes.count)"
             case .backoff: "пауза после ошибки ЛК"
-            case .quietHours: "тихие часы, пропущено"
             case .tooSoon: "рано, пропущено"
             case .notNeeded: "нет пар, пропущено"
             }

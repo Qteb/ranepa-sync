@@ -154,13 +154,14 @@ enum Notifications {
     }
 
     /// «Таймер мёртвой руки»: каждое успешное обновление переносит уведомление
-    /// вперёд — за [keepAliveBefore] до конца сессии ЛК, а если срок
-    /// неизвестен, на [keepAliveAfter] после обновления. Если iOS перестала
-    /// будить приложение, пользователь узнает об этом до того, как сессия истечёт.
+    /// на [keepAliveAfter] вперёд (или раньше, если токен истекает раньше).
+    /// Срок токена «на 30 дней» не верим: на деле сессия держится сутки.
+    /// Если iOS перестала будить приложение, пользователь узнает об этом до
+    /// того, как сессия истечёт.
     static func scheduleKeepAlive(lastSync: Date, sessionUntil: Date?) async {
         cancelKeepAlive()
-        let at = sessionUntil.map { $0.addingTimeInterval(-keepAliveBefore) }
-            ?? lastSync.addingTimeInterval(keepAliveAfter)
+        let at = min(lastSync.addingTimeInterval(keepAliveAfter),
+                     sessionUntil.map { $0.addingTimeInterval(-keepAliveBefore) } ?? .distantFuture)
         guard at > Date() else { return }
         await show(keepAliveID, title: "Открой приложение",
                    body: "Расписание давно не обновлялось. Открой приложение, иначе придётся заново входить в ЛК.",
