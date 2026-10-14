@@ -39,8 +39,9 @@ struct RanepaApp: App {
                 if state.loggedIn && !state.demo { Background.schedule() }
             }
             // ranepa://lesson?start=<секунды по настоящим часам> — из Live
-            // Activity и виджета.
+            // Activity и виджета, ranepa://today — из Пункта управления.
             .onOpenURL { url in
+                if url.host == "today" { return state.pendingToday = true }
                 guard url.host == "lesson",
                       let start = URLComponents(url: url, resolvingAgainstBaseURL: false)?
                           .queryItems?.first(where: { $0.name == "start" })?.value.flatMap(Double.init)

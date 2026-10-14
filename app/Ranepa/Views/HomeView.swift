@@ -121,6 +121,13 @@ struct HomeView: View {
             if !jumping, let page { selected = dayAt(page) }
         }
         .onChange(of: state.pendingLesson) { openPendingLesson() }
+        .onChange(of: state.pendingToday) { _, today in
+            guard today else { return }
+            state.pendingToday = false
+            showAccount = false
+            sheetLesson = nil
+            goTo(Clock.now)
+        }
         .onChange(of: state.pendingChanges) { _, changes in
             guard !changes.isEmpty else { return }
             state.pendingChanges = []

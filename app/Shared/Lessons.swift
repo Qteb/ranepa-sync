@@ -19,8 +19,13 @@ struct LessonItem: Codable, Hashable {
     let t: String
     let k: String
     let r: String
-    /// Отменена. Есть только в данных для часов.
+    /// Отменена.
     var c: Bool? = nil
+    /// Преподаватель, адрес корпуса и ссылка на корпус в выбранных Картах.
+    /// Есть только в данных для виджетов iPhone.
+    var l: String? = nil
+    var a: String? = nil
+    var m: String? = nil
 
     var cancelled: Bool { c ?? false }
     var start: Date { Date(timeIntervalSince1970: s) }

@@ -36,6 +36,12 @@ struct Lesson: Identifiable, Hashable {
         return "\(shortLocation), корпус \(match.1)"
     }
 
+    /// «1 - 2262, блок 2F» — подпись точки в Картах.
+    var mapTitle: String {
+        guard let block = room.firstMatch(of: /Блок\s+(\S+)/) else { return shortLocation }
+        return "\(shortLocation), блок \(block.1)"
+    }
+
     /// Описание события в календаре.
     var details: String {
         [lecturer, email, groups.joined(separator: ", "), lmsLink, comment]
