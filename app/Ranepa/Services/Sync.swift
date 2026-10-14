@@ -23,8 +23,6 @@ enum SyncTrigger {
 enum SkipReason {
     /// Пауза после ошибки сервера.
     case backoff
-    /// Ночь или воскресенье днём — фон не ходит в ЛК.
-    case quietHours
     /// С прошлого обновления прошло слишком мало времени.
     case tooSoon
     /// Обновлять нечего: каникулы или данные свежие.
@@ -64,26 +62,35 @@ enum Sync {
         d.time(Keys.backoffUntil).map { $0 > Clock.now } ?? false
     }
 
-    /// Как часто фон ходит в ЛК в это время; nil — не ходит совсем.
-    /// Чаще всего — в учебное время, когда пары переносят и отменяют.
-    /// В воскресенье — только вечером: вдруг отменят первую пару понедельника.
-    static func interval(at now: Date) -> TimeInterval? {
+    /// Как часто фон ходит в ЛК в это время. Чаще всего — в учебное время,
+    /// когда пары переносят и отменяют. Реже всего — ночью (раз в 4 часа)
+    /// и в воскресенье днём (раз в 12): каждое обновление продлевает сессию
+    /// ЛК, а она живёт сутки, так что совсем пропускать нельзя.
+    static func interval(at now: Date) -> TimeInterval {
         let hour = now.hour
-        if hour < 6 { return nil }
-        if now.isoWeekday == 7 { return hour >= 18 ? 3 * 3600 : nil }
-        // Вечером — один раз, чтобы поймать изменения на завтра.
+        if now.isoWeekday == 7 {
+            // Вечером чаще: вдруг отменят первую пару понедельника.
+            return hour >= 18 ? 3 * 3600 : 12 * 3600
+        }
+        if hour < 6 { return 4 * 3600 }
+        // Вечером — реже, но изменения на завтра ловим.
         if hour >= 21 { return 3 * 3600 }
         return now.isoWeekday == 6 ? 2 * 3600 : 3600
     }
 
-    /// Когда фону стоит проснуться в следующий раз: через интервал, а если
-    /// это попадает на ночь или воскресенье днём — к началу следующего окна.
+    /// На каникулах (пар в ближайшие 2 недели нет) — не чаще раза в 4 часа:
+    /// обновлять нечего, но сессию ЛК продлевать надо.
+    static let holidayInterval: TimeInterval = 4 * 3600
+
+    /// Когда фону стоит проснуться: первый момент, когда с [now] прошло не
+    /// меньше интервала, действующего в тот момент.
     static func nextRun(after now: Date) -> Date {
-        var next = now.addingTimeInterval(interval(at: now) ?? 3600)
-        for _ in 0..<48 where interval(at: next) == nil {
-            next = calendar.dateInterval(of: .hour, for: next)!.end
+        var t = now
+        for _ in 0..<(13 * 4) {
+            t = t.addingTimeInterval(15 * 60)
+            if t.timeIntervalSince(now) >= interval(at: t) { return t }
         }
-        return next
+        return t
     }
 
     /// Почему не надо идти в ЛК, или nil — надо. Отдельно от загрузки, чтобы
@@ -93,13 +100,11 @@ enum Sync {
         let full = isFullDue(d, now: now)
         switch trigger {
         case .background:
-            guard let interval = interval(at: now) else { return .quietHours }
+            let interval = lessonsSoon(d, now) ? interval(at: now) : max(interval(at: now), holidayInterval)
             if since(d, Keys.lastAttemptAt, now) < interval - intervalSlack { return .tooSoon }
-            // На каникулах — только ежедневная полная загрузка.
-            if !full && !lessonsSoon(d, now) { return .notNeeded }
         case .open:
-            // Свежими считаем данные моложе интервала фона; ночью — 3 часа.
-            let stale = interval(at: now) ?? 3 * 3600
+            // Свежими считаем данные моложе интервала фона, но не старше 3 часов.
+            let stale = min(interval(at: now), 3 * 3600)
             if since(d, Keys.fetchedAt, now) < stale || since(d, Keys.lastAttemptAt, now) < openRetryAfter {
                 return .notNeeded
             }

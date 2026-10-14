@@ -32,7 +32,7 @@
 
 ## Фоновое обновление
 
-Приложение обновляет расписание в фоне: в будни днём — примерно раз в час, в субботу — реже, в воскресенье — только вечером. Ночью, с 0 до 6 часов, обновлений нет. Время запуска выбирает система телефона. Запросы идут только на сайт личного кабинета РАНХиГС — так же, как при ручном обновлении. Каждое обновление продлевает сессию личного кабинета, поэтому входить заново не нужно.
+Приложение обновляет расписание в фоне: в будни днём — примерно раз в час, ночью и в субботу — реже, в воскресенье — раз в 12 часов. Время запуска выбирает система телефона. Запросы идут только на сайт личного кабинета РАНХиГС — так же, как при ручном обновлении. Каждое обновление продлевает сессию личного кабинета, поэтому входить заново не нужно.
 
 ## Разрешения
 
@@ -99,7 +99,7 @@ This data stays on your device and is never transmitted elsewhere.
 
 ## Background updates
 
-The app updates your timetable in the background: about once an hour on weekday daytime, less often on Saturdays, and only in the evening on Sundays. There are no updates at night, from midnight to 6 a.m. Your phone's system decides exactly when to run them. Requests go only to the RANEPA student portal, the same as a manual refresh. Each update extends your portal session, so you don't need to sign in again.
+The app updates your timetable in the background: about once an hour on weekday daytime, less often at night and on Saturdays, and every 12 hours on Sundays. Your phone's system decides exactly when to run them. Requests go only to the RANEPA student portal, the same as a manual refresh. Each update extends your portal session, so you don't need to sign in again.
 
 ## Permissions
 
