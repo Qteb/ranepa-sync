@@ -124,6 +124,12 @@ struct LessonSheet: View {
         .modifier(mapsDialog($mapsFromRow))
     }
 
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// Цвет выделения корпуса: бордовый акцент в светлой теме, системный
+    /// синий в тёмной — светлый бордовый на тёмной карте читается хуже.
+    private var highlight: Color { colorScheme == .dark ? Color(.systemBlue) : Color.accentColor }
+
     /// Подпись булавки: «Корпус 1» для кампуса, иначе аудитория.
     private var markerTitle: String {
         guard let address, let m = address.firstMatch(of: /корпус\s*(\d+)/) else { return lesson.shortLocation }
@@ -135,27 +141,28 @@ struct LessonSheet: View {
         Button { openPlace(fromMap: true) } label: {
             let building = address.flatMap(Campus.building(for:))
             Map(initialPosition: .camera(MapCamera(centerCoordinate: c, distance: building == nil ? 600 : 450))) {
-                // Нужный корпус залит цветом акцента, номер — подписью
-                // поверх, чтобы булавка не закрывала здание.
+                // Выделение как в Картах: лёгкая заливка, тонкая обводка,
+                // подпись цветом выделения на светлой плашке.
                 if let building {
                     MapPolygon(coordinates: building.outline)
-                        .foregroundStyle(Color.accentColor.opacity(0.45))
-                        .stroke(Color.accentColor, lineWidth: 2)
+                        .foregroundStyle(highlight.opacity(colorScheme == .dark ? 0.22 : 0.15))
+                        .stroke(highlight.opacity(colorScheme == .dark ? 0.8 : 0.7), lineWidth: 1.5)
                     Annotation("", coordinate: c, anchor: .center) {
                         Text(markerTitle)
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Color.accentColor, in: .capsule)
+                            .foregroundStyle(highlight)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2)
+                            .background(Color(.systemBackground).opacity(0.9), in: .capsule)
                     }
                 } else {
                     Marker(markerTitle, systemImage: "building.columns.fill", coordinate: c)
-                        .tint(Color.accentColor)
+                        .tint(highlight)
                 }
             }
-            // Без кафе, магазинов и чужих организаций: только улицы и здания.
-            .mapStyle(.standard(pointsOfInterest: .excludingAll))
+            // Блёклая подложка: выделенный корпус заметнее. Из мест — только
+            // транспорт (метро), без кафе и чужих организаций.
+            .mapStyle(.standard(emphasis: .muted, pointsOfInterest: .including([.publicTransport])))
             .allowsHitTesting(false)
             .frame(height: 150)
         }
