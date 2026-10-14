@@ -11,28 +11,7 @@ struct LessonSheet: View {
     @State private var copied = false
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Label(lesson.kind.isEmpty ? "Пара" : lesson.kind.capitalizedFirst,
-                              systemImage: kindSymbol(lesson.kind))
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(kindTextColor(lesson.kind))
-                        Text(lesson.subject)
-                            .font(.title.bold())
-                            .strikethrough(lesson.cancelled)
-                            .copyable(lesson.subject)
-                        Text("\(dayTitle(lesson.start)), \(hm(lesson.start))–\(hm(lesson.end))")
-                            .foregroundStyle(.secondary)
-                        if lesson.cancelled {
-                            Text("Отменена").foregroundStyle(.red)
-                        }
-                    }
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 4, trailing: 4))
-                }
-
+        List {
                 TipView(CopyTip())
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets())
@@ -72,18 +51,49 @@ struct LessonSheet: View {
                 }
             }
             .listSectionSpacing(.compact)
-            // Название сразу под крестиком, как в карточке места в Картах.
-            .contentMargins(.top, 0, for: .scrollContent)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(role: .close) { dismiss() }
-                }
-            }
+            .contentMargins(.top, 8, for: .scrollContent)
+            // Название в одной строке с крестиком, как в карточке места
+            // в Картах. Список прокручивается под шапкой.
+            .safeAreaBar(edge: .top) { header }
             .alert("Адрес скопирован", isPresented: $copied) {} message: { Text(lesson.email) }
-        }
         .presentationDetents([.medium, .large])
         .presentationBackground(Color(.systemGroupedBackground))
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: kindSymbol(lesson.kind))
+                    Text(lesson.kind.isEmpty ? "Пара" : lesson.kind.capitalizedFirst)
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(kindTextColor(lesson.kind))
+                Text(lesson.subject)
+                    .font(.title.bold())
+                    .strikethrough(lesson.cancelled)
+                    .copyable(lesson.subject)
+                Text("\(dayTitle(lesson.start)), \(hm(lesson.start))–\(hm(lesson.end))")
+                    .foregroundStyle(.secondary)
+                if lesson.cancelled {
+                    Text("Отменена").foregroundStyle(.red)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            // Как системный крестик листа: 44 pt, 20 pt от верха и от края.
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
+                    .glassEffect(.regular.interactive(), in: .circle)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Закрыть")
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+        .padding(.bottom, 8)
     }
 
     private func row(_ text: String, symbol: String) -> some View {
