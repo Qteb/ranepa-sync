@@ -29,8 +29,6 @@ enum Keys {
     static let demoFastFrom = "demoFastFrom"
     /// Когда истекает сессия ЛК (refresh-токен), по настоящим часам.
     static let sessionUntil = "sessionUntil"
-    static let remoteConfig = "remoteConfig"
-    static let remoteConfigCheckedAt = "remoteConfigCheckedAt"
 
     /// Всё, что относится к сессии и удаляется при выходе.
     static let session = [

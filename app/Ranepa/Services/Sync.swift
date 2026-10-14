@@ -14,15 +14,13 @@ enum SyncTrigger {
 }
 
 enum SkipReason {
-    /// Обновление выключено удалённым конфигом.
-    case paused
     /// Пауза после ошибки сервера.
     case backoff
-    /// Ночь — фон не ходит в ЛК.
+    /// Ночь или воскресенье днём — фон не ходит в ЛК.
     case quietHours
     /// С прошлого обновления прошло слишком мало времени.
     case tooSoon
-    /// Обновлять нечего: воскресенье, каникулы или данные свежие.
+    /// Обновлять нечего: каникулы или данные свежие.
     case notNeeded
 }
 
@@ -36,12 +34,10 @@ struct SyncResult {
 
 /// Когда и сколько загружать из ЛК.
 enum Sync {
-    /// Данные старше этого обновляются при открытии приложения.
-    static let staleAfter: TimeInterval = 4 * 3600
     /// При открытии не пытаемся чаще, даже если прошлая попытка не удалась.
     private static let openRetryAfter: TimeInterval = 15 * 60
-    /// Ночью фон в ЛК не ходит.
-    private static let quietUntilHour = 7
+    /// «Потянуть вниз» чаще этого не делает запросов.
+    private static let manualCooldown: TimeInterval = 2 * 60
     /// Допуск к интервалу фона: система запускает задачу с разбросом.
     private static let intervalSlack: TimeInterval = 15 * 60
     /// Пауза после ответа 429/5xx: 8 → 16 → 24 часа.
@@ -54,29 +50,52 @@ enum Sync {
         d.time(key).map { now.timeIntervalSince($0) } ?? 365 * 24 * 3600
     }
 
-    /// Обновление стоит на паузе: выключено конфигом или после ошибки сервера.
+    /// Обновление стоит на паузе после ошибки сервера.
     static func paused(_ d: UserDefaults = .standard) -> Bool {
-        !RemoteConfig.cached(d).sync || (d.time(Keys.backoffUntil).map { $0 > Clock.now } ?? false)
+        d.time(Keys.backoffUntil).map { $0 > Clock.now } ?? false
+    }
+
+    /// Как часто фон ходит в ЛК в это время; nil — не ходит совсем.
+    /// Чаще всего — в учебное время, когда пары переносят и отменяют.
+    /// В воскресенье — только вечером: вдруг отменят первую пару понедельника.
+    static func interval(at now: Date) -> TimeInterval? {
+        let hour = now.hour
+        if hour < 6 { return nil }
+        if now.isoWeekday == 7 { return hour >= 18 ? 3 * 3600 : nil }
+        // Вечером — один раз, чтобы поймать изменения на завтра.
+        if hour >= 21 { return 3 * 3600 }
+        return now.isoWeekday == 6 ? 2 * 3600 : 3600
+    }
+
+    /// Когда фону стоит проснуться в следующий раз: через интервал, а если
+    /// это попадает на ночь или воскресенье днём — к началу следующего окна.
+    static func nextRun(after now: Date) -> Date {
+        var next = now.addingTimeInterval(interval(at: now) ?? 3600)
+        for _ in 0..<48 where interval(at: next) == nil {
+            next = calendar.dateInterval(of: .hour, for: next)!.end
+        }
+        return next
     }
 
     /// Почему не надо идти в ЛК, или nil — надо. Отдельно от загрузки, чтобы
     /// проверять правила тестами.
-    static func skipReason(_ d: UserDefaults, _ trigger: SyncTrigger, config: RemoteConfig, now: Date) -> SkipReason? {
-        if !config.sync { return .paused }
+    static func skipReason(_ d: UserDefaults, _ trigger: SyncTrigger, now: Date) -> SkipReason? {
         if let until = d.time(Keys.backoffUntil), until > now { return .backoff }
         let full = isFullDue(d, now: now)
         switch trigger {
         case .background:
-            if now.hour < quietUntilHour { return .quietHours }
-            if since(d, Keys.lastAttemptAt, now) < config.minInterval - intervalSlack { return .tooSoon }
-            // В воскресенье и на каникулах — только ежедневная полная загрузка.
-            if !full && (now.isoWeekday == 7 || !lessonsSoon(d, now)) { return .notNeeded }
+            guard let interval = interval(at: now) else { return .quietHours }
+            if since(d, Keys.lastAttemptAt, now) < interval - intervalSlack { return .tooSoon }
+            // На каникулах — только ежедневная полная загрузка.
+            if !full && !lessonsSoon(d, now) { return .notNeeded }
         case .open:
-            if since(d, Keys.fetchedAt, now) < staleAfter || since(d, Keys.lastAttemptAt, now) < openRetryAfter {
+            // Свежими считаем данные моложе интервала фона; ночью — 3 часа.
+            let stale = interval(at: now) ?? 3 * 3600
+            if since(d, Keys.fetchedAt, now) < stale || since(d, Keys.lastAttemptAt, now) < openRetryAfter {
                 return .notNeeded
             }
         case .manual:
-            if since(d, Keys.fetchedAt, now) < config.manualCooldown { return .tooSoon }
+            if since(d, Keys.fetchedAt, now) < manualCooldown { return .tooSoon }
         case .debug:
             break
         }
@@ -95,9 +114,8 @@ enum Sync {
     @MainActor
     static func run(_ trigger: SyncTrigger, _ d: UserDefaults = .standard) async throws -> SyncResult {
         if d.bool(forKey: Keys.demo) { return await Demo.sync(trigger, d) }
-        let config = await RemoteConfig.load(d)
         let now = Clock.now
-        if let reason = skipReason(d, trigger, config: config, now: now) { return SyncResult(skipped: reason) }
+        if let reason = skipReason(d, trigger, now: now) { return SyncResult(skipped: reason) }
 
         let full = isFullDue(d, now: now)
         d.setTime(now, Keys.lastAttemptAt)

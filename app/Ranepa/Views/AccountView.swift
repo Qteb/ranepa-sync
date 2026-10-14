@@ -151,7 +151,7 @@ struct AccountView: View {
             parts.append("Уведомления выключены — об изменениях в расписании ты не узнаешь.")
         }
         if state.calendarExport { parts.append("Пары добавляются в отдельный календарь «\(CalendarExport.name)».") }
-        parts.append("Расписание обновляется в фоне примерно раз в 4 часа.")
+        parts.append("В будни днём расписание обновляется в фоне примерно раз в час, ночью — нет.")
         if !state.demo {
             parts.append(state.lastBackgroundRun.map {
                 "Последнее фоновое обновление — \($0.sameDay(Clock.now) ? "сегодня" : shortDate($0)) в \(hm($0))."

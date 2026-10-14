@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		00144E66F493001DC8490AC1 /* RanepaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A3E055F6E10A7192DA4425D5 /* RanepaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		020FB00F221F49EA1E18E060 /* RemoteConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B02E597C2FD2CD0D00B72583 /* RemoteConfig.swift */; };
 		07358A8133639C0BA31EB1AE /* CalendarExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9468FD91CB162D269B016603 /* CalendarExport.swift */; };
 		0C324248BDAB6BB356AF32D3 /* Campus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31F47E45E969B537A1CE4783 /* Campus.swift */; };
 		113EB897B8F89ED8D8AF91C5 /* RanepaWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B55E87CFD806A9A1800FDB03 /* RanepaWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -163,7 +162,6 @@
 		A50AFFAA75BD71DF9CEC62A6 /* Lessons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lessons.swift; sourceTree = "<group>"; };
 		A923FC78AEC5710C4C4F3544 /* Ranepa.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Ranepa.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ACBD0344A882122F9A7479F4 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		B02E597C2FD2CD0D00B72583 /* RemoteConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteConfig.swift; sourceTree = "<group>"; };
 		B55E87CFD806A9A1800FDB03 /* RanepaWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RanepaWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B884B80DDC4664D677EEED98 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C1A0708D3D56C4621444EE86 /* Background.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Background.swift; sourceTree = "<group>"; };
@@ -312,7 +310,6 @@
 				92125C291F3157D8E61B5056 /* Format.swift */,
 				2C2E0E62DF9E1AAE98262BE1 /* Lesson.swift */,
 				E337B0A51BEC1E16A227584A /* Prefs.swift */,
-				B02E597C2FD2CD0D00B72583 /* RemoteConfig.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -545,7 +542,6 @@
 				3C2C55FB94E27B6CFE531D0F /* Places.swift in Sources */,
 				7B8FDE878BFE34BED4461228 /* Prefs.swift in Sources */,
 				B51B733A8834F9AB03B0A860 /* RanepaApp.swift in Sources */,
-				020FB00F221F49EA1E18E060 /* RemoteConfig.swift in Sources */,
 				F3A2F63D52766961AD6DC4C1 /* Sync.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
