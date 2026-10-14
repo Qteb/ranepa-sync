@@ -1,3 +1,4 @@
+import CoreLocation
 import EventKit
 import UIKit
 
@@ -22,7 +23,11 @@ enum CalendarExport {
                 event.title = l.title
                 event.startDate = l.start
                 event.endDate = l.end
-                event.location = l.location
+                if let place = await place(for: l) {
+                    event.structuredLocation = place
+                } else {
+                    event.location = l.location
+                }
                 event.notes = l.details
                 if reminderMinutes > 0 { event.addAlarm(EKAlarm(relativeOffset: -Double(reminderMinutes) * 60)) }
                 try store.save(event, span: .thisEvent, commit: false)
@@ -32,6 +37,19 @@ enum CalendarExport {
         } catch {
             return "Не удалось выгрузить в календарь: \(error.localizedDescription)"
         }
+    }
+
+    /// Место события с точкой корпуса: Календарь покажет карту и откроет
+    /// нужное здание, а не будет сам угадывать по тексту адреса.
+    /// «1 - 2317, корпус 1, проспект Вернадского, 84».
+    private static func place(for l: Lesson) async -> EKStructuredLocation? {
+        guard !l.isRemote, let address = Places.address(from: l.room),
+              let c = await Places.locate(address) else { return nil }
+        let place = EKStructuredLocation(title: "\(l.shortLocation) · \(Places.query(for: address).replacingOccurrences(of: "Москва, ", with: ""))")
+        place.geoLocation = CLLocation(latitude: c.latitude, longitude: c.longitude)
+        // Радиус — чтобы карта в Календаре открывалась на здании, а не на районе.
+        place.radius = 60
+        return place
     }
 
     private static func ownCalendar() throws -> EKCalendar {
