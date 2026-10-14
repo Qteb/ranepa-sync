@@ -33,8 +33,13 @@ enum Places {
         if let c = cache[address], c.count == 2 {
             return CLLocationCoordinate2D(latitude: c[0], longitude: c[1])
         }
-        guard let request = MKGeocodingRequest(addressString: query(for: address)),
-              let item = try? await request.mapItems.first else { return nil }
+        // Без номера дома геокодер находит только город и ставит точку
+        // в центр Москвы — на Красную площадь. Такой адрес на карте не показываем.
+        guard address.contains(where: \.isNumber),
+              let request = MKGeocodingRequest(addressString: query(for: address)),
+              let item = try? await request.mapItems.first,
+              item.address?.shortAddress?.contains(where: \.isNumber) ?? false
+        else { return nil }
         let c = item.location.coordinate
         cache[address] = [c.latitude, c.longitude]
         d.set(cache, forKey: cacheKey)
