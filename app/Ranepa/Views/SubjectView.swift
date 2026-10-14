@@ -21,7 +21,8 @@ struct SubjectView: View {
             Section {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(name).font(.title.bold())
-                    Text(subject.upcomingSummary).foregroundStyle(.secondary)
+                    if let line = planLine { Text(line).font(.subheadline.weight(.semibold)).foregroundStyle(.secondary) }
+                    Text(subject.lessons.isEmpty ? "Пар в расписании нет" : subject.upcomingSummary).foregroundStyle(.secondary)
                 }
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
@@ -68,6 +69,18 @@ struct SubjectView: View {
         .sheet(item: $lesson) { LessonSheet(lesson: $0, from: .subject(name)) }
         .alert("Адрес скопирован", isPresented: Binding(get: { copied != nil }, set: { if !$0 { copied = nil } })) {
         } message: { Text(copied ?? "") }
+    }
+
+    /// «Зачёт · 72 ч · 2 з. е. · 1-й семестр» — из плана обучения.
+    private var planLine: String? {
+        guard let plan = state.plan else { return nil }
+        let current = plan.currentSemester(now: Clock.now)
+        guard let item = plan.item(named: name, semester: current) ?? plan.item(named: name, semester: nil) else { return nil }
+        var parts = [item.form].compactMap { $0 }
+        if item.hours > 0 { parts.append("\(item.hours) ч") }
+        if item.ze > 0 { parts.append("\(item.ze) з. е.") }
+        if item.semesterNumber != current { parts.append(item.semester) }
+        return parts.joined(separator: " · ")
     }
 
     private func lecturerRow(_ l: Subject.Lecturer) -> some View {

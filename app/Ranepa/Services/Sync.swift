@@ -138,7 +138,7 @@ enum Sync {
         do {
             result = try await LKWebView.refresh(monday: monday, weeks: weeks,
                                                  stopAfterEmpty: semester ? emptyWeeksToStop : nil,
-                                                 withProfile: full, withPhoto: full && photoStale(d))
+                                                 withProfile: full, withPhoto: full && photoStale(d), withPlan: semester)
         } catch LKError.serverBusy(let status, let retryAfter) {
             startBackoff(d, retryAfter: retryAfter)
             throw LKError.serverBusy(status: status, retryAfter: retryAfter)
@@ -210,6 +210,7 @@ enum Sync {
         }
         d.setTime(Clock.now, Keys.fetchedAt)
         if let until = result.sessionUntil { d.setTime(until, Keys.sessionUntil) }
+        if let plan = result.plan { d.set(plan, forKey: Keys.plan) }
         if full { d.setTime(Clock.now, Keys.lastFullAt) }
         if replaceAll {
             d.setTime(monday, Keys.rangeStart)

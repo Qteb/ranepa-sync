@@ -4,6 +4,7 @@ import SwiftUI
 enum Route: Hashable {
     case subject(String)
     case lecturer(String)
+    case plan
 }
 
 extension View {
@@ -15,6 +16,7 @@ extension View {
                 switch route {
                 case .subject(let name): SubjectView(name: name)
                 case .lecturer(let name): LecturerView(name: name)
+                case .plan: PlanView()
                 }
             }
             .onAppear(perform: shown)

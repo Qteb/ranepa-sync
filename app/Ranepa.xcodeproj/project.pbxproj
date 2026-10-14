@@ -16,6 +16,7 @@
 		19357670AE3FAEC0E8B35818 /* Subjects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F63FF50EB3BEC47772A6EB /* Subjects.swift */; };
 		1D32CCDB3B1DF8D04973161F /* RanepaWatchWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 42EAE608BF1FA1C464D11906 /* RanepaWatchWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		24FACA1FB42473D8B8979181 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5E506A5328AC63A32AEDB950 /* Assets.xcassets */; };
+		2AB589F4D1B5B8B8AE7C6C23 /* StudyPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 269A4C69BA3D2A6EA8C3228E /* StudyPlan.swift */; };
 		302126585882BA012D464779 /* ExamSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B0576FE42B62CCB11FA32A4 /* ExamSessionTests.swift */; };
 		313F11021DC289EA76FD1BC8 /* LessonActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3507124DF6D45C996F40B198 /* LessonActivity.swift */; };
 		33BFC9300D589A7FFF36A03C /* Lessons.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50AFFAA75BD71DF9CEC62A6 /* Lessons.swift */; };
@@ -30,6 +31,7 @@
 		546D8AFD4C658C4AD9CD8941 /* PRIVACY.md in Resources */ = {isa = PBXBuildFile; fileRef = 6B36D2D53D07595AA012830D /* PRIVACY.md */; };
 		5921E8600CC056515060B713 /* Lessons.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50AFFAA75BD71DF9CEC62A6 /* Lessons.swift */; };
 		5AB8EDB60739859CCD5A682D /* LessonSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D4B3FAF3B8ED55D063D641 /* LessonSheet.swift */; };
+		5B0DE23F0BD11EBFDF7E0596 /* PlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45D43F9F77D7C9FB26A9616A /* PlanView.swift */; };
 		6889011EC6F3F733E9AD6E65 /* LessonActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3507124DF6D45C996F40B198 /* LessonActivity.swift */; };
 		6E9B3857EA5EBA78253C607A /* Pagers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B3F0933FDE3223C67BA291D /* Pagers.swift */; };
 		700AA86B66013788320E486C /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D29FAA68E5EE9073A8865A6 /* Notifications.swift */; };
@@ -139,6 +141,7 @@
 		18F63FF50EB3BEC47772A6EB /* Subjects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Subjects.swift; sourceTree = "<group>"; };
 		1983755CA3C96F939265476E /* LecturerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LecturerView.swift; sourceTree = "<group>"; };
 		1BB7669F639E7DBDC5420FFC /* SubjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubjectsView.swift; sourceTree = "<group>"; };
+		269A4C69BA3D2A6EA8C3228E /* StudyPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyPlan.swift; sourceTree = "<group>"; };
 		26E4E1FC4532AB0DC23038FE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2B9669D1302E3DFF395022ED /* RanepaWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RanepaWatch.entitlements; sourceTree = "<group>"; };
 		2C2E0E62DF9E1AAE98262BE1 /* Lesson.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lesson.swift; sourceTree = "<group>"; };
@@ -149,6 +152,7 @@
 		3507124DF6D45C996F40B198 /* LessonActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonActivity.swift; sourceTree = "<group>"; };
 		42EAE608BF1FA1C464D11906 /* RanepaWatchWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RanepaWatchWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		444A9DDA20FE0282FF2CF1FC /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
+		45D43F9F77D7C9FB26A9616A /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
 		464C578967848BE5F3267C85 /* Places.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Places.swift; sourceTree = "<group>"; };
 		4801304716C6CC53BF64663F /* RanepaWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RanepaWidget.entitlements; sourceTree = "<group>"; };
 		4B0576FE42B62CCB11FA32A4 /* ExamSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamSessionTests.swift; sourceTree = "<group>"; };
@@ -242,6 +246,7 @@
 				1983755CA3C96F939265476E /* LecturerView.swift */,
 				61D4B3FAF3B8ED55D063D641 /* LessonSheet.swift */,
 				0B3F0933FDE3223C67BA291D /* Pagers.swift */,
+				45D43F9F77D7C9FB26A9616A /* PlanView.swift */,
 				4E16E3D726B71339E4452771 /* SearchView.swift */,
 				1BB7669F639E7DBDC5420FFC /* SubjectsView.swift */,
 				7AA5B18DB357CA05A7ACAED5 /* SubjectView.swift */,
@@ -333,6 +338,7 @@
 				92125C291F3157D8E61B5056 /* Format.swift */,
 				2C2E0E62DF9E1AAE98262BE1 /* Lesson.swift */,
 				E337B0A51BEC1E16A227584A /* Prefs.swift */,
+				269A4C69BA3D2A6EA8C3228E /* StudyPlan.swift */,
 				18F63FF50EB3BEC47772A6EB /* Subjects.swift */,
 			);
 			path = Core;
@@ -567,9 +573,11 @@
 				E46B14E686E533854AC45B22 /* Outputs.swift in Sources */,
 				6E9B3857EA5EBA78253C607A /* Pagers.swift in Sources */,
 				3C2C55FB94E27B6CFE531D0F /* Places.swift in Sources */,
+				5B0DE23F0BD11EBFDF7E0596 /* PlanView.swift in Sources */,
 				7B8FDE878BFE34BED4461228 /* Prefs.swift in Sources */,
 				B51B733A8834F9AB03B0A860 /* RanepaApp.swift in Sources */,
 				B84E1AEE78E61848A2014308 /* SearchView.swift in Sources */,
+				2AB589F4D1B5B8B8AE7C6C23 /* StudyPlan.swift in Sources */,
 				EB8AE2A5DA5DB11BCF8C368B /* SubjectView.swift in Sources */,
 				19357670AE3FAEC0E8B35818 /* Subjects.swift in Sources */,
 				52C6036401037090361E4D75 /* SubjectsView.swift in Sources */,

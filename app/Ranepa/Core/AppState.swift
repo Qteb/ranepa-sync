@@ -37,6 +37,11 @@ final class AppState {
     var group: String?
     var program: String?
     var photo: UIImage?
+    /// План обучения из ЛК; nil — ещё не загружался или в демо.
+    var plan: StudyPlan?
+
+    /// Сессия текущего семестра: план + события расписания.
+    var session: ExamSession? { ExamSession(lessons: lessons, plan: plan, now: Clock.now) }
 
     init() {
         d.migrateFromFlutter()
@@ -76,6 +81,7 @@ final class AppState {
         fullName = d.string(forKey: Keys.fullName)
         group = d.string(forKey: Keys.group)
         program = d.string(forKey: Keys.program)
+        plan = StudyPlan.cached(d)
         photo = d.string(forKey: Keys.photo).flatMap { Data(base64Encoded: $0) }.flatMap(UIImage.init(data:))
         if !loggedIn && d.bool(forKey: Keys.sessionExpiredNotified) {
             error = "Сессия ЛК истекла, войди заново"

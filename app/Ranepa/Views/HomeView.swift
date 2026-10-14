@@ -74,7 +74,7 @@ struct HomeView: View {
         .sheet(item: $sheetLesson) { LessonSheet(lesson: $0) }
         .sheet(isPresented: $showAccount) { AccountView() }
         .sheet(isPresented: $showExams) {
-            if let session = ExamSession(lessons: state.lessons, now: Clock.now) { ExamsView(session: session) }
+            if let session = state.session { ExamsView(session: session) }
         }
         .onAppear {
             dayPage = index(of: selected)
@@ -253,7 +253,7 @@ private struct DayPage: View {
                         .padding(.bottom, 12)
                 }
                 // Сессия скоро — карточка над сегодняшним днём.
-                if isToday, let session = ExamSession(lessons: state.lessons, now: Clock.now),
+                if isToday, let session = state.session,
                    session.showsCard(now: Clock.now) {
                     ExamCard(session: session, open: openExams)
                         .padding(.bottom, 12)
