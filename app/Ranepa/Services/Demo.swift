@@ -125,7 +125,46 @@ enum Demo {
             }
             days.append(["date": moscowStamp(day), "discs": discs])
         }
-        return FetchResult(days: days, group: group, program: program, fullName: name)
+        return FetchResult(days: days, group: group, program: program, fullName: name,
+                           plan: plan(monday: monday))
+    }
+
+    /// План обучения: формы контроля по предметам и сессия — те две недели,
+    /// где в демо стоят консультация, зачёт и экзамен.
+    static func plan(monday: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "dd.MM.yyyy"
+        let start = monday.adding(days: 7 * (fetchWeeks - 2))
+        let next = start.adding(days: 7 * 22)
+        func item(_ name: String, _ control: String?, _ hours: Int, semester: Int = 1) -> [String: Any] {
+            var i: [String: Any] = ["name": name, "hours": hours, "ze": hours / 36, "course": 1,
+                                    "semester": "\(semester)-й семестр", "elective": false, "practice": false,
+                                    "courseWork": false, "facultative": false, "selected": true]
+            if let control { i["control"] = control }
+            return i
+        }
+        let current: [(String, String?, Int)] = [
+            ("Математика", "Экзамен", 144), ("Экономическая теория", "Экзамен", 144),
+            ("Теория управления", "Зачет", 72), ("Иностранный язык (английский)", "Зачет", 108),
+            ("Основы российской государственности", "Зачет", 72), ("Информационные технологии в управлении", "Зачет с оценкой", 108),
+            ("Правоведение", "Зачет", 72), ("Элективные дисциплины по физической культуре и спорту", nil, 64),
+        ]
+        let second: [(String, String?, Int)] = [
+            ("Математика", "Экзамен", 144), ("Макроэкономика", "Экзамен", 144), ("Философия", "Зачет", 72),
+            ("Иностранный язык (английский)", "Зачет", 108), ("Менеджмент", "Зачет с оценкой", 108),
+        ]
+        let plan: [String: Any] = [
+            "items": current.map { item($0.0, $0.1, $0.2) } + second.map { item($0.0, $0.1, $0.2, semester: 2) },
+            "sessions": [
+                ["course": "1-й курс", "semester": "1-й семестр", "start": f.string(from: start),
+                 "end": f.string(from: start.adding(days: 13))],
+                ["course": "1-й курс", "semester": "2-й семестр", "start": f.string(from: next),
+                 "end": f.string(from: next.adding(days: 13))],
+            ],
+        ]
+        let data = (try? JSONSerialization.data(withJSONObject: plan)) ?? Data()
+        return String(decoding: data, as: UTF8.self)
     }
 
     /// Демо-расписание на сегодня. Сдвиг запоминается на весь день, иначе

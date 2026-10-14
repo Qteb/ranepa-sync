@@ -6,6 +6,19 @@ final class DemoTests: XCTestCase {
         parseLessons(Demo.result(now: now, revision: revision).days)
     }
 
+    /// План в демо: сессия с экзаменом и зачётами видна, карточка — в пределах месяца.
+    func testDemoPlanSession() throws {
+        let now = date(2026, 10, 13, 11, 5)
+        let result = Demo.result(now: now)
+        let plan = try XCTUnwrap(result.plan.flatMap { try? JSONDecoder().decode(StudyPlan.self, from: Data($0.utf8)) })
+        XCTAssertEqual(plan.currentSemester(now: now), 1)
+        let session = try XCTUnwrap(ExamSession(lessons: parseLessons(result.days), plan: plan, now: now))
+        XCTAssertEqual(session.exams.map(\.subject), ["Математика", "Экономическая теория"])
+        XCTAssertNotNil(session.exams[0].event)
+        XCTAssertEqual(session.credits.count, 5)
+        XCTAssertTrue(session.showsCard(now: now))
+    }
+
     func testTuesdayMorningRegularGrid() {
         let now = date(2026, 10, 13, 11, 5)
         let today = lessons(at: now).filter { $0.start.sameDay(now) }
