@@ -29,6 +29,7 @@ enum Places {
     static func locate(_ address: String) async -> CLLocationCoordinate2D? {
         let d = UserDefaults.standard
         var cache = d.dictionary(forKey: cacheKey) as? [String: [Double]] ?? [:]
+        if let building = Campus.building(for: address) { return building.center }
         if let c = cache[address], c.count == 2 {
             return CLLocationCoordinate2D(latitude: c[0], longitude: c[1])
         }

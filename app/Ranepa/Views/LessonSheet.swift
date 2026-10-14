@@ -132,13 +132,38 @@ struct LessonSheet: View {
         .copyable(lesson.room)
     }
 
+    /// Подпись булавки: «Корпус 1» для кампуса, иначе аудитория.
+    private var markerTitle: String {
+        guard let address, let m = address.firstMatch(of: /корпус\s*(\d+)/) else { return lesson.shortLocation }
+        return "Корпус \(m.1)"
+    }
+
     /// Корпус на карте. Карта не листается: нажатие открывает приложение карт.
     private func mapPreview(_ c: CLLocationCoordinate2D) -> some View {
         Button { openPlace() } label: {
-            Map(initialPosition: .camera(MapCamera(centerCoordinate: c, distance: 700))) {
-                Marker(lesson.shortLocation, systemImage: "building.columns.fill", coordinate: c)
-                    .tint(Color.accentColor)
+            let building = address.flatMap(Campus.building(for:))
+            Map(initialPosition: .camera(MapCamera(centerCoordinate: c, distance: building == nil ? 600 : 450))) {
+                // Нужный корпус залит цветом акцента, номер — подписью
+                // поверх, чтобы булавка не закрывала здание.
+                if let building {
+                    MapPolygon(coordinates: building.outline)
+                        .foregroundStyle(Color.accentColor.opacity(0.45))
+                        .stroke(Color.accentColor, lineWidth: 2)
+                    Annotation("", coordinate: c, anchor: .center) {
+                        Text(markerTitle)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(Color.accentColor, in: .capsule)
+                    }
+                } else {
+                    Marker(markerTitle, systemImage: "building.columns.fill", coordinate: c)
+                        .tint(Color.accentColor)
+                }
             }
+            // Без кафе, магазинов и чужих организаций: только улицы и здания.
+            .mapStyle(.standard(pointsOfInterest: .excludingAll))
             .allowsHitTesting(false)
             .frame(height: 150)
         }

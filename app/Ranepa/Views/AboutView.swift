@@ -53,7 +53,8 @@ struct AboutView: View {
                                 icon: SettingsIcon(asset: "GitHub", Color(red: 0x1F / 255, green: 0x23 / 255, blue: 0x28 / 255)))
                 }
             } footer: {
-                Text("Неофициальное приложение. Не связано с РАНХиГС.")
+                // Контуры корпусов на карте — из OpenStreetMap (ODbL).
+                Text("Неофициальное приложение. Не связано с РАНХиГС.\nКонтуры корпусов: © участники [OpenStreetMap](https://www.openstreetmap.org/copyright).")
                     .frame(maxWidth: .infinity)
                     .padding(.top, 8)
             }

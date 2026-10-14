@@ -10,6 +10,7 @@
 		00144E66F493001DC8490AC1 /* RanepaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A3E055F6E10A7192DA4425D5 /* RanepaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		020FB00F221F49EA1E18E060 /* RemoteConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = B02E597C2FD2CD0D00B72583 /* RemoteConfig.swift */; };
 		07358A8133639C0BA31EB1AE /* CalendarExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9468FD91CB162D269B016603 /* CalendarExport.swift */; };
+		0C324248BDAB6BB356AF32D3 /* Campus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31F47E45E969B537A1CE4783 /* Campus.swift */; };
 		113EB897B8F89ED8D8AF91C5 /* RanepaWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B55E87CFD806A9A1800FDB03 /* RanepaWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		172CC367A9EBFA8B14FFD3B0 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DFB335EA1DCB3CAFB17F32C /* Components.swift */; };
 		1D32CCDB3B1DF8D04973161F /* RanepaWatchWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 42EAE608BF1FA1C464D11906 /* RanepaWatchWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -131,6 +132,7 @@
 		2C2E0E62DF9E1AAE98262BE1 /* Lesson.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lesson.swift; sourceTree = "<group>"; };
 		30257E6E310E76C9372B281E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		30F9545DFDEF7BD52107DCE7 /* AuthViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViews.swift; sourceTree = "<group>"; };
+		31F47E45E969B537A1CE4783 /* Campus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Campus.swift; sourceTree = "<group>"; };
 		3507124DF6D45C996F40B198 /* LessonActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LessonActivity.swift; sourceTree = "<group>"; };
 		42EAE608BF1FA1C464D11906 /* RanepaWatchWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RanepaWatchWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		444A9DDA20FE0282FF2CF1FC /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
@@ -178,6 +180,7 @@
 			children = (
 				C1A0708D3D56C4621444EE86 /* Background.swift */,
 				9468FD91CB162D269B016603 /* CalendarExport.swift */,
+				31F47E45E969B537A1CE4783 /* Campus.swift */,
 				DC5C906772AAF457F1E0C62F /* Demo.swift */,
 				70173D848F872DD97E135A3C /* LKClient.swift */,
 				0D29FAA68E5EE9073A8865A6 /* Notifications.swift */,
@@ -519,6 +522,7 @@
 				CE35F73666D81AB487A4126B /* AuthViews.swift in Sources */,
 				7E4A3143827B0F016DA0B9E9 /* Background.swift in Sources */,
 				07358A8133639C0BA31EB1AE /* CalendarExport.swift in Sources */,
+				0C324248BDAB6BB356AF32D3 /* Campus.swift in Sources */,
 				C3D0995C1E45DFDC6B2A54B5 /* Changes.swift in Sources */,
 				172CC367A9EBFA8B14FFD3B0 /* Components.swift in Sources */,
 				765BDAFBAA8AD738914C1043 /* Demo.swift in Sources */,
