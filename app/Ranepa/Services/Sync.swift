@@ -244,6 +244,7 @@ enum Sync {
         let minutes = d.object(forKey: Keys.reminderMinutes) == nil
             ? defaultReminderMinutes : d.integer(forKey: Keys.reminderMinutes)
         await Notifications.scheduleReminders(lessons, minutes: minutes)
+        await Notifications.scheduleExamReminders(lessons)
         // В демо сессии ЛК нет — напоминать о ней незачем.
         if let fetchedAt = d.time(Keys.fetchedAt), !d.bool(forKey: Keys.demo) {
             await Notifications.scheduleKeepAlive(lastSync: fetchedAt, sessionUntil: d.time(Keys.sessionUntil))

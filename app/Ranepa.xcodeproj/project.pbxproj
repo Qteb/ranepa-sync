@@ -14,9 +14,11 @@
 		172CC367A9EBFA8B14FFD3B0 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DFB335EA1DCB3CAFB17F32C /* Components.swift */; };
 		1D32CCDB3B1DF8D04973161F /* RanepaWatchWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 42EAE608BF1FA1C464D11906 /* RanepaWatchWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		24FACA1FB42473D8B8979181 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5E506A5328AC63A32AEDB950 /* Assets.xcassets */; };
+		302126585882BA012D464779 /* ExamSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B0576FE42B62CCB11FA32A4 /* ExamSessionTests.swift */; };
 		313F11021DC289EA76FD1BC8 /* LessonActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3507124DF6D45C996F40B198 /* LessonActivity.swift */; };
 		33BFC9300D589A7FFF36A03C /* Lessons.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50AFFAA75BD71DF9CEC62A6 /* Lessons.swift */; };
 		33D44A23DB356BAF49D1C610 /* Lessons.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50AFFAA75BD71DF9CEC62A6 /* Lessons.swift */; };
+		3674C8ACF525B5BDC9119FE1 /* ExamsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9681F30AE47E678F8B6E2F80 /* ExamsView.swift */; };
 		39D55AD8D56DF1C7B64EA63D /* DemoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8106CCE7A7ABA94724E47606 /* DemoTests.swift */; };
 		3C2C55FB94E27B6CFE531D0F /* Places.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464C578967848BE5F3267C85 /* Places.swift */; };
 		4422FA7CEB4E92B2B03B084D /* RanepaWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFBEDBA7C68823446BDD9FF7 /* RanepaWatchApp.swift */; };
@@ -43,6 +45,7 @@
 		B862AA4EF76288DDDD31AB4F /* Format.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92125C291F3157D8E61B5056 /* Format.swift */; };
 		B8EA663BB8BAEF94EECDF2B6 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 30257E6E310E76C9372B281E /* PrivacyInfo.xcprivacy */; };
 		B9446D381F3A972854F932D4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = ACBD0344A882122F9A7479F4 /* PrivacyInfo.xcprivacy */; };
+		BCF6DD8240CF8082E0382B04 /* Exams.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6E12A3FDE3A06395F97283D /* Exams.swift */; };
 		BDCC1CA01F59D9E233FF2390 /* LessonLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D828BADE50E01ABB6CF1363 /* LessonLiveActivity.swift */; };
 		C3D0995C1E45DFDC6B2A54B5 /* Changes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF5605E35BFEC841A2FC4D0 /* Changes.swift */; };
 		CE35F73666D81AB487A4126B /* AuthViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30F9545DFDEF7BD52107DCE7 /* AuthViews.swift */; };
@@ -140,6 +143,7 @@
 		444A9DDA20FE0282FF2CF1FC /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		464C578967848BE5F3267C85 /* Places.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Places.swift; sourceTree = "<group>"; };
 		4801304716C6CC53BF64663F /* RanepaWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RanepaWidget.entitlements; sourceTree = "<group>"; };
+		4B0576FE42B62CCB11FA32A4 /* ExamSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamSessionTests.swift; sourceTree = "<group>"; };
 		4C3872821F8A2BB774ED4806 /* RanepaWatchWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RanepaWatchWidget.entitlements; sourceTree = "<group>"; };
 		5AB6FF30A280790373AC0BDB /* RanepaTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RanepaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DFB335EA1DCB3CAFB17F32C /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
@@ -155,6 +159,7 @@
 		8EF316051A221AE25EEEC15E /* RanepaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RanepaApp.swift; sourceTree = "<group>"; };
 		92125C291F3157D8E61B5056 /* Format.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Format.swift; sourceTree = "<group>"; };
 		9468FD91CB162D269B016603 /* CalendarExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarExport.swift; sourceTree = "<group>"; };
+		9681F30AE47E678F8B6E2F80 /* ExamsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamsView.swift; sourceTree = "<group>"; };
 		A1037ADF40B8613343E39C2E /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		A213DBDB3CF51ECB6D9EA3FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A29B04F3B1CAB517770673D8 /* SyncPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncPolicyTests.swift; sourceTree = "<group>"; };
@@ -165,6 +170,7 @@
 		B55E87CFD806A9A1800FDB03 /* RanepaWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RanepaWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B884B80DDC4664D677EEED98 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C1A0708D3D56C4621444EE86 /* Background.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Background.swift; sourceTree = "<group>"; };
+		C6E12A3FDE3A06395F97283D /* Exams.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Exams.swift; sourceTree = "<group>"; };
 		C732ECF6116ECED4EF6BF3B0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D16240585307204C7B401A29 /* Controls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Controls.swift; sourceTree = "<group>"; };
 		D2DDC720F1AF98933BD3F958 /* RanepaWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RanepaWidget.swift; sourceTree = "<group>"; };
@@ -197,6 +203,7 @@
 			isa = PBXGroup;
 			children = (
 				8106CCE7A7ABA94724E47606 /* DemoTests.swift */,
+				4B0576FE42B62CCB11FA32A4 /* ExamSessionTests.swift */,
 				A29B04F3B1CAB517770673D8 /* SyncPolicyTests.swift */,
 			);
 			path = RanepaTests;
@@ -220,6 +227,7 @@
 				444A9DDA20FE0282FF2CF1FC /* AccountView.swift */,
 				30F9545DFDEF7BD52107DCE7 /* AuthViews.swift */,
 				5DFB335EA1DCB3CAFB17F32C /* Components.swift */,
+				9681F30AE47E678F8B6E2F80 /* ExamsView.swift */,
 				6E390453ED75403003A12A1C /* HomeView.swift */,
 				61D4B3FAF3B8ED55D063D641 /* LessonSheet.swift */,
 				0B3F0933FDE3223C67BA291D /* Pagers.swift */,
@@ -307,6 +315,7 @@
 			children = (
 				E01AF94B4D84CEB02AD96B4A /* AppState.swift */,
 				0BF5605E35BFEC841A2FC4D0 /* Changes.swift */,
+				C6E12A3FDE3A06395F97283D /* Exams.swift */,
 				92125C291F3157D8E61B5056 /* Format.swift */,
 				2C2E0E62DF9E1AAE98262BE1 /* Lesson.swift */,
 				E337B0A51BEC1E16A227584A /* Prefs.swift */,
@@ -529,6 +538,8 @@
 				C3D0995C1E45DFDC6B2A54B5 /* Changes.swift in Sources */,
 				172CC367A9EBFA8B14FFD3B0 /* Components.swift in Sources */,
 				765BDAFBAA8AD738914C1043 /* Demo.swift in Sources */,
+				BCF6DD8240CF8082E0382B04 /* Exams.swift in Sources */,
+				3674C8ACF525B5BDC9119FE1 /* ExamsView.swift in Sources */,
 				B862AA4EF76288DDDD31AB4F /* Format.swift in Sources */,
 				ACB3C01A7C0DF48C110ED7F5 /* HomeView.swift in Sources */,
 				FAB44E89034F08B4BD58AE33 /* LKClient.swift in Sources */,
@@ -560,6 +571,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				39D55AD8D56DF1C7B64EA63D /* DemoTests.swift in Sources */,
+				302126585882BA012D464779 /* ExamSessionTests.swift in Sources */,
 				4C5E3FD9A653FEF837272E96 /* SyncPolicyTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

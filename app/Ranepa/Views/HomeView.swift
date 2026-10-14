@@ -15,6 +15,7 @@ struct HomeView: View {
     @State private var jumping = false
     @State private var sheetLesson: Lesson?
     @State private var showAccount = false
+    @State private var showExams = false
     @State private var banner: Banner?
     /// Перерисовка раз в минуту: «идёт сейчас» и «ещё N мин».
     @State private var minute = Date()
@@ -98,6 +99,9 @@ struct HomeView: View {
         .onGeometryChange(for: Bool.self) { $0.size.width >= 1100 } action: { wide = $0 }
         .sheet(item: $sheetLesson) { LessonSheet(lesson: $0) }
         .sheet(isPresented: $showAccount) { AccountView() }
+        .sheet(isPresented: $showExams) {
+            if let session = ExamSession(lessons: state.lessons, now: Clock.now) { ExamsView(session: session) }
+        }
         .onAppear {
             dayPage = index(of: selected)
             openPendingLesson()
@@ -257,7 +261,7 @@ struct HomeView: View {
         ScrollView(.horizontal) {
             LazyHStack(spacing: 0) {
                 ForEach(0..<state.dayCount, id: \.self) { i in
-                    DayPage(day: dayAt(i), minute: minute, open: { sheetLesson = $0 })
+                    DayPage(day: dayAt(i), minute: minute, open: { sheetLesson = $0 }, openExams: { showExams = true })
                         .containerRelativeFrame(.horizontal)
                         .id(i)
                 }
@@ -276,6 +280,7 @@ private struct DayPage: View {
     let day: Date
     let minute: Date
     let open: (Lesson) -> Void
+    let openExams: () -> Void
 
     /// Подсказки по одной, по порядку.
     @State private var tips = TipGroup(.ordered) {
@@ -290,6 +295,12 @@ private struct DayPage: View {
             LazyVStack(alignment: .leading, spacing: 0) {
                 if !lessons.isEmpty || isToday {
                     TipView(tips.currentTip)
+                        .padding(.bottom, 12)
+                }
+                // Сессия скоро — карточка над сегодняшним днём.
+                if isToday, let session = ExamSession(lessons: state.lessons, now: Clock.now),
+                   session.showsCard(now: Clock.now) {
+                    ExamCard(session: session, open: openExams)
                         .padding(.bottom, 12)
                 }
                 if lessons.isEmpty {

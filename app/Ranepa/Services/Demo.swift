@@ -102,9 +102,12 @@ enum Demo {
                 let (name, lecturer, email) = subjects[subject]
                 var place = room < 0 ? remote : rooms[room]
                 if revision % 2 == 1 && day.sameDay(nextDay) && n == 0 { place = rooms[(room + 2) % 4] }
-                // Предпоследняя неделя — консультация, последняя — зачёт.
-                let kind = weekIndex == fetchWeeks - 2 && day.isoWeekday == 6 && n == 1 ? "Консультация"
-                    : weekIndex == fetchWeeks - 1 && day.isoWeekday == 6 && n == 1 ? "Зачёт" : type
+                // Сессия по субботам: консультация, зачёт и экзамен. Зачёт —
+                // не дальше месяца, чтобы карточка сессии была видна всегда.
+                let session = day.isoWeekday == 6 && n == 1
+                let kind = session && weekIndex == fetchWeeks - 3 ? "Консультация"
+                    : session && weekIndex == fetchWeeks - 2 ? "Зачёт"
+                    : session && weekIndex == fetchWeeks - 1 ? "Экзамен" : type
                 discs.append([
                     "start_date": moscowStamp(start),
                     "end_date": moscowStamp(start.addingTimeInterval(length)),
