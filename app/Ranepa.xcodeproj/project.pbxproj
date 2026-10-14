@@ -12,6 +12,7 @@
 		0C324248BDAB6BB356AF32D3 /* Campus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31F47E45E969B537A1CE4783 /* Campus.swift */; };
 		113EB897B8F89ED8D8AF91C5 /* RanepaWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B55E87CFD806A9A1800FDB03 /* RanepaWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		172CC367A9EBFA8B14FFD3B0 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DFB335EA1DCB3CAFB17F32C /* Components.swift */; };
+		19357670AE3FAEC0E8B35818 /* Subjects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18F63FF50EB3BEC47772A6EB /* Subjects.swift */; };
 		1D32CCDB3B1DF8D04973161F /* RanepaWatchWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 42EAE608BF1FA1C464D11906 /* RanepaWatchWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		24FACA1FB42473D8B8979181 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5E506A5328AC63A32AEDB950 /* Assets.xcassets */; };
 		302126585882BA012D464779 /* ExamSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B0576FE42B62CCB11FA32A4 /* ExamSessionTests.swift */; };
@@ -24,6 +25,7 @@
 		4422FA7CEB4E92B2B03B084D /* RanepaWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFBEDBA7C68823446BDD9FF7 /* RanepaWatchApp.swift */; };
 		4C5E3FD9A653FEF837272E96 /* SyncPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A29B04F3B1CAB517770673D8 /* SyncPolicyTests.swift */; };
 		4E8C752E1813A98D5859F1F1 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01AF94B4D84CEB02AD96B4A /* AppState.swift */; };
+		52C6036401037090361E4D75 /* SubjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BB7669F639E7DBDC5420FFC /* SubjectsView.swift */; };
 		546D8AFD4C658C4AD9CD8941 /* PRIVACY.md in Resources */ = {isa = PBXBuildFile; fileRef = 6B36D2D53D07595AA012830D /* PRIVACY.md */; };
 		5921E8600CC056515060B713 /* Lessons.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50AFFAA75BD71DF9CEC62A6 /* Lessons.swift */; };
 		5AB8EDB60739859CCD5A682D /* LessonSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61D4B3FAF3B8ED55D063D641 /* LessonSheet.swift */; };
@@ -42,6 +44,7 @@
 		AF32F42A386C984FC03CFBAD /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1037ADF40B8613343E39C2E /* AboutView.swift */; };
 		AF85C23F939596E9BE924FD1 /* Lesson.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2E0E62DF9E1AAE98262BE1 /* Lesson.swift */; };
 		B51B733A8834F9AB03B0A860 /* RanepaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EF316051A221AE25EEEC15E /* RanepaApp.swift */; };
+		B84E1AEE78E61848A2014308 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E16E3D726B71339E4452771 /* SearchView.swift */; };
 		B862AA4EF76288DDDD31AB4F /* Format.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92125C291F3157D8E61B5056 /* Format.swift */; };
 		B8EA663BB8BAEF94EECDF2B6 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 30257E6E310E76C9372B281E /* PrivacyInfo.xcprivacy */; };
 		B9446D381F3A972854F932D4 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = ACBD0344A882122F9A7479F4 /* PrivacyInfo.xcprivacy */; };
@@ -54,6 +57,7 @@
 		D31550B2BFF62C4BAB407505 /* RanepaWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2DDC720F1AF98933BD3F958 /* RanepaWidget.swift */; };
 		DD131A2CEBAF89EEBDBB70E5 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 26E4E1FC4532AB0DC23038FE /* PrivacyInfo.xcprivacy */; };
 		E46B14E686E533854AC45B22 /* Outputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02DCAEF06BB45457B4B85D28 /* Outputs.swift */; };
+		EB8AE2A5DA5DB11BCF8C368B /* SubjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA5B18DB357CA05A7ACAED5 /* SubjectView.swift */; };
 		F3A2F63D52766961AD6DC4C1 /* Sync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79BD1F4E8D133C34C295940F /* Sync.swift */; };
 		FAB44E89034F08B4BD58AE33 /* LKClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70173D848F872DD97E135A3C /* LKClient.swift */; };
 /* End PBXBuildFile section */
@@ -131,6 +135,8 @@
 		0B3F0933FDE3223C67BA291D /* Pagers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pagers.swift; sourceTree = "<group>"; };
 		0BF5605E35BFEC841A2FC4D0 /* Changes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Changes.swift; sourceTree = "<group>"; };
 		0D29FAA68E5EE9073A8865A6 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
+		18F63FF50EB3BEC47772A6EB /* Subjects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Subjects.swift; sourceTree = "<group>"; };
+		1BB7669F639E7DBDC5420FFC /* SubjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubjectsView.swift; sourceTree = "<group>"; };
 		26E4E1FC4532AB0DC23038FE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2B9669D1302E3DFF395022ED /* RanepaWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RanepaWatch.entitlements; sourceTree = "<group>"; };
 		2C2E0E62DF9E1AAE98262BE1 /* Lesson.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lesson.swift; sourceTree = "<group>"; };
@@ -145,6 +151,7 @@
 		4801304716C6CC53BF64663F /* RanepaWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RanepaWidget.entitlements; sourceTree = "<group>"; };
 		4B0576FE42B62CCB11FA32A4 /* ExamSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamSessionTests.swift; sourceTree = "<group>"; };
 		4C3872821F8A2BB774ED4806 /* RanepaWatchWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RanepaWatchWidget.entitlements; sourceTree = "<group>"; };
+		4E16E3D726B71339E4452771 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		5AB6FF30A280790373AC0BDB /* RanepaTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = RanepaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5DFB335EA1DCB3CAFB17F32C /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		5E506A5328AC63A32AEDB950 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -155,6 +162,7 @@
 		6E390453ED75403003A12A1C /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		70173D848F872DD97E135A3C /* LKClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LKClient.swift; sourceTree = "<group>"; };
 		79BD1F4E8D133C34C295940F /* Sync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sync.swift; sourceTree = "<group>"; };
+		7AA5B18DB357CA05A7ACAED5 /* SubjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubjectView.swift; sourceTree = "<group>"; };
 		8106CCE7A7ABA94724E47606 /* DemoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoTests.swift; sourceTree = "<group>"; };
 		8EF316051A221AE25EEEC15E /* RanepaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RanepaApp.swift; sourceTree = "<group>"; };
 		92125C291F3157D8E61B5056 /* Format.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Format.swift; sourceTree = "<group>"; };
@@ -231,6 +239,9 @@
 				6E390453ED75403003A12A1C /* HomeView.swift */,
 				61D4B3FAF3B8ED55D063D641 /* LessonSheet.swift */,
 				0B3F0933FDE3223C67BA291D /* Pagers.swift */,
+				4E16E3D726B71339E4452771 /* SearchView.swift */,
+				1BB7669F639E7DBDC5420FFC /* SubjectsView.swift */,
+				7AA5B18DB357CA05A7ACAED5 /* SubjectView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -319,6 +330,7 @@
 				92125C291F3157D8E61B5056 /* Format.swift */,
 				2C2E0E62DF9E1AAE98262BE1 /* Lesson.swift */,
 				E337B0A51BEC1E16A227584A /* Prefs.swift */,
+				18F63FF50EB3BEC47772A6EB /* Subjects.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -553,6 +565,10 @@
 				3C2C55FB94E27B6CFE531D0F /* Places.swift in Sources */,
 				7B8FDE878BFE34BED4461228 /* Prefs.swift in Sources */,
 				B51B733A8834F9AB03B0A860 /* RanepaApp.swift in Sources */,
+				B84E1AEE78E61848A2014308 /* SearchView.swift in Sources */,
+				EB8AE2A5DA5DB11BCF8C368B /* SubjectView.swift in Sources */,
+				19357670AE3FAEC0E8B35818 /* Subjects.swift in Sources */,
+				52C6036401037090361E4D75 /* SubjectsView.swift in Sources */,
 				F3A2F63D52766961AD6DC4C1 /* Sync.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -56,33 +56,18 @@ struct HomeView: View {
                 }
             }
             .background(Color(.systemGroupedBackground))
-            // Мягкий край под строкой «Обновлено…»: лента вложена в листание
-            // дней, и система не находит её, чтобы размыть край сама.
-            .overlay {
-                GeometryReader { geometry in
-                    VStack(spacing: 0) {
-                        Spacer()
-                        LinearGradient(colors: [Color(.systemGroupedBackground).opacity(0),
-                                                Color(.systemGroupedBackground)],
-                                       startPoint: .top, endPoint: .bottom)
-                            .frame(height: 40)
-                        Color(.systemGroupedBackground)
-                            .frame(height: geometry.safeAreaInsets.bottom + 8)
-                    }
-                    .ignoresSafeArea(edges: .bottom)
-                }
-                .allowsHitTesting(false)
-            }
             .safeAreaBar(edge: .top) { header }
             .toolbar(.hidden, for: .navigationBar)
             .toolbar {
-                // Строка состояния без подложки, как в Почте: лента уходит
-                // под неё в фон (см. overlay выше).
-                ToolbarItem(placement: .status) {
-                    status.fixedSize()
-                        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+                // На iPad панель вкладок сверху — строка состояния внизу, как
+                // в Почте. На iPhone внизу вкладки, и она стоит в конце ленты.
+                if sizeClass == .regular {
+                    ToolbarItem(placement: .status) {
+                        SyncStatus().fixedSize()
+                            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+                    }
+                    .sharedBackgroundVisibility(.hidden)
                 }
-                .sharedBackgroundVisibility(.hidden)
             }
             .overlay(alignment: .top) {
                 if let banner {
@@ -235,27 +220,6 @@ struct HomeView: View {
         .padding(.bottom, 6)
     }
 
-    private var status: some View {
-        HStack(spacing: 6) {
-            if state.loading {
-                ProgressView().controlSize(.mini)
-                Text("Обновление…")
-            } else {
-                Text(statusText)
-            }
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-    }
-
-    private var statusText: String {
-        guard let at = state.fetchedAt else { return "Расписание ещё не загружено" }
-        let today = at.sameDay(Clock.now)
-        // На паузе без объяснений про ЛК: по дате видно, насколько данные старые.
-        if state.syncPaused { return "Расписание от \(today ? "" : "\(shortDate(at)), ")\(hm(at))" }
-        return "Обновлено \(today ? "сегодня" : shortDate(at)) в \(hm(at))"
-    }
-
     // MARK: Лента дней
 
     private var dayPager: some View {
@@ -327,6 +291,10 @@ private struct DayPage: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
             .id(minute)
+            SyncStatus()
+                .frame(maxWidth: .infinity)
+                .padding(.top, 12)
+                .padding(.bottom, 24)
         }
         .refreshable {
             RefreshTip().invalidate(reason: .actionPerformed)
@@ -523,5 +491,31 @@ struct GapRow: View {
         } else {
             Spacer().frame(height: 8)
         }
+    }
+}
+
+/// «Обновлено сегодня в 14:20» или «Обновление…».
+struct SyncStatus: View {
+    @Environment(AppState.self) private var state
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if state.loading {
+                ProgressView().controlSize(.mini)
+                Text("Обновление…")
+            } else {
+                Text(text)
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+
+    private var text: String {
+        guard let at = state.fetchedAt else { return "Расписание ещё не загружено" }
+        let today = at.sameDay(Clock.now)
+        // На паузе без объяснений про ЛК: по дате видно, насколько данные старые.
+        if state.syncPaused { return "Расписание от \(today ? "" : "\(shortDate(at)), ")\(hm(at))" }
+        return "Обновлено \(today ? "сегодня" : shortDate(at)) в \(hm(at))"
     }
 }

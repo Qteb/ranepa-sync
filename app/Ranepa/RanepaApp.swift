@@ -22,7 +22,7 @@ struct RanepaApp: App {
         WindowGroup {
             Group {
                 if state.loggedIn {
-                    HomeView()
+                    RootView()
                 } else {
                     AuthFlow()
                 }
