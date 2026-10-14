@@ -68,12 +68,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         guard let start = Notifications.lessonStart(response.notification.request.content.userInfo) else { return }
-        await MainActor.run {
-            // При холодном старте состояние ещё не создано — ждём его.
-            Task { @MainActor in
-                while state == nil { try? await Task.sleep(for: .milliseconds(50)) }
-                state?.pendingLesson = start
-            }
+        // При холодном старте состояние ещё не создано — ждём его.
+        Task { @MainActor in
+            while state == nil { try? await Task.sleep(for: .milliseconds(50)) }
+            state?.pendingLesson = start
         }
     }
 }
