@@ -53,11 +53,13 @@ struct AccountView: View {
                     }
                     Toggle(isOn: Binding(get: { state.calendarExport },
                                          set: { v in Task { await state.setCalendarExport(v) } })) {
-                        Label { Text("Календарь iPhone") } icon: { SettingsIcon("calendar", .orange) }
+                        Label { Text("Добавлять в Календарь") } icon: { SettingsIcon("calendar", .orange) }
                     }
-                    Toggle(isOn: Binding(get: { state.liveActivity },
-                                         set: { v in Task { await state.setLiveActivity(v) } })) {
-                        Label { Text("Пара на экране блокировки") } icon: { SettingsIcon("timer", .green) }
+                    if isPhone {
+                        Toggle(isOn: Binding(get: { state.liveActivity },
+                                             set: { v in Task { await state.setLiveActivity(v) } })) {
+                            Label { Text("Live Activity") } icon: { SettingsIcon("timer", .green) }
+                        }
                     }
                     Picker(selection: Binding(get: { state.themeMode }, set: { state.setThemeMode($0) })) {
                         Text("Авто").tag(0)
@@ -118,14 +120,19 @@ struct AccountView: View {
         }
     }
 
+    private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
+
     private var logoutTitle: String { state.demo && !Clock.screenshotMode ? "Выйти из демо" : "Выйти из ЛК" }
 
     private var footer: String {
+        // Что делает переключатель Live Activity — всегда, раз название
+        // английское. На iPad Live Activity нет.
+        let live = isPhone ? "Live Activity — текущая пара на экране блокировки и в Dynamic Island. " : ""
         if state.demo && !Clock.screenshotMode {
-            return "Демо-режим: профиль и расписание выдуманы, приложение не обращается к ЛК. "
+            return live + "Демо-режим: профиль и расписание выдуманы, приложение не обращается к ЛК. "
                 + "«Выйти из демо» удалит и календарь «\(CalendarExport.name)»."
         }
-        var parts: [String] = []
+        var parts: [String] = live.isEmpty ? [] : [live.trimmingCharacters(in: .whitespaces)]
         if state.notificationsEnabled == false {
             parts.append("Уведомления выключены — об изменениях в расписании ты не узнаешь.")
         }
