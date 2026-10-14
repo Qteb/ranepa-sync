@@ -132,7 +132,10 @@ enum Demo {
         let day = "\(Int(now.dateOnly.timeIntervalSince1970))"
         let saved = d.string(forKey: Keys.demoShift)?.split(separator: "|")
         let shift: TimeInterval
-        if let saved, saved.count == 2, saved[0] == day, let minutes = Double(saved[1]) {
+        if Clock.screenshotMode {
+            // Скриншоты: обычная сетка пар, состояние дня задаёт DEMO_AT.
+            shift = 0
+        } else if let saved, saved.count == 2, saved[0] == day, let minutes = Double(saved[1]) {
             shift = minutes * 60
         } else {
             shift = todayShift(now)

@@ -76,6 +76,7 @@ struct HomeView: View {
             openPendingLesson()
         }
         .task {
+            await state.reloadDemoForScreenshots()
             await state.refresh(.open)
             await state.showLiveActivity()
             await state.checkNotifications(request: true)
@@ -254,24 +255,23 @@ private struct DayPage: View {
                     TipView(tips.currentTip)
                         .padding(.bottom, 12)
                 }
-                if isToday {
-                    NowCard(today: lessons.filter { !$0.cancelled },
-                            next: state.next(after: Clock.now), open: open)
-                        .padding(.bottom, 20)
-                }
-                if lessons.isEmpty && !isToday {
+                if lessons.isEmpty {
                     ContentUnavailableView {
-                        Label("Пар нет", systemImage: "moon.zzz")
+                        Label(isToday ? "Сегодня пар нет" : "Пар нет", systemImage: "moon.zzz")
                     } description: {
-                        if let next = state.next(after: day.adding(days: 1)) {
+                        if let next = state.next(after: isToday ? Clock.now : day.adding(days: 1)) {
                             Text("Следующая \(whenLabel(next.start))")
                         }
                     }
                     .padding(.top, 40)
-                }
-                ForEach(Array(lessons.enumerated()), id: \.element.id) { i, lesson in
-                    if i > 0 { GapRow(from: lessons[i - 1].end, to: lesson.start) }
-                    TimelineRow(lesson: lesson, now: Clock.now) { open(lesson) }
+                } else if isToday {
+                    TodayTimeline(lessons: lessons, next: state.next(after: lessons.last!.end),
+                                  now: Clock.now, open: open)
+                } else {
+                    ForEach(Array(lessons.enumerated()), id: \.element.id) { i, lesson in
+                        if i > 0 { GapRow(from: lessons[i - 1].end, to: lesson.start) }
+                        TimelineRow(lesson: lesson, now: Clock.now) { open(lesson) }
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -285,7 +285,93 @@ private struct DayPage: View {
     }
 }
 
-/// Карточка «Сейчас»: идущая пара, следующая или итог дня.
+/// Лента сегодняшнего дня: что идёт сейчас, видно прямо в ней. Красная
+/// линия с текущим временем — до начала, в перерыве и после конца пар,
+/// как в Календаре. Во время пары её заменяет заполняющаяся полоска,
+/// а остаток стоит в подписи пары.
+private struct TodayTimeline: View {
+    let lessons: [Lesson]
+    /// Ближайшая пара после сегодняшних — для «Пары закончились».
+    let next: Lesson?
+    let now: Date
+    let open: (Lesson) -> Void
+
+    /// «через 40 мин» с округлением вверх: в последнюю минуту — «1 мин».
+    private func left(_ until: Date) -> String { durationText(until.timeIntervalSince(now) + 59) }
+
+    var body: some View {
+        let active = lessons.filter { !$0.cancelled }
+        let first = active.first
+        let last = active.last
+        VStack(alignment: .leading, spacing: 0) {
+            if let first, now < first.start {
+                NowLine(now: now)
+                NowCaption(text: "Первая пара через \(left(first.start))")
+            }
+            ForEach(Array(lessons.enumerated()), id: \.element.id) { i, lesson in
+                if i > 0 {
+                    let from = lessons[i - 1].end
+                    if from <= now && now < lesson.start && !lessons[i - 1].cancelled && !lesson.cancelled {
+                        NowLine(now: now)
+                        let long = lesson.start.timeIntervalSince(from) >= 3600
+                        NowCaption(text: "\(long ? "Окно" : "Перерыв") · ещё \(left(lesson.start))")
+                    } else {
+                        GapRow(from: from, to: lesson.start)
+                    }
+                }
+                TimelineRow(lesson: lesson, now: now,
+                            remaining: lesson.isOngoing(at: now) ? "ещё \(left(lesson.end))" : nil) { open(lesson) }
+            }
+            if let last, now >= last.end {
+                NowLine(now: now).padding(.top, 6)
+                NowCaption(text: "Пары закончились")
+                if let next {
+                    NowCaption(text: "Следующая \(whenLabel(next.start)) — \(next.subject)", secondary: true)
+                }
+            }
+        }
+    }
+}
+
+/// Красная линия «сейчас»: время в колонке времени, линия — до края.
+private struct NowLine: View {
+    let now: Date
+    @ScaledMetric(relativeTo: .subheadline) private var timeWidth = 48
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Text(hm(now))
+                .font(.caption2.weight(.bold))
+                .monospacedDigit()
+                .foregroundStyle(.white)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(Color.red, in: .capsule)
+                .frame(width: timeWidth + 6, alignment: .trailing)
+            Rectangle().fill(Color.red).frame(height: 1.5)
+        }
+        .padding(.vertical, 4)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Подпись под линией «сейчас», с отступом колонки текста.
+private struct NowCaption: View {
+    let text: String
+    var secondary = false
+    @ScaledMetric(relativeTo: .subheadline) private var timeWidth = 48
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        Text(text)
+            .font(.footnote.weight(secondary ? .regular : .semibold))
+            .foregroundStyle(secondary ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.red))
+            .padding(.leading, typeSize.isAccessibilitySize ? 13 : timeWidth + 23)
+            .padding(.bottom, 4)
+    }
+}
+
+/// Карточка «Сейчас» — на iPad, над неделей колонками.
 struct NowCard: View {
     let today: [Lesson]
     let next: Lesson?
@@ -374,6 +460,8 @@ struct NowCard: View {
 struct TimelineRow: View {
     let lesson: Lesson
     let now: Date
+    /// «ещё 40 мин» у идущей пары: красным в конце подписи.
+    var remaining: String? = nil
     let action: () -> Void
     @ScaledMetric(relativeTo: .subheadline) private var timeWidth = 48
     @Environment(\.dynamicTypeSize) private var typeSize
@@ -381,14 +469,16 @@ struct TimelineRow: View {
     var body: some View {
         let ongoing = lesson.isOngoing(at: now)
         let dimmed = lesson.cancelled || now > lesson.end
+        let progress = ongoing ? now.timeIntervalSince(lesson.start) / lesson.end.timeIntervalSince(lesson.start) : nil
+        let details = remaining.map {
+            Text("\(lessonDetails(lesson, icon: true)) · \(Text($0).foregroundStyle(Color.red).fontWeight(.semibold))")
+        } ?? lessonDetails(lesson, icon: true)
         Button(action: action) {
             // На крупных размерах шрифта время встаёт над названием, иначе
             // колонка времени съедает ширину и название рвётся по слогам.
             if typeSize.isAccessibilitySize {
                 HStack(alignment: .top, spacing: 10) {
-                    RoundedRectangle(cornerRadius: 1.5)
-                        .fill(kindColor(lesson.kind))
-                        .frame(width: 3)
+                    KindStripe(kind: lesson.kind, progress: progress)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(hm(lesson.start))–\(hm(lesson.end))")
                             .font(.subheadline.weight(ongoing ? .semibold : .medium))
@@ -396,7 +486,7 @@ struct TimelineRow: View {
                         Text(lesson.subject)
                             .font(.body.weight(ongoing ? .semibold : .regular))
                             .strikethrough(lesson.cancelled)
-                        lessonDetails(lesson, icon: true).font(.subheadline).foregroundStyle(.secondary)
+                        details.font(.subheadline).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -412,14 +502,12 @@ struct TimelineRow: View {
                     Text(hm(lesson.end)).font(.footnote).foregroundStyle(.secondary)
                 }
                 .frame(width: timeWidth, alignment: .trailing)
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(kindColor(lesson.kind))
-                    .frame(width: 3)
+                KindStripe(kind: lesson.kind, progress: progress)
                 VStack(alignment: .leading, spacing: 0) {
                     Text(lesson.subject)
                         .font(.body.weight(ongoing ? .semibold : .regular))
                         .strikethrough(lesson.cancelled)
-                    lessonDetails(lesson, icon: true).font(.subheadline).foregroundStyle(.secondary)
+                    details.font(.subheadline).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -436,9 +524,29 @@ struct TimelineRow: View {
         .accessibilityLabel([
             "\(hm(lesson.start))–\(hm(lesson.end))", lesson.subject, lesson.kind,
             lesson.isRemote ? "дистанционно" : lesson.shortLocation,
-            lesson.cancelled ? "отменена" : "", ongoing ? "идёт сейчас" : "",
+            lesson.cancelled ? "отменена" : "", ongoing ? "идёт сейчас" : "", remaining ?? "",
         ].filter { !$0.isEmpty }.joined(separator: ", "))
         .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// Цветная полоска типа. У идущей пары заполняется сверху вниз по ходу пары.
+private struct KindStripe: View {
+    let kind: String
+    let progress: Double?
+
+    var body: some View {
+        let color = kindColor(kind)
+        Capsule()
+            .fill(progress == nil ? color : color.opacity(0.25))
+            .overlay(alignment: .top) {
+                if let progress {
+                    GeometryReader { g in
+                        Capsule().fill(color).frame(height: max(3, g.size.height * min(max(progress, 0), 1)))
+                    }
+                }
+            }
+            .frame(width: progress == nil ? 3 : 4)
     }
 }
 

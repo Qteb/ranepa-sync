@@ -47,7 +47,6 @@ final class AppState {
     var syncPaused: Bool { Sync.paused(d) }
     var pausedMessage: String? { RemoteConfig.cached(d).message }
 
-    var colorScheme: ColorScheme? { themeMode == 1 ? .light : themeMode == 2 ? .dark : nil }
 
     /// Первый день загруженного диапазона — понедельник текущей недели.
     var firstDay: Date { Clock.now.monday }
@@ -93,6 +92,13 @@ final class AppState {
     func startDemo() async {
         d.set(true, forKey: Keys.demo)
         await completeLogin(Demo.fetch(d), monday: Clock.now.monday)
+    }
+
+    /// Скриншоты (DEMO_AT): демо пересобирается под переведённые часы.
+    func reloadDemoForScreenshots() async {
+        guard Clock.screenshotMode, demo else { return }
+        _ = await Sync.save(Demo.fetch(d), monday: Clock.now.monday, d)
+        loadCache()
     }
 
     /// Отладка: демо, где сегодня 4 пары по 4 минуты, первая — через
@@ -187,6 +193,16 @@ final class AppState {
     func setThemeMode(_ mode: Int) {
         d.set(mode, forKey: Keys.themeMode)
         themeMode = mode
+        applyTheme()
+    }
+
+    /// Тема задаётся окну, а не через preferredColorScheme: тот после
+    /// возврата к «Авто» оставляет окно и открытые листы в прежней теме.
+    func applyTheme() {
+        let style: UIUserInterfaceStyle = themeMode == 1 ? .light : themeMode == 2 ? .dark : .unspecified
+        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+            for window in scene.windows { window.overrideUserInterfaceStyle = style }
+        }
     }
 
     func logout() async {
