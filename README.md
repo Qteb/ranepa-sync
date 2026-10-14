@@ -1,6 +1,7 @@
 # Расписание студента
 
-Неофициальное мобильное приложение с расписанием занятий для студентов РАНХиГС.
+Неофициальное приложение для iPhone, iPad и Apple Watch с расписанием занятий
+для студентов РАНХиГС.
 Расписание берётся из личного кабинета студента (my.ranepa.ru).
 
 > Приложение не связано с РАНХиГС и не поддерживается академией.
@@ -9,8 +10,7 @@
 
 - Показывает расписание твоей группы и подгрупп: сверху карточка с текущей или
   следующей парой, ниже — пары дня с перерывами между ними.
-- На iPad показывает всю неделю колонками, в альбомной ориентации — с боковой
-  панелью.
+- На iPad показывает всю неделю колонками.
 - Работает без интернета: расписание на месяц вперёд хранится на телефоне.
 - Обновляется в фоне и присылает уведомление, если пару перенесли, отменили,
   добавили или поменяли аудиторию.
@@ -41,7 +41,7 @@
 ## Вход и токены
 
 **Вход.** Приложение открывает страницу `my.ranepa.ru` во встроенном WebView
-(`flutter_inappwebview`). Студент входит так же, как в браузере: форма, пароль
+(`WKWebView`). Студент входит так же, как в браузере: форма, пароль
 и проверки — на стороне сайта. Приложение не подставляет данные в форму и не
 читает поля ввода. Оно только следит за адресом страницы: когда страница ушла
 с `/login`, вход состоялся.
@@ -50,20 +50,20 @@
 
 | Данные | Где | Кто пишет |
 |---|---|---|
-| Cookie ЛК, `access_token`, `refresh_token`, срок жизни токена | Хранилище WebView в песочнице приложения (`localStorage` и cookie сайта `my.ranepa.ru`) | Сам сайт ЛК |
-| Расписание, ФИО, группа, программа, уменьшенное фото, время обновлений, настройки | `SharedPreferences` (iOS — `NSUserDefaults`, Android — XML в папке приложения) | Приложение |
-| Ближайшие пары для виджета | Общая область приложения и виджета (App Group на iOS) | Приложение |
+| Cookie ЛК, `access_token`, `refresh_token`, срок жизни токена | Хранилище WebKit в песочнице приложения (`localStorage` и cookie сайта `my.ranepa.ru`) | Сам сайт ЛК |
+| Расписание, ФИО, группа, программа, уменьшенное фото, время обновлений, настройки | `UserDefaults` приложения | Приложение |
+| Ближайшие пары для виджета | Общая область приложения и виджета (App Group) | Приложение |
 
-Токены не копируются в хранилище приложения и не попадают в Dart-код. Запросы
+Токены не копируются в хранилище приложения и не попадают в Swift-код. Запросы
 расписания выполняются JavaScript-кодом внутри страницы ЛК: он берёт
 `access_token` из `localStorage` страницы и подставляет в заголовок
 `Authorization`, а наружу отдаёт только JSON с расписанием
-(`lib/ranepa_client.dart`). Все данные лежат в песочнице приложения, другие
+(`app/Ranepa/Services/LKClient.swift`). Все данные лежат в песочнице приложения, другие
 приложения к ним доступа не имеют.
 
 **Жизнь токенов.** Access-токен ЛК живёт час, refresh-токен — сутки.
 Приложение не обновляет токены само: при каждом обновлении скрытый WebView
-(`HeadlessInAppWebView`) открывает страницу ЛК с сохранёнными cookie и
+открывает страницу ЛК с сохранёнными cookie и
 `localStorage`, и скрипты сайта сами обменивают refresh-токен на новую пару
 токенов. Так каждое обновление продлевает сессию ещё на сутки, и повторно
 входить не нужно, пока приложение обновляется хотя бы раз в день. Если
@@ -84,9 +84,8 @@
   4) загружается при входе и первым обновлением за день. Остальные обновления
   берут только текущую неделю, с пятницы — ещё и следующую, и подставляют её в
   сохранённый месяц. Профиль загружается раз в день, фото — раз в неделю.
-- **Фон примерно раз в 4 часа.** На Android — WorkManager в случайный момент
-  окна 3:50–4:10 и только при наличии сети, на iOS — `BGAppRefreshTask`, время
-  запуска выбирает система (не раньше чем через 4 часа).
+- **Фон примерно раз в 4 часа.** `BGAppRefreshTask`, время запуска выбирает
+  система (не раньше чем через 4 часа).
 - **Ночью тишина.** С 00:00 до 07:00 фон в ЛК не ходит.
 - **Воскресенья и каникулы.** Если пар нет (воскресенье или в ближайшие
   14 дней пусто), фон делает только одну загрузку в день.
@@ -98,53 +97,50 @@
   отправляет запросов. При открытии приложение обновляется, только если
   данным больше 4 часов, и пытается не чаще раза в 15 минут.
 
-Правила собраны в `syncSchedule` (`lib/services/sync.dart`) и покрыты тестами
-(`test/sync_policy_test.dart`).
+Правила собраны в `Sync.skipReason` (`app/Ranepa/Services/Sync.swift`) и
+покрыты тестами (`app/RanepaTests/SyncPolicyTests.swift`).
 
 ## Как это устроено
 
 - **Данные.** Сайт закрыт JS-проверкой браузера, поэтому все запросы идут
   изнутри WebView. Приложение перехватывает запрос расписания, который делает
   сама страница (`n-api/schedule` с `uid_org` и всеми группами студента), и по
-  его образцу запрашивает нужные недели (`lib/ranepa_client.dart`).
+  его образцу запрашивает нужные недели (`app/Ranepa/Services/LKClient.swift`).
 - **Изменения.** Новое расписание сравнивается с сохранённым; изменения в
-  ближайшие 7 дней приходят одним уведомлением (`lib/services/changes.dart`).
-- **Календарь.** `eventide` ведёт отдельный календарь «РАНХиГС» и пересоздаёт
+  ближайшие 7 дней приходят одним уведомлением (`app/Ranepa/Core/Changes.swift`).
+- **Календарь.** EventKit ведёт отдельный календарь «РАНХиГС» и пересоздаёт
   события при каждом обновлении.
-- **Виджет.** `home_widget` передаёт пары на 14 дней через App Group. Нативный
-  виджет (iOS — `ios/RanepaWidget`, Android — `RanepaWidgetProvider.kt`) сам
-  отбрасывает прошедшие пары.
+- **Виджет.** Приложение передаёт пары на 14 дней через App Group, виджет
+  (`app/RanepaWidget`) сам отбрасывает прошедшие пары.
 - **Live Activity.** При открытии приложения и после каждого обновления
-  оставшиеся сегодня пары уходят в `ios/Runner/LiveActivityBridge.swift`.
+  оставшиеся сегодня пары уходят в `LiveActivities` (`app/Ranepa/Services/Outputs.swift`).
   Запустить активность iOS даёт только из открытого приложения, обновить — и
   из фона. Сервера для push-обновлений нет, поэтому в активности сразу лежат
   идущая и следующая пара: когда первая заканчивается, расширение
-  (`ios/RanepaWidget/LessonLiveActivity.swift`) само показывает перемену.
+  (`app/RanepaWidget/LessonLiveActivity.swift`) само показывает перемену.
 - **Apple Watch.** После каждого обновления iPhone отправляет те же пары на
-  часы через WatchConnectivity (`ios/Runner/WatchBridge.swift`). Приложение
-  для часов (`ios/RanepaWatch`) сохраняет их у себя, усложнения
-  (`ios/RanepaWatchWidget`) читают оттуда. Сами часы в ЛК не ходят. Общая
-  модель пар — `ios/Shared/Lessons.swift`.
-- **Интерфейс.** Экраны свёрстаны на Cupertino-виджетах по Apple Human Interface
-  Guidelines.
+  часы через WatchConnectivity (`WatchSync` в `app/Ranepa/Services/Outputs.swift`).
+  Приложение для часов (`app/RanepaWatch`) сохраняет их у себя, усложнения
+  (`app/RanepaWatchWidget`) читают оттуда. Сами часы в ЛК не ходят. Общая
+  модель пар — `app/Shared/Lessons.swift`.
+- **Интерфейс.** SwiftUI на системных компонентах iOS 26 (Liquid Glass) по
+  Apple Human Interface Guidelines.
 
 ## Сборка
 
-Нужны Flutter 3.47+, Xcode и CocoaPods (для iOS) или Android Studio (для Android).
+Нужны Xcode 26 и [XcodeGen](https://github.com/yonaskolb/XcodeGen): проект
+Xcode собирается из `app/project.yml`.
 
 ```bash
-flutter pub get
-flutter run                      # на подключённом устройстве или симуляторе
-flutter build ios --simulator    # сборка для iOS Simulator
-flutter build apk                # APK для Android
+cd app
+xcodegen generate
+open Ranepa.xcodeproj
 ```
 
-С приложением для часов `flutter build ios --simulator` не работает: Flutter
-требует конкретное устройство. Для симулятора — так:
+Тесты:
 
 ```bash
-flutter build ios --config-only --simulator --debug
-xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Debug -destination "id=<iPhone>" build
+xcodebuild -project app/Ranepa.xcodeproj -scheme Ranepa -destination "platform=iOS Simulator,name=iPhone 17 Pro" test
 ```
 
 В отладочной сборке на экране аккаунта есть раздел «Отладка»: запуск фонового
@@ -154,17 +150,18 @@ xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Debug
 
 Долгое нажатие на логотип на стартовом экране открывает демо: выдуманная
 студентка с расписанием на месяц, без входа и без интернета
-(`lib/services/demo.dart`). Работают напоминания, виджет, календарь и
+(`app/Ranepa/Services/Demo.swift`). Работают напоминания, виджет, календарь и
 «потянуть вниз»: каждое обновление меняет одну аудиторию на завтра, чтобы было
 видно уведомление об изменении. «Выйти из демо» на экране аккаунта удаляет всё,
 включая календарь, и возвращает к стартовому экрану. Демо есть и в релизной
 сборке — для проверки в App Review.
 
 Сегодняшние пары сдвигаются так, чтобы одна из них шла прямо сейчас. Для
-одинаковых скриншотов время приложения можно зафиксировать:
+одинаковых скриншотов время приложения можно зафиксировать аргументом
+запуска:
 
 ```bash
-flutter run --dart-define=DEMO_AT=2026-10-13T11:05
+xcrun simctl launch booted com.qteb.ranepaTimetable -DEMO_AT 2026-10-13T11:05
 ```
 
 ```bash
@@ -191,17 +188,17 @@ tool/install_device.sh
 
 | Что | Где |
 |---|---|
-| Команда разработчика (`DEVELOPMENT_TEAM`) | `ios/Runner.xcodeproj/project.pbxproj` или Xcode → Signing & Capabilities у таргетов `Runner` и `RanepaWidgetExtension` |
-| Bundle ID `com.qteb.ranepaTimetable` | `ios/Runner.xcodeproj/project.pbxproj` |
-| App Group `group.com.qteb.ranepatimetable` | `ios/Runner/Runner.entitlements`, `ios/RanepaWidget/RanepaWidget.entitlements`, `ios/RanepaWidget/RanepaWidget.swift`, `lib/services/home_widget_bridge.dart` |
-| Фоновая задача `com.qteb.ranepaTimetable.refresh` | `ios/Runner/Info.plist`, `ios/Runner/AppDelegate.swift`, `lib/services/background.dart` |
-| Android `applicationId` `com.qteb.ranepa_sync` | `android/app/build.gradle.kts`, пакет Kotlin в `android/app/src/main/kotlin/com/qteb/ranepa_sync` |
+| Команда разработчика (`DEVELOPMENT_TEAM`) | `app/project.yml` |
+| Bundle ID `com.qteb.ranepaTimetable` | `app/project.yml` |
+| App Group `group.com.qteb.ranepatimetable` | `*.entitlements` в `app/`, `app/Shared/Lessons.swift` |
+| Фоновая задача `com.qteb.ranepaTimetable.refresh` | `app/project.yml`, `app/Ranepa/Services/Background.swift` |
+
+После правки `project.yml` — снова `xcodegen generate`.
 
 ## Состояние
 
-- iOS — проверено на симуляторе, бета-версии раздаются через TestFlight.
-- Android — код написан (включая виджет и фоновое обновление), но сборка пока
-  не проверялась.
+- Версия 1.x написана на Flutter, с 2.0 приложение нативное (SwiftUI).
+- Бета-версии раздаются через TestFlight.
 
 ## Лицензия
 

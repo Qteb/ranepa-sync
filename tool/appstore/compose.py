@@ -2,7 +2,7 @@
 import sys
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-RAW, SPLIT, W_DIR, OUT = sys.argv[1:5]
+RAW, W_DIR, OUT = sys.argv[1:4]
 SF = '/System/Library/Fonts/SFNS.ttf'
 BG = (246, 240, 242)
 TITLE = (28, 10, 16)
@@ -100,24 +100,47 @@ def showcase(w_dir, title, sub, size, tsize, ssize, **_):
 IPHONE = dict(size=(1320, 2868), screen_w=1010, radius=128, bezel=22, tsize=104, ssize=50)
 IPAD = dict(size=(2064, 2752), screen_w=1560, radius=44, bezel=26, tsize=118, ssize=56)
 
+def split_home():
+    """Главный экран: светлая и тёмная тема, разделённые по диагонали."""
+    light = Image.open(f'{RAW}/home-light.png').convert('RGB')
+    dark = Image.open(f'{RAW}/home-dark.png').convert('RGB')
+    w, h = light.size
+    m = Image.new('L', (w, h), 0)
+    ImageDraw.Draw(m).polygon([(w, int(h * 0.42)), (w, h), (0, h), (0, int(h * 0.58))], fill=255)
+    light.paste(dark, (0, 0), m)
+    path = f'{RAW}/home-split.png'
+    light.save(path)
+    return path
+
+
+def no_date(path):
+    """iPad: в строке состояния — настоящая дата, а не дата демо. Убираем её."""
+    s = Image.open(path).convert('RGB')
+    bg = s.getpixel((400, 12))
+    ImageDraw.Draw(s).rectangle((130, 0, 600, 60), fill=bg)
+    out = path.replace('.png', '-nodate.png')
+    s.save(out)
+    return out
+
+
 slides = [
-    ('iphone', f'{SPLIT}/01-home.png', 'Твоё расписание.\nВсегда под рукой',
+    ('iphone', split_home(), 'Твоё расписание.\nВсегда под рукой',
      'Прямо из личного кабинета,\nработает без интернета'),
     ('iphone', 'widgets', 'Пары\nна главном экране',
      'Следующая пара видна,\nне открывая приложение'),
-    ('iphone', f'{RAW}/05-change-light.png', 'Узнаёшь о переносах\nпервым',
+    ('iphone', f'{RAW}/lesson.png', 'Где пара —\nвидно сразу',
+     'Корпус на карте, аудитория\nи преподаватель'),
+    ('iphone', f'{RAW}/change2.png', 'Узнаёшь о переносах\nпервым',
      'Перенесли, отменили, сменили\nаудиторию — придёт уведомление'),
-    ('iphone', f'{RAW}/02-lesson-light.png', 'Всё о паре\nв одном месте',
-     'Аудитория, преподаватель,\nгруппа и ссылка на курс'),
-    ('iphone', f'{RAW}/06-calendar-light.png', 'Пары\nв календаре iPhone',
-     'Отдельный календарь «РАНХиГС»\nобновляется сам'),
-    ('iphone', f'{RAW}/03-account-light.png', 'Напомнит\nзаранее',
+    ('iphone', f'{RAW}/cal.png', 'Пары\nв Календаре',
+     'Отдельный календарь «РАНХиГС»\nс адресами корпусов'),
+    ('iphone', f'{RAW}/account.png', 'Напомнит\nзаранее',
      'За 5, 15 или 30 минут\nдо начала пары'),
-    ('ipad', f'{RAW}/ipad-01-home-light.png', 'Вся неделя\nна одном экране',
-     'Пары по дням, текущая — с рамкой'),
-    ('ipad', f'{RAW}/ipad-02-lesson-light.png', 'Всё о паре\nв одном месте',
-     'Аудитория, преподаватель, группа и ссылка на курс'),
-    ('ipad', f'{RAW}/ipad-04-account-light.png', 'Напомнит заранее',
+    ('ipad', no_date(f'{RAW}/ipad-home.png'), 'Вся неделя\nна одном экране',
+     'Идущая пара — с остатком времени'),
+    ('ipad', no_date(f'{RAW}/ipad-lesson.png'), 'Где пара — видно сразу',
+     'Корпус на карте, аудитория и преподаватель'),
+    ('ipad', no_date(f'{RAW}/ipad-account.png'), 'Напомнит заранее',
      'За 5, 15 или 30 минут до начала пары'),
 ]
 n = {'iphone': 0, 'ipad': 0}
@@ -128,4 +151,7 @@ for dev, path, title, sub in slides:
     else:
         img = framed(path, title, sub, **(IPHONE if dev == 'iphone' else IPAD))
     img.save(f'{OUT}/{dev}-{n[dev]}.png')
+    if dev == 'iphone':
+        # 6,3": тот же кадр меньше.
+        img.resize((1206, 2622), Image.LANCZOS).save(f'{OUT}/{dev}-63-{n[dev]}.png')
 print('ok')

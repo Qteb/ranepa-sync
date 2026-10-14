@@ -1,0 +1,150 @@
+# Проект Xcode собирается из этого файла: xcodegen generate (в папке app).
+name: Ranepa
+options:
+  bundleIdPrefix: com.qteb
+  developmentLanguage: ru
+  deploymentTarget:
+    iOS: "26.0"
+    watchOS: "10.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: DXDPT4TQR4
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: 2.0.0
+    CURRENT_PROJECT_VERSION: 20
+    SWIFT_VERSION: 5.0
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+  configs:
+    Debug:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+    # Сборка для своего iPhone с разделом «Отладка» (tool/install_device.sh).
+    TestTools:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: TEST_TOOLS
+configs:
+  Debug: debug
+  Release: release
+  TestTools: release
+
+targets:
+  Ranepa:
+    type: application
+    platform: iOS
+    sources:
+      - Ranepa
+      - Shared
+      - path: ../PRIVACY.md
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.qteb.ranepaTimetable
+        PRODUCT_NAME: Ranepa
+        CODE_SIGN_ENTITLEMENTS: Ranepa/Ranepa.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        INFOPLIST_FILE: Ranepa/Info.plist
+    info:
+      path: Ranepa/Info.plist
+      properties:
+        CFBundleDisplayName: Расписание
+        CFBundleDevelopmentRegion: ru
+        CFBundleLocalizations: [ru]
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleURLTypes:
+          - CFBundleURLName: com.qteb.ranepaTimetable
+            CFBundleURLSchemes: [ranepa]
+        BGTaskSchedulerPermittedIdentifiers: [com.qteb.ranepaTimetable.refresh]
+        ITSAppUsesNonExemptEncryption: false
+        LSRequiresIPhoneOS: true
+        NSCalendarsFullAccessUsageDescription: Чтобы добавлять пары в календарь «РАНХиГС» и обновлять их при изменениях.
+        NSCalendarsUsageDescription: Чтобы добавлять пары в календарь «РАНХиГС» и обновлять их при изменениях.
+        NSSupportsLiveActivities: true
+        # Какие приложения карт установлены — для выбора, где открыть корпус.
+        LSApplicationQueriesSchemes: [yandexmaps, dgis, comgooglemaps]
+        UIBackgroundModes: [fetch]
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    dependencies:
+      - target: RanepaWidget
+      - target: RanepaWatch
+
+  RanepaWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - RanepaWidget
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.qteb.ranepaTimetable.RanepaWidget
+        PRODUCT_NAME: RanepaWidgetExtension
+        CODE_SIGN_ENTITLEMENTS: RanepaWidget/RanepaWidget.entitlements
+        INFOPLIST_FILE: RanepaWidget/Info.plist
+        TARGETED_DEVICE_FAMILY: "1,2"
+        APPLICATION_EXTENSION_API_ONLY: YES
+
+  RanepaWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - RanepaWatch
+      - Shared/Lessons.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.qteb.ranepaTimetable.watchkitapp
+        CODE_SIGN_ENTITLEMENTS: RanepaWatch/RanepaWatch.entitlements
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Расписание
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.qteb.ranepaTimetable
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SKIP_INSTALL: YES
+    dependencies:
+      - target: RanepaWatchWidget
+
+  RanepaWatchWidget:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - RanepaWatchWidget
+      - Shared/Lessons.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.qteb.ranepaTimetable.watchkitapp.widgets
+        PRODUCT_NAME: RanepaWatchWidgetExtension
+        CODE_SIGN_ENTITLEMENTS: RanepaWatchWidget/RanepaWatchWidget.entitlements
+        INFOPLIST_FILE: RanepaWatchWidget/Info.plist
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+
+  RanepaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [RanepaTests]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.qteb.ranepaTimetable.tests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: Ranepa
+
+schemes:
+  Ranepa:
+    build:
+      targets:
+        Ranepa: all
+        RanepaTests: [test]
+    test:
+      targets: [RanepaTests]
+    archive:
+      config: Release

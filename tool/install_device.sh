@@ -11,27 +11,22 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# Flutter может быть не в PATH (например, при запуске из другого терминала).
-if ! command -v flutter >/dev/null; then
-  export PATH="$HOME/development/flutter/bin:$PATH"
-fi
-
 device="${1:-}"
 if [[ -z "$device" ]]; then
   device=$(xcrun devicectl list devices 2>/dev/null \
-    | awk '/connected/ && /iPhone/ { for (i = 1; i <= NF; i++) if ($i ~ /^[0-9A-F-]{36}$/) { print $i; exit } }')
+    | awk '/(connected|available)/ && !/unavailable/ && /iPhone/ { for (i = 1; i <= NF; i++) if ($i ~ /^[0-9A-F-]{36}$/) { print $i; exit } }')
 fi
 if [[ -z "$device" ]]; then
-  echo "iPhone не найден. Подключи кабелем, разблокируй и нажми «Доверять»." >&2
+  echo "iPhone не найден. Подключи кабелем или по Wi-Fi, разблокируй и нажми «Доверять»." >&2
   exit 1
 fi
 
-flutter build ios --release --config-only --dart-define=TEST_TOOLS=true
-xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release \
+(cd app && xcodegen generate --quiet)
+xcodebuild -project app/Ranepa.xcodeproj -scheme Ranepa -configuration TestTools \
   -destination 'generic/platform=iOS' -derivedDataPath build/device \
   -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
   build -quiet
-app=build/device/Build/Products/Release-iphoneos/Runner.app
+app=build/device/Build/Products/TestTools-iphoneos/Ranepa.app
 xcrun devicectl device install app --device "$device" "$app" >/dev/null
 if xcrun devicectl device process launch --device "$device" com.qteb.ranepaTimetable >/dev/null 2>&1; then
   echo "Установлено и запущено. Отладка — в аккаунте, внизу."
