@@ -184,37 +184,42 @@ private struct DayCell: View {
 struct WeekColumns: View {
     @Environment(AppState.self) private var state
     let week: Date
+    /// Перерисовка раз в минуту: линия «сейчас» и «ещё N мин».
+    let minute: Date
     let open: (Lesson) -> Void
 
     var body: some View {
         let days = (0..<7).map { week.adding(days: $0) }
             .filter { $0.isoWeekday < 7 || !state.lessons(on: $0).isEmpty }
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                if days.contains(where: { $0.sameDay(Clock.now) }) {
-                    NowCard(today: state.lessons(on: Clock.now).filter { !$0.cancelled },
-                            next: state.next(after: Clock.now), open: open)
-                        .frame(maxWidth: 520)
-                }
-                HStack(alignment: .top, spacing: 12) {
-                    ForEach(days, id: \.self) { day in
-                        DayColumn(day: day, lessons: state.lessons(on: day), open: open)
-                    }
+            HStack(alignment: .top, spacing: 12) {
+                ForEach(days, id: \.self) { day in
+                    let lessons = state.lessons(on: day)
+                    DayColumn(day: day, lessons: lessons, now: Clock.now,
+                              next: lessons.last.flatMap { state.next(after: $0.end) }, open: open)
                 }
             }
             .padding(20)
+            .id(minute)
         }
         .refreshable { await state.refresh(.manual) }
     }
 }
 
+/// День колонкой карточек. Сегодня — с линией «сейчас», как в ленте iPhone:
+/// до начала, в перерыве и после пар; у идущей пары — остаток и полоска.
 private struct DayColumn: View {
     let day: Date
     let lessons: [Lesson]
+    let now: Date
+    let next: Lesson?
     let open: (Lesson) -> Void
 
+    private func left(_ until: Date) -> String { durationText(until.timeIntervalSince(now) + 59) }
+
     var body: some View {
-        let today = day.sameDay(Clock.now)
+        let today = day.sameDay(now)
+        let active = lessons.filter { !$0.cancelled }
         VStack(alignment: .leading, spacing: 8) {
             Text("\(weekdaysShort[day.isoWeekday - 1]), \(day.day)")
                 .font(.subheadline.weight(.semibold))
@@ -222,32 +227,81 @@ private struct DayColumn: View {
             if lessons.isEmpty {
                 Text("Пар нет").font(.footnote).foregroundStyle(.tertiary)
             }
-            ForEach(lessons) { lesson in
-                Button { open(lesson) } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 4) {
-                            KindIcon(kind: lesson.kind, size: 12)
-                            Text("\(hm(lesson.start))–\(hm(lesson.end))")
-                                .font(.caption.weight(.medium)).foregroundStyle(.secondary)
-                                .lineLimit(1).minimumScaleFactor(0.8)
-                        }
-                        // Колонки узкие (iPad mini — около 100 pt): шрифт мельче,
-                        // чтобы длинные слова реже переносились по буквам.
-                        Text(lesson.subject)
-                            .font(.footnote.weight(.semibold))
-                            .strikethrough(lesson.cancelled)
-                            .lineLimit(3)
-                        Text(lesson.isRemote ? "Дистанционно" : lesson.shortLocation)
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(10)
-                    .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 14))
-                    .opacity(lesson.cancelled || Clock.now > lesson.end ? 0.45 : 1)
+            if today, let first = active.first, now < first.start {
+                ColumnNowLine(now: now, caption: "Первая пара через \(left(first.start))")
+            }
+            ForEach(Array(lessons.enumerated()), id: \.element.id) { i, lesson in
+                if today, i > 0, lessons[i - 1].end <= now, now < lesson.start,
+                   !lessons[i - 1].cancelled, !lesson.cancelled {
+                    let long = lesson.start.timeIntervalSince(lessons[i - 1].end) >= 3600
+                    ColumnNowLine(now: now, caption: "\(long ? "Окно" : "Перерыв") · ещё \(left(lesson.start))")
                 }
-                .buttonStyle(.plain)
+                card(lesson)
+            }
+            if today, let last = active.last, now >= last.end {
+                ColumnNowLine(now: now, caption: "Пары закончились",
+                              detail: next.map { "Следующая \(whenLabel($0.start))" })
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private func card(_ lesson: Lesson) -> some View {
+        let ongoing = lesson.isOngoing(at: now)
+        return Button { open(lesson) } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    KindIcon(kind: lesson.kind, size: 12)
+                    Text("\(hm(lesson.start))–\(hm(lesson.end))")
+                        .font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                }
+                // Колонки узкие (iPad mini — около 100 pt): шрифт мельче,
+                // чтобы длинные слова реже переносились по буквам.
+                Text(lesson.subject)
+                    .font(.footnote.weight(.semibold))
+                    .strikethrough(lesson.cancelled)
+                    .lineLimit(3)
+                Text(lesson.isRemote ? "Дистанционно" : lesson.shortLocation)
+                    .font(.caption).foregroundStyle(.secondary)
+                if ongoing {
+                    Text("ещё \(left(lesson.end))")
+                        .font(.caption.weight(.semibold)).foregroundStyle(.red)
+                    ProgressView(value: min(max(now.timeIntervalSince(lesson.start)
+                        / lesson.end.timeIntervalSince(lesson.start), 0), 1))
+                        .tint(kindColor(lesson.kind))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(10)
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 14))
+            .opacity(lesson.cancelled || now > lesson.end ? 0.45 : 1)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Линия «сейчас» в колонке: время на красной плашке и подпись под ней.
+private struct ColumnNowLine: View {
+    let now: Date
+    let caption: String
+    var detail: String? = nil
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 0) {
+                Text(hm(now))
+                    .font(.caption2.weight(.bold))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(Color.red, in: .capsule)
+                Rectangle().fill(Color.red).frame(height: 1.5)
+            }
+            Text(caption).font(.caption.weight(.semibold)).foregroundStyle(.red)
+            if let detail { Text(detail).font(.caption).foregroundStyle(.secondary) }
+        }
+        .accessibilityElement(children: .combine)
     }
 }

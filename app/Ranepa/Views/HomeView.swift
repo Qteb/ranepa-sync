@@ -27,7 +27,7 @@ struct HomeView: View {
         NavigationStack {
             Group {
                 if sizeClass == .regular {
-                    WeekColumns(week: selected.monday, open: { sheetLesson = $0 })
+                    WeekColumns(week: selected.monday, minute: minute, open: { sheetLesson = $0 })
                 } else {
                     dayPager
                 }
@@ -368,91 +368,6 @@ private struct NowCaption: View {
             .foregroundStyle(secondary ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.red))
             .padding(.leading, typeSize.isAccessibilitySize ? 13 : timeWidth + 23)
             .padding(.bottom, 4)
-    }
-}
-
-/// Карточка «Сейчас» — на iPad, над неделей колонками.
-struct NowCard: View {
-    let today: [Lesson]
-    let next: Lesson?
-    let open: (Lesson) -> Void
-
-    var body: some View {
-        let now = Clock.now
-        let current = today.first { $0.start <= now && now < $0.end }
-        let upcoming = today.first { $0.start > now }
-        let target = current ?? upcoming ?? next
-
-        Button { if let target { open(target) } } label: {
-            VStack(alignment: .leading, spacing: 0) {
-                // Не помещается в строку (крупный шрифт) — «ещё 40 мин» под подписью.
-                ViewThatFits(in: .horizontal) {
-                    HStack {
-                        captionText(current: current, upcoming: upcoming)
-                        Spacer()
-                        trailingText(current: current, upcoming: upcoming, now: now)
-                    }
-                    VStack(alignment: .leading, spacing: 2) {
-                        captionText(current: current, upcoming: upcoming)
-                        trailingText(current: current, upcoming: upcoming, now: now)
-                    }
-                }
-                .padding(.bottom, 6)
-                if let current {
-                    Text(current.subject).font(.title3.weight(.semibold))
-                    lessonDetails(current).font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
-                    ProgressView(value: min(max(now.timeIntervalSince(current.start)
-                        / current.end.timeIntervalSince(current.start), 0), 1))
-                        .padding(.top, 12)
-                    Text(upcoming.map { "Дальше в \(hm($0.start)) — \($0.subject)" } ?? "Это последняя пара сегодня")
-                        .font(.footnote).foregroundStyle(.secondary).padding(.top, 10)
-                } else if let upcoming {
-                    Text(upcoming.subject).font(.title3.weight(.semibold))
-                    Text("\(hm(upcoming.start))–\(hm(upcoming.end)) · \(lessonDetails(upcoming))")
-                        .font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
-                } else if let next {
-                    Text("Следующая \(whenLabel(next.start))").font(.title3.weight(.semibold))
-                    Text(next.subject).font(.subheadline).foregroundStyle(.secondary).padding(.top, 2)
-                } else {
-                    Text("Отдыхай").font(.title3.weight(.semibold))
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 24))
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .disabled(target == nil)
-    }
-
-    private func captionText(current: Lesson?, upcoming: Lesson?) -> some View {
-        Text(caption(current: current, upcoming: upcoming))
-            .font(.footnote.weight(.semibold))
-            .foregroundStyle(.tint)
-            .fixedSize()
-    }
-
-    @ViewBuilder
-    private func trailingText(current: Lesson?, upcoming: Lesson?, now: Date) -> some View {
-        if let trailing = trailing(current: current, upcoming: upcoming, now: now) {
-            Text(trailing).font(.footnote).foregroundStyle(.secondary).fixedSize()
-        }
-    }
-
-    private func caption(current: Lesson?, upcoming: Lesson?) -> String {
-        if current != nil { return "СЕЙЧАС" }
-        if upcoming != nil { return "ДАЛЕЕ" }
-        return today.isEmpty ? "СЕГОДНЯ ПАР НЕТ" : "ПАРЫ ЗАКОНЧИЛИСЬ"
-    }
-
-    private func trailing(current: Lesson?, upcoming: Lesson?, now: Date) -> String? {
-        if let current { return "ещё \(durationText(current.end.timeIntervalSince(now) + 60))" }
-        if let upcoming {
-            let wait = upcoming.start.timeIntervalSince(now)
-            return wait < 2 * 3600 ? "через \(durationText(wait + 60))" : "в \(hm(upcoming.start))"
-        }
-        return nil
     }
 }
 
