@@ -29,13 +29,17 @@ struct SubjectView: View {
             }
             if let next = subject.next {
                 Section("Следующая") {
-                    Button { lesson = next } label: { NextRow(lesson: next) }
+                    Button { lesson = next } label: { LessonListRow(lesson: next, showSubject: false) }
                         .foregroundStyle(Color(.label))
                 }
             }
             if let exam = subject.exam {
                 Section(exam.kind.capitalizedFirst) {
-                    Button { lesson = exam } label: { ExamRow(exam: exam, consultation: subject.consultation) }
+                    Button { lesson = exam } label: {
+                        LessonListRow(lesson: exam, showSubject: false, note: subject.consultation.map { c in
+                            "Консультация — \(shortWhen(c.start))\(c.isRemote ? ", дистанционно" : ", \(c.shortLocation)")"
+                        })
+                    }
                         .foregroundStyle(Color(.label))
                 }
             }
@@ -113,12 +117,7 @@ struct SubjectView: View {
 
     private func kindRow(_ k: Subject.KindSummary) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: kindSymbol(k.kind))
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(width: 30, height: 30)
-                .background(RoundedRectangle(cornerRadius: 7).fill(kindColor(k.kind)))
-                .accessibilityHidden(true)
+            KindStripe(kind: k.kind)
             VStack(alignment: .leading, spacing: 2) {
                 Text(kindPlural(k.kind))
                 Text([k.upcoming > 0 ? "\(k.upcoming) впереди" : "все прошли", k.usualRoom.map { "обычно \($0)" }]
@@ -127,6 +126,7 @@ struct SubjectView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .combine)
     }
 
@@ -141,7 +141,7 @@ struct SubjectView: View {
             Section("\(monthsNominative[key % 100 - 1]) · \(items.count) \(plural(items.count, "пара", "пары", "пар"))") {
                 if open {
                     ForEach(items) { l in
-                        Button { lesson = l } label: { PairRow(lesson: l) }
+                        Button { lesson = l } label: { LessonListRow(lesson: l, showSubject: false) }
                             .foregroundStyle(Color(.label))
                     }
                 } else {
@@ -149,99 +149,5 @@ struct SubjectView: View {
                 }
             }
         }
-    }
-}
-
-private struct NextRow: View {
-    let lesson: Lesson
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Stripe(kind: lesson.kind)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(shortWhen(lesson.start))–\(hm(lesson.end))")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Color.accentColor)
-                Text("\(lesson.kind.capitalizedFirst) · \(lesson.isRemote ? "дистанционно" : lesson.shortLocation)")
-                    .font(.headline)
-                if !lesson.lecturer.isEmpty {
-                    Text(lesson.lecturer).font(.subheadline).foregroundStyle(.secondary)
-                }
-            }
-            Spacer(minLength: 0)
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-private struct ExamRow: View {
-    let exam: Lesson
-    let consultation: Lesson?
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: kindSymbol(exam.kind))
-                .font(.title2)
-                .foregroundStyle(kindColor(exam.kind))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(daysUntil(exam.start, from: Clock.now).capitalizedFirst)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(kindTextColor(exam.kind))
-                Text("\(dayTitle(exam.start).capitalizedFirst), \(hm(exam.start)) · \(exam.isRemote ? "дистанционно" : exam.shortLocation)")
-                    .font(.headline)
-                if let c = consultation {
-                    Label {
-                        Text("Консультация — \(dayTitle(c.start).lowercased()), \(hm(c.start))\(c.isRemote ? ", дистанционно" : "")")
-                    } icon: {
-                        Image(systemName: kindSymbol(c.kind)).foregroundStyle(kindColor(c.kind))
-                    }
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 2)
-                }
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// Пара в списке: число и день недели, полоска типа, время и аудитория.
-struct PairRow: View {
-    let lesson: Lesson
-
-    var body: some View {
-        HStack(spacing: 12) {
-            VStack(spacing: 0) {
-                Text("\(lesson.start.day)").font(.title3.weight(.semibold)).monospacedDigit()
-                Text(weekdaysShort[lesson.start.isoWeekday - 1].lowercased()).font(.caption).foregroundStyle(.secondary)
-            }
-            .frame(width: 34)
-            Stripe(kind: lesson.kind)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(hm(lesson.start)) · \(lesson.kind.capitalizedFirst)")
-                    .strikethrough(lesson.cancelled)
-                Text(place)
-                    .font(.subheadline)
-                    .foregroundStyle(lesson.room.hasPrefix("Уточняется") ? Color.orange : .secondary)
-            }
-            Spacer(minLength: 0)
-        }
-        .opacity(lesson.end < Clock.now ? 0.45 : 1)
-        .accessibilityElement(children: .combine)
-    }
-
-    private var place: String {
-        if lesson.cancelled { return "отменена" }
-        if lesson.isRemote { return "дистанционно" }
-        if lesson.room.hasPrefix("Уточняется") { return "аудитория уточняется" }
-        return lesson.shortLocation
-    }
-}
-
-private struct Stripe: View {
-    let kind: String
-    var body: some View {
-        RoundedRectangle(cornerRadius: 2).fill(kindColor(kind)).frame(width: 4).frame(minHeight: 34)
     }
 }

@@ -47,8 +47,8 @@ struct ExamCard: View {
     }
 }
 
-/// Вкладка «Сессия»: ближайшая сессия по плану — экзамены карточками,
-/// зачёты списком, сданное — внизу.
+/// Вкладка «Сессия»: ближайшая сессия по плану — экзамены и зачёты
+/// строками пар, сданное — внизу.
 struct SessionTab: View {
     @Environment(AppState.self) private var state
     @State private var lesson: Lesson?
@@ -56,62 +56,56 @@ struct SessionTab: View {
 
     var body: some View {
         let now = Clock.now
+        let session = state.session
         NavigationStack {
             Group {
-                if let session = state.session {
+                if let session {
                     content(session, now: now)
                 } else {
                     ContentUnavailableView("Сессии пока нет", systemImage: "graduationcap",
-                                           description: Text("Даты сессии появятся, когда загрузится план обучения."))
+                                           description: Text("Даты появятся, когда загрузится план обучения."))
                 }
             }
-            .navigationTitle("Сессия")
+            .background(Color(.systemGroupedBackground))
+            .safeAreaBar(edge: .top) {
+                TabHeader(title: "Сессия", subtitle: session.map { subtitle($0, now: now) }) { showAccount = true }
+            }
+            .toolbar(.hidden, for: .navigationBar)
             .routes()
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showAccount = true } label: { AvatarView(size: 36) }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Аккаунт и настройки")
-                }
-                .sharedBackgroundVisibility(.hidden)
-            }
         }
         .sheet(item: $lesson) { LessonSheet(lesson: $0) }
         .sheet(isPresented: $showAccount) { AccountView() }
     }
 
+    /// «11–30 января · через 89 дней», «11–30 января · идёт, осталось 8 из 9».
+    private func subtitle(_ session: ExamSession, now: Date) -> String {
+        let when: String
+        if session.isRunning(now: now) {
+            when = "идёт, осталось \(session.remaining(now: now)) из \(session.all.count)"
+        } else {
+            when = session.firstDate.map { daysUntil($0, from: now) } ?? ""
+        }
+        return [session.dates, when].filter { !$0.isEmpty }.joined(separator: " · ")
+    }
+
     private func content(_ session: ExamSession, now: Date) -> some View {
-        let running = session.isRunning(now: now)
         let exams = session.exams.filter { !session.isDone($0, now: now) }
         let credits = session.credits.filter { !session.isDone($0, now: now) }
         let done = session.all.filter { session.isDone($0, now: now) }
         return List {
-            Section {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(running
-                         ? "\(session.dates) · осталось \(session.remaining(now: now)) из \(session.all.count)"
-                         : [session.dates, session.summary].filter { !$0.isEmpty }.joined(separator: " · "))
-                        .foregroundStyle(.secondary)
-                    if let when = countdown(session, running: running, now: now) {
-                        Text(when).font(.headline).foregroundStyle(Color.accentColor)
-                    }
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
-            }
             if !exams.isEmpty {
-                Section(running ? "Впереди" : exams.count == 1 ? "Экзамен" : "Экзамены") {
-                    ForEach(exams) { examRow($0) }
+                Section("\(exams.count == 1 ? "Экзамен" : "Экзамены") · \(exams.count)") {
+                    ForEach(exams) { row($0) }
                 }
             }
             if !credits.isEmpty {
-                Section(credits.count == 1 ? "Зачёт" : "Зачёты") {
-                    ForEach(credits) { creditRow($0, done: false) }
+                Section("\(credits.count == 1 ? "Зачёт" : "Зачёты") · \(credits.count)") {
+                    ForEach(credits) { row($0) }
                 }
             }
             if !done.isEmpty {
                 Section("Прошли") {
-                    ForEach(done) { creditRow($0, done: true) }
+                    ForEach(done) { row($0) }
                 }
             }
             Section {
@@ -119,82 +113,35 @@ struct SessionTab: View {
                 Text("Вечером накануне каждого экзамена и зачёта с датой придёт напоминание.")
             }
         }
-        .listSectionSpacing(.compact)
+        .contentMargins(.top, 4, for: .scrollContent)
     }
 
-    private func countdown(_ session: ExamSession, running: Bool, now: Date) -> String? {
-        if running {
-            guard let left = session.daysLeft(now: now) else { return "Идёт" }
-            return left == 0 ? "Идёт · последний день" : "Идёт · до конца \(left) \(plural(left, "день", "дня", "дней"))"
-        }
-        return session.firstDate.map { daysUntil($0, from: now).capitalizedFirst }
-    }
-
+    /// С датой — строка пары (открывает карточку), без даты — предмет.
     @ViewBuilder
-    private func examRow(_ e: ExamSession.Entry) -> some View {
+    private func row(_ e: ExamSession.Entry) -> some View {
         if let event = e.event {
-            Button { lesson = event } label: { examLabel(e) }
-                .foregroundStyle(Color(.label))
+            Button { lesson = event } label: {
+                LessonListRow(lesson: event, note: consultationNote(e))
+            }
+            .foregroundStyle(Color(.label))
         } else {
-            NavigationLink(value: Route.subject(e.subject)) { examLabel(e) }
-        }
-    }
-
-    private func examLabel(_ e: ExamSession.Entry) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(alignment: .firstTextBaseline) {
-                Label(e.form, systemImage: kindSymbol("экзамен"))
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(kindTextColor("экзамен"))
-                Spacer()
-                if let event = e.event {
-                    Text(daysUntil(event.start, from: Clock.now))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(Color.accentColor)
-                }
-            }
-            Text(e.subject).font(.title3.bold()).multilineTextAlignment(.leading)
-            Text(e.event.map { "\(shortDay($0.start)), \(hm($0.start)) · \(place($0))" } ?? "Дата не назначена")
-                .font(.subheadline)
-                .foregroundStyle(e.event == nil ? .tertiary : .secondary)
-            if let c = e.consultation, c.end > Clock.now {
-                Label {
-                    Text("Консультация — \(shortDay(c.start)), \(hm(c.start)) · \(place(c))")
-                } icon: {
-                    Image(systemName: kindSymbol(c.kind)).foregroundStyle(kindColor(c.kind))
-                }
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .padding(.top, 2)
-            }
-        }
-        .padding(.vertical, 4)
-        .accessibilityElement(children: .combine)
-    }
-
-    private func creditRow(_ e: ExamSession.Entry, done: Bool) -> some View {
-        NavigationLink(value: Route.subject(e.subject)) {
-            VStack(alignment: .leading, spacing: 2) {
-                HStack {
-                    Text(e.subject)
-                        .strikethrough(done)
-                        .foregroundStyle(done ? .secondary : .primary)
-                    if e.form != "Зачёт" {
-                        Text(e.form).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            NavigationLink(value: Route.subject(e.subject)) {
+                HStack(alignment: .top, spacing: 12) {
+                    KindStripe(kind: "экзамен", muted: true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Дата не назначена").font(.subheadline.weight(.medium)).foregroundStyle(.tertiary)
+                        Text(e.subject).font(.headline)
+                        Text(e.form).font(.subheadline).foregroundStyle(.secondary)
                     }
                 }
-                Text(e.event.map { done ? shortDay($0.start) : "\(shortDay($0.start)), \(hm($0.start)) · \(place($0))" }
-                     ?? "Дата не назначена")
-                    .font(.subheadline)
-                    .foregroundStyle(e.event == nil ? .tertiary : .secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.vertical, 2)
             }
         }
     }
 
-    /// «сб, 7 ноября».
-    private func shortDay(_ d: Date) -> String {
-        "\(weekdaysShort[d.isoWeekday - 1].lowercased()), \(d.day) \(monthsGenitive[d.month - 1])"
+    private func consultationNote(_ e: ExamSession.Entry) -> String? {
+        guard let c = e.consultation, c.end > Clock.now else { return nil }
+        return "Консультация — \(shortWhen(c.start))\(c.isRemote ? ", дистанционно" : ", \(c.shortLocation)")"
     }
-
-    private func place(_ l: Lesson) -> String { l.isRemote ? "дистанционно" : l.shortLocation }
 }

@@ -63,7 +63,7 @@ struct SearchView: View {
                     if !lessons.isEmpty {
                         Section("Ближайшие пары") {
                             ForEach(lessons.prefix(30)) { l in
-                                Button { lesson = l } label: { LessonLine(lesson: l) }
+                                Button { lesson = l } label: { LessonListRow(lesson: l) }
                                 .foregroundStyle(Color(.label))
                             }
                         }

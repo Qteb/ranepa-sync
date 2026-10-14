@@ -179,16 +179,10 @@ struct HomeView: View {
                         .buttonStyle(.glass)
                         .transition(.opacity)
                 }
-                Button {
-                    AccountTip().invalidate(reason: .actionPerformed)
-                    showAccount = true
-                } label: {
-                    AvatarView(size: 36)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Аккаунт и настройки")
+                AccountButton { showAccount = true }
             }
-            .padding(.horizontal, 16)
+            // Как у крупного заголовка системной навигации.
+            .padding(.horizontal, 20)
             .animation(.snappy, value: selected.sameDay(Clock.now))
             // Крупный заголовок растёт со шрифтом меньше текста, как в системных
             // приложениях.
@@ -417,8 +411,8 @@ struct TimelineRow: View {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.vertical, 12)
             .padding(.horizontal, 14)
-            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
-            .contentShape(.rect(cornerRadius: 20))
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 26))
+            .contentShape(.rect(cornerRadius: 26))
         }
         .buttonStyle(.plain)
         .opacity(dimmed ? 0.5 : 1)
@@ -435,12 +429,14 @@ struct TimelineRow: View {
 }
 
 /// Цветная полоска типа. У идущей пары заполняется сверху вниз по ходу пары.
-private struct KindStripe: View {
+struct KindStripe: View {
     let kind: String
-    let progress: Double?
+    var progress: Double? = nil
+    /// Без даты (сессия) — серая.
+    var muted = false
 
     var body: some View {
-        let color = kindColor(kind)
+        let color = muted ? Color(.systemGray3) : kindColor(kind)
         Capsule()
             .fill(progress == nil ? color : color.opacity(0.25))
             .overlay(alignment: .top) {

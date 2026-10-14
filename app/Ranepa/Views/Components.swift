@@ -193,3 +193,85 @@ func openMail(_ address: String, subject: String? = nil, openURL: OpenURLAction,
         copied()
     }
 }
+
+/// Шапка вкладки как у расписания: крупный заголовок и аватар в одной
+/// строке, под ними подзаголовок. Ставится в `safeAreaBar(edge: .top)`.
+struct TabHeader: View {
+    let title: String
+    var subtitle: String? = nil
+    let openAccount: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(.largeTitle.bold())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 8)
+                AccountButton(action: openAccount)
+            }
+            if let subtitle, !subtitle.isEmpty {
+                Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 6)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+    }
+}
+
+/// Фото в шапке — открывает настройки.
+struct AccountButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            AccountTip().invalidate(reason: .actionPerformed)
+            action()
+        } label: {
+            AvatarView(size: 36)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Аккаунт и настройки")
+    }
+}
+
+/// Пара в списке — везде одинаково: полоска цвета типа, когда (серым),
+/// предмет, тип и аудитория. Прошедшая — бледнее.
+struct LessonListRow: View {
+    let lesson: Lesson
+    /// День перед временем — когда список не разбит по дням.
+    var showDay = true
+    /// Предмет — не нужен на экране самого предмета.
+    var showSubject = true
+    /// Строка под всем, например консультация к экзамену.
+    var note: String? = nil
+
+    var body: some View {
+        let past = lesson.end < Clock.now
+        HStack(alignment: .top, spacing: 12) {
+            KindStripe(kind: lesson.kind)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(showDay ? "\(dayName(lesson.start)), \(hm(lesson.start))–\(hm(lesson.end))"
+                             : "\(hm(lesson.start))–\(hm(lesson.end))")
+                    .font(.subheadline.weight(.medium))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                if showSubject {
+                    Text(lesson.subject).font(.headline).strikethrough(lesson.cancelled)
+                }
+                lessonDetails(lesson, icon: true).font(.subheadline).foregroundStyle(.secondary)
+                if let note {
+                    Text(note).font(.footnote).foregroundStyle(.secondary).padding(.top, 1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.vertical, 2)
+        .opacity(past || lesson.cancelled ? 0.5 : 1)
+        .accessibilityElement(children: .combine)
+    }
+}

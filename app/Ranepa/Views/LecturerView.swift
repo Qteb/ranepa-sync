@@ -74,7 +74,7 @@ struct LecturerView: View {
             if !upcoming.isEmpty {
                 Section("Ближайшие пары") {
                     ForEach(upcoming.prefix(10)) { l in
-                        Button { lesson = l } label: { LessonLine(lesson: l) }
+                        Button { lesson = l } label: { LessonListRow(lesson: l) }
                             .foregroundStyle(Color(.label))
                     }
                 }
@@ -84,23 +84,5 @@ struct LecturerView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $lesson) { LessonSheet(lesson: $0, from: .lecturer(name)) }
         .alert("Адрес скопирован", isPresented: $copied) {} message: { Text(email) }
-    }
-}
-
-/// Пара строкой: когда, предмет, тип и аудитория.
-struct LessonLine: View {
-    let lesson: Lesson
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("\(weekdaysShort[lesson.start.isoWeekday - 1]), \(lesson.start.day) \(monthsGenitive[lesson.start.month - 1]), \(hm(lesson.start))")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Text(lesson.subject).font(.headline)
-            Text("\(lesson.kind.capitalizedFirst) · \(lesson.isRemote ? "дистанционно" : lesson.shortLocation)")
-                .font(.subheadline)
-                .foregroundStyle(kindTextColor(lesson.kind))
-        }
-        .accessibilityElement(children: .combine)
     }
 }

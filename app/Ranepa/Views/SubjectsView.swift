@@ -71,15 +71,8 @@ struct SubjectsView: View {
                 if let plan = state.plan, !plan.items.isEmpty {
                     Section {
                         NavigationLink(value: Route.plan) {
-                            HStack(spacing: 12) {
-                                SettingsIcon("list.bullet.rectangle", Color.accentColor)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("План обучения")
-                                    Text("\(plan.semesters.count) \(plural(plan.semesters.count, "семестр", "семестра", "семестров"))")
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
+                            LabeledContent("План обучения",
+                                           value: "\(plan.semesters.count) \(plural(plan.semesters.count, "семестр", "семестра", "семестров"))")
                         }
                     }
                 }
@@ -90,17 +83,14 @@ struct SubjectsView: View {
                                            description: Text("Они появятся, когда загрузится расписание."))
                 }
             }
-            .navigationTitle("Предметы")
-            .navigationSubtitle(semester.flatMap { s in state.plan?.course(semester: s).map { "\($0) · \(s)-й семестр" } } ?? "")
-            .routes()
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showAccount = true } label: { AvatarView(size: 36) }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Аккаунт и настройки")
+            .safeAreaBar(edge: .top) {
+                TabHeader(title: "Предметы",
+                          subtitle: semester.flatMap { s in state.plan?.course(semester: s).map { "\($0) · \(s)-й семестр" } }) {
+                    showAccount = true
                 }
-                .sharedBackgroundVisibility(.hidden)
             }
+            .toolbar(.hidden, for: .navigationBar)
+            .routes()
         }
         .sheet(isPresented: $showAccount) { AccountView() }
     }
@@ -113,12 +103,7 @@ private struct SubjectRow: View {
         let subject = entry.subject
         let kind = subject.kinds.max { $0.upcoming < $1.upcoming }?.kind
         HStack(spacing: 12) {
-            Image(systemName: kind.map(kindSymbol) ?? "calendar.badge.exclamationmark")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(width: 30, height: 30)
-                .background(RoundedRectangle(cornerRadius: 7).fill(kind.map(kindColor) ?? Color(.systemGray)))
-                .accessibilityHidden(true)
+            KindStripe(kind: kind ?? "", muted: kind == nil)
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name).lineLimit(2)
                 Text(subtitle)
@@ -129,6 +114,7 @@ private struct SubjectRow: View {
             Spacer(minLength: 4)
             if let form = entry.form { FormBadge(form: form) }
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var subtitle: String {
@@ -154,13 +140,16 @@ struct FormBadge: View {
     }
 }
 
-/// «Сегодня, 09:00», «Завтра, 12:20», «Пт, 10:40», «16 окт., 09:00».
-func shortWhen(_ t: Date) -> String {
-    let day = switch t.days(since: Clock.now) {
+/// День в списках, как в Календаре: «Сегодня», «Завтра», на этой неделе —
+/// «Пт», дальше — «Ср, 14 октября».
+func dayName(_ t: Date) -> String {
+    switch t.days(since: Clock.now) {
     case 0: "Сегодня"
     case 1: "Завтра"
     case 2...6: weekdaysShort[t.isoWeekday - 1]
-    default: "\(t.day) \(monthsGenitive[t.month - 1].prefix(3)).".replacingOccurrences(of: "мая.", with: "мая")
+    default: "\(weekdaysShort[t.isoWeekday - 1]), \(t.day) \(monthsGenitive[t.month - 1])"
     }
-    return "\(day), \(hm(t))"
 }
+
+/// «Сегодня, 09:00», «Ср, 14 октября, 10:40».
+func shortWhen(_ t: Date) -> String { "\(dayName(t)), \(hm(t))" }
