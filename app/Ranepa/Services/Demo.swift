@@ -99,7 +99,9 @@ enum Demo {
                 } else if isToday {
                     start = start.addingTimeInterval(shift)
                 }
-                let (name, lecturer, email) = subjects[subject]
+                // Зачёт — по правоведению: по математике в плане экзамен.
+                let credit = day.isoWeekday == 6 && n == 1 && weekIndex == fetchWeeks - 2
+                let (name, lecturer, email) = subjects[credit ? 7 : subject]
                 var place = room < 0 ? remote : rooms[room]
                 if revision % 2 == 1 && day.sameDay(nextDay) && n == 0 { place = rooms[(room + 2) % 4] }
                 // Сессия по субботам: консультация, зачёт и экзамен. Зачёт —
