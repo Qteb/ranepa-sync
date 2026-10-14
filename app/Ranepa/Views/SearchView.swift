@@ -10,7 +10,7 @@ struct SearchView: View {
         NavigationStack {
             results
                 .navigationTitle("Поиск")
-                .navigationDestination(for: Subject.self) { SubjectView(name: $0.name) }
+                .routes()
         }
         .searchable(text: $query, prompt: "Предмет, преподаватель, аудитория")
         .sheet(item: $lesson) { LessonSheet(lesson: $0) }
@@ -37,7 +37,7 @@ struct SearchView: View {
                     if !subjects.isEmpty {
                         Section("Предметы") {
                             ForEach(subjects) { s in
-                                NavigationLink(value: s) {
+                                NavigationLink(value: Route.subject(s.name)) {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(s.name)
                                         Text(s.upcomingSummary).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
@@ -51,7 +51,7 @@ struct SearchView: View {
                             ForEach(lecturers.keys.sorted(), id: \.self) { name in
                                 let own = lecturers[name]!
                                 let subjectNames = Array(Set(own.map(\.subject))).sorted()
-                                NavigationLink(value: Subject(name: subjectNames[0], lessons: [], now: now)) {
+                                NavigationLink(value: Route.lecturer(name)) {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(name)
                                         Text(subjectNames.joined(separator: ", ")).font(.subheadline).foregroundStyle(.secondary)
@@ -63,15 +63,7 @@ struct SearchView: View {
                     if !lessons.isEmpty {
                         Section("Ближайшие пары") {
                             ForEach(lessons.prefix(30)) { l in
-                                Button { lesson = l } label: {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("\(weekdaysShort[l.start.isoWeekday - 1]), \(l.start.day) \(monthsGenitive[l.start.month - 1]), \(hm(l.start))").font(.subheadline).foregroundStyle(.secondary)
-                                        Text(l.subject).font(.headline)
-                                        Text("\(l.kind.capitalizedFirst) · \(l.isRemote ? "дистанционно" : l.shortLocation)")
-                                            .font(.subheadline)
-                                            .foregroundStyle(kindTextColor(l.kind))
-                                    }
-                                }
+                                Button { lesson = l } label: { LessonLine(lesson: l) }
                                 .foregroundStyle(Color(.label))
                             }
                         }

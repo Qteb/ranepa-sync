@@ -64,6 +64,7 @@ struct ExamsView: View {
                 .padding(.bottom, 24)
             }
             .background(Color(.systemGroupedBackground))
+            .routes()
             .navigationTitle("Сессия")
             .navigationSubtitle("\(session.summary.capitalizedFirst) · \(session.dates)")
             .toolbar {

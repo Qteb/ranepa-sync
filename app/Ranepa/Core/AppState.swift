@@ -47,8 +47,6 @@ final class AppState {
 
     var lastBackgroundRun: Date? { d.time(Keys.lastBackgroundRun) }
     var lastBackgroundResult: String? { d.string(forKey: Keys.lastBackgroundResult) }
-    /// Обновление стоит на паузе после ошибки ЛК.
-    var syncPaused: Bool { Sync.paused(d) }
 
 
     /// Первый день загруженного диапазона — понедельник текущей недели.

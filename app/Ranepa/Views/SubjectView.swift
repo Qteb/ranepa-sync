@@ -65,12 +65,16 @@ struct SubjectView: View {
         .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 60 } action: { _, hidden in
             withAnimation(.easeInOut(duration: 0.15)) { titleHidden = hidden }
         }
-        .sheet(item: $lesson) { LessonSheet(lesson: $0) }
+        .sheet(item: $lesson) { LessonSheet(lesson: $0, from: .subject(name)) }
         .alert("Адрес скопирован", isPresented: Binding(get: { copied != nil }, set: { if !$0 { copied = nil } })) {
         } message: { Text(copied ?? "") }
     }
 
     private func lecturerRow(_ l: Subject.Lecturer) -> some View {
+        NavigationLink(value: Route.lecturer(l.name)) { lecturerLabel(l) }
+    }
+
+    private func lecturerLabel(_ l: Subject.Lecturer) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(l.name)

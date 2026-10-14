@@ -38,7 +38,7 @@ struct SubjectsView: View {
                 }
                 Section {
                     ForEach(subjects) { subject in
-                        NavigationLink(value: subject) { SubjectRow(subject: subject) }
+                        NavigationLink(value: Route.subject(subject.name)) { SubjectRow(subject: subject) }
                     }
                 }
             }
@@ -49,7 +49,7 @@ struct SubjectsView: View {
                 }
             }
             .navigationTitle("Предметы")
-            .navigationDestination(for: Subject.self) { SubjectView(name: $0.name) }
+            .routes()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { showAccount = true } label: { AvatarView(size: 36) }

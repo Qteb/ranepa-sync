@@ -58,17 +58,6 @@ struct HomeView: View {
             .background(Color(.systemGroupedBackground))
             .safeAreaBar(edge: .top) { header }
             .toolbar(.hidden, for: .navigationBar)
-            .toolbar {
-                // На iPad панель вкладок сверху — строка состояния внизу, как
-                // в Почте. На iPhone внизу вкладки, и она стоит в конце ленты.
-                if sizeClass == .regular {
-                    ToolbarItem(placement: .status) {
-                        SyncStatus().fixedSize()
-                            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
-                    }
-                    .sharedBackgroundVisibility(.hidden)
-                }
-            }
             .overlay(alignment: .top) {
                 if let banner {
                     BannerView(banner: banner)
@@ -291,10 +280,6 @@ private struct DayPage: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
             .id(minute)
-            SyncStatus()
-                .frame(maxWidth: .infinity)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
         }
         .refreshable {
             RefreshTip().invalidate(reason: .actionPerformed)
@@ -491,31 +476,5 @@ struct GapRow: View {
         } else {
             Spacer().frame(height: 8)
         }
-    }
-}
-
-/// «Обновлено сегодня в 14:20» или «Обновление…».
-struct SyncStatus: View {
-    @Environment(AppState.self) private var state
-
-    var body: some View {
-        HStack(spacing: 6) {
-            if state.loading {
-                ProgressView().controlSize(.mini)
-                Text("Обновление…")
-            } else {
-                Text(text)
-            }
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-    }
-
-    private var text: String {
-        guard let at = state.fetchedAt else { return "Расписание ещё не загружено" }
-        let today = at.sameDay(Clock.now)
-        // На паузе без объяснений про ЛК: по дате видно, насколько данные старые.
-        if state.syncPaused { return "Расписание от \(today ? "" : "\(shortDate(at)), ")\(hm(at))" }
-        return "Обновлено \(today ? "сегодня" : shortDate(at)) в \(hm(at))"
     }
 }
