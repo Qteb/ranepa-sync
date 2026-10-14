@@ -1,0 +1,251 @@
+import SwiftUI
+
+/// Название месяца листается пальцем, как в Календаре: соседний месяц
+/// выезжает следом, полоса дней переходит к нему.
+struct MonthPager: View {
+    let months: [Date]
+    let selected: Date
+    let onSwipe: (Date) -> Void
+
+    @State private var page: Int?
+    /// Заголовок догоняет выбранный день: это не свайп пользователя.
+    @State private var following = false
+
+    private func index(of day: Date) -> Int {
+        months.firstIndex { $0.year == day.year && $0.month == day.month } ?? 0
+    }
+
+    var body: some View {
+        let now = Clock.now
+        ScrollView(.horizontal) {
+            LazyHStack(spacing: 0) {
+                ForEach(months.indices, id: \.self) { i in
+                    let m = months[i]
+                    let name = monthsNominative[m.month - 1]
+                    Text(m.year == now.year ? name : "\(name) \(m.year)")
+                        .font(.largeTitle.bold())
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .containerRelativeFrame(.horizontal)
+                        .id(i)
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.paging)
+        .scrollPosition(id: $page)
+        .scrollIndicators(.hidden)
+        .scrollClipDisabled(false)
+        .frame(maxWidth: .infinity)
+        .fixedSize(horizontal: false, vertical: true)
+        .onAppear { page = index(of: selected) }
+        .onChange(of: selected) { _, day in
+            let target = index(of: day)
+            guard page != target else { return }
+            following = true
+            withAnimation(.smooth(duration: 0.3)) { page = target } completion: { following = false }
+        }
+        .onChange(of: page) { _, page in
+            guard !following, let page, page != index(of: selected) else { return }
+            onSwipe(months[page])
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(monthsNominative[selected.month - 1])
+        .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// Полоса недель как в Календаре: листается неделями за пальцем, выбор
+/// остаётся на том же дне недели. Если выбранный день ушёл в другую неделю
+/// (листали пары, «Сегодня»), полоса перелистывается сама.
+struct WeekPager: View {
+    let selected: Date
+    /// Понедельник первой недели.
+    let firstDay: Date
+    let weeks: Int
+    let hasLessons: (Date) -> Bool
+    let onSelect: (Date) -> Void
+
+    @State private var page: Int?
+    @State private var following = false
+
+    private func week(of day: Date) -> Int { min(max(day.days(since: firstDay) / 7, 0), weeks - 1) }
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            LazyHStack(spacing: 0) {
+                ForEach(0..<weeks, id: \.self) { w in
+                    WeekRow(monday: firstDay.adding(days: w * 7), selected: selected,
+                            hasLessons: hasLessons, onSelect: onSelect)
+                        .padding(.horizontal, 8)
+                        .containerRelativeFrame(.horizontal)
+                        .id(w)
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollTargetBehavior(.paging)
+        .scrollPosition(id: $page)
+        .scrollIndicators(.hidden)
+        .fixedSize(horizontal: false, vertical: true)
+        .onAppear { page = week(of: selected) }
+        .onChange(of: selected) { _, day in
+            let target = week(of: day)
+            guard let current = page, current != target else { return }
+            following = true
+            if abs(target - current) > 1 {
+                var t = Transaction()
+                t.disablesAnimations = true
+                withTransaction(t) { page = target > current ? target - 1 : target + 1 }
+            }
+            Task { @MainActor in
+                withAnimation(.smooth(duration: 0.3)) { page = target } completion: { following = false }
+            }
+        }
+        .onChange(of: page) { _, page in
+            // Свайп недели: тот же день недели в новой неделе.
+            guard !following, let page, page != week(of: selected) else { return }
+            onSelect(firstDay.adding(days: page * 7 + selected.isoWeekday - 1))
+        }
+    }
+}
+
+/// Неделя: будни и выходные на общей подложке — видно, где кончается неделя.
+private struct WeekRow: View {
+    let monday: Date
+    let selected: Date
+    let hasLessons: (Date) -> Bool
+    let onSelect: (Date) -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<7, id: \.self) { cell($0) }
+        }
+        .background {
+            GeometryReader { g in
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(.tertiarySystemFill))
+                    .frame(width: g.size.width * 2 / 7)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+            }
+        }
+    }
+
+    private func cell(_ i: Int) -> some View {
+        let day = monday.adding(days: i)
+        return DayCell(day: day, selected: day.sameDay(selected), dot: hasLessons(day)) { onSelect(day) }
+            .frame(maxWidth: .infinity)
+    }
+}
+
+private struct DayCell: View {
+    let day: Date
+    let selected: Bool
+    let dot: Bool
+    let action: () -> Void
+    @ScaledMetric(relativeTo: .title3) private var size = 34
+
+    var body: some View {
+        let today = day.sameDay(Clock.now)
+        let weekend = day.isoWeekday >= 6
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Text(weekdaysShort[day.isoWeekday - 1])
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("\(day.day)")
+                    .font(.title3.weight(selected || today ? .semibold : .regular))
+                    .monospacedDigit()
+                    .foregroundStyle(selected ? AnyShapeStyle(Color(.systemBackground))
+                        : today ? AnyShapeStyle(.tint)
+                        : weekend ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+                    .frame(width: size, height: size)
+                    .background {
+                        if selected {
+                            Circle().fill(today ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+                        }
+                    }
+                Circle()
+                    .fill(dot ? Color(.systemGray2) : .clear)
+                    .frame(width: 4, height: 4)
+            }
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .accessibilityLabel("\(today ? "Сегодня, " : "")\(dayTitle(day))\(dot ? "" : ", пар нет")")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// iPad: выбранная неделя колонками карточек, над ней — «Сейчас».
+struct WeekColumns: View {
+    @Environment(AppState.self) private var state
+    let week: Date
+    let open: (Lesson) -> Void
+
+    var body: some View {
+        let days = (0..<7).map { week.adding(days: $0) }
+            .filter { $0.isoWeekday < 7 || !state.lessons(on: $0).isEmpty }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                if days.contains(where: { $0.sameDay(Clock.now) }) {
+                    NowCard(today: state.lessons(on: Clock.now).filter { !$0.cancelled },
+                            next: state.next(after: Clock.now), open: open)
+                        .frame(maxWidth: 520)
+                }
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(days, id: \.self) { day in
+                        DayColumn(day: day, lessons: state.lessons(on: day), open: open)
+                    }
+                }
+            }
+            .padding(20)
+        }
+        .refreshable { await state.refresh(.manual) }
+    }
+}
+
+private struct DayColumn: View {
+    let day: Date
+    let lessons: [Lesson]
+    let open: (Lesson) -> Void
+
+    var body: some View {
+        let today = day.sameDay(Clock.now)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("\(weekdaysShort[day.isoWeekday - 1]), \(day.day)")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(today ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+            if lessons.isEmpty {
+                Text("Пар нет").font(.footnote).foregroundStyle(.tertiary)
+            }
+            ForEach(lessons) { lesson in
+                Button { open(lesson) } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 4) {
+                            KindIcon(kind: lesson.kind, size: 12)
+                            Text("\(hm(lesson.start))–\(hm(lesson.end))")
+                                .font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                        }
+                        Text(lesson.subject)
+                            .font(.subheadline.weight(.semibold))
+                            .strikethrough(lesson.cancelled)
+                            .lineLimit(3)
+                        Text(lesson.isRemote ? "Дистанционно" : lesson.shortLocation)
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10)
+                    .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 14))
+                    .opacity(lesson.cancelled || Clock.now > lesson.end ? 0.45 : 1)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+}

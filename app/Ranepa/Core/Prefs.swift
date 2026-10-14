@@ -1,0 +1,70 @@
+import Foundation
+
+/// Ключи настроек и кэша в UserDefaults. Названия те же, что были во Flutter:
+/// при первом запуске после обновления данные переносятся как есть.
+enum Keys {
+    static let loggedIn = "loggedIn"
+    static let days = "days"
+    static let group = "group"
+    static let fetchedAt = "fetchedAt"
+    static let rangeStart = "rangeStart"
+    static let reminderMinutes = "reminderMinutes"
+    static let calendarExport = "calendarExport"
+    static let sessionExpiredNotified = "sessionExpiredNotified"
+    static let lastBackgroundRun = "lastBackgroundRun"
+    static let lastBackgroundResult = "lastBackgroundResult"
+    static let fullName = "fullName"
+    static let program = "program"
+    static let photo = "photo"
+    static let photoFetchedAt = "photoFetchedAt"
+    static let lastFullAt = "lastFullAt"
+    static let lastAttemptAt = "lastAttemptAt"
+    static let backoffUntil = "backoffUntil"
+    static let backoffFailures = "backoffFailures"
+    static let liveActivity = "liveActivity"
+    static let themeMode = "themeMode"
+    static let demo = "demo"
+    static let demoRevision = "demoRevision"
+    static let demoShift = "demoShift"
+    static let demoFastFrom = "demoFastFrom"
+    static let remoteConfig = "remoteConfig"
+    static let remoteConfigCheckedAt = "remoteConfigCheckedAt"
+
+    /// Всё, что относится к сессии и удаляется при выходе.
+    static let session = [
+        loggedIn, days, group, fetchedAt, rangeStart, sessionExpiredNotified,
+        lastBackgroundRun, lastBackgroundResult, fullName, program, photo,
+        photoFetchedAt, lastFullAt, lastAttemptAt, backoffUntil, backoffFailures,
+        demo, demoRevision, demoShift, demoFastFrom,
+    ]
+}
+
+extension UserDefaults {
+    /// Моменты времени хранятся в миллисекундах, как во Flutter-версии.
+    func time(_ key: String) -> Date? {
+        guard object(forKey: key) != nil else { return nil }
+        return Date(timeIntervalSince1970: Double(integer(forKey: key)) / 1000)
+    }
+
+    func setTime(_ date: Date?, _ key: String) {
+        guard let date else { return removeObject(forKey: key) }
+        set(Int((date.timeIntervalSince1970 * 1000).rounded()), forKey: key)
+    }
+
+    func bool(_ key: String, default value: Bool) -> Bool {
+        object(forKey: key) == nil ? value : bool(forKey: key)
+    }
+
+    /// Flutter (shared_preferences) хранил всё в этом же UserDefaults
+    /// с приставкой «flutter.». Переносим один раз: сессия ЛК в WKWebView
+    /// и так общая, поэтому заново входить не придётся.
+    func migrateFromFlutter() {
+        let marker = "migratedFromFlutter"
+        guard !bool(forKey: marker) else { return }
+        for (key, value) in dictionaryRepresentation() where key.hasPrefix("flutter.") {
+            set(value, forKey: String(key.dropFirst("flutter.".count)))
+            removeObject(forKey: key)
+        }
+        set(true, forKey: marker)
+    }
+}
