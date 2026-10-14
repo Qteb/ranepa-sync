@@ -64,7 +64,7 @@ struct LessonSheet: View {
                             HStack {
                                 Label("Открыть курс в СДО", systemImage: "book")
                                 Spacer()
-                                Image(systemName: "arrow.up.right").foregroundStyle(.tertiary)
+                                Image(systemName: "arrow.up.right").foregroundStyle(Color(.tertiaryLabel))
                             }
                         }
                         .copyable(lesson.lmsLink)

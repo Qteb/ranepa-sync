@@ -49,3 +49,8 @@ app.*.map.json
 
 # Скриншоты для App Store — большие PNG, в репозиторий не кладём.
 /screenshots/
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/

@@ -67,7 +67,7 @@ struct AboutView: View {
         HStack {
             Label { Text(title).foregroundStyle(Color(.label)) } icon: { icon }
             Spacer()
-            Image(systemName: "arrow.up.right").foregroundStyle(.tertiary)
+            Image(systemName: "arrow.up.right").foregroundStyle(Color(.tertiaryLabel))
         }
     }
 }

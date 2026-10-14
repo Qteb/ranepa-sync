@@ -70,7 +70,9 @@ struct AccountView: View {
                     Text(footer)
                 }
 
+                #if DEBUG || TEST_TOOLS
                 if Clock.debugTools { DebugSection() }
+                #endif
 
                 Section {
                     NavigationLink {
@@ -135,6 +137,7 @@ struct AccountView: View {
     }
 }
 
+#if DEBUG || TEST_TOOLS
 /// Отладка: в отладочной сборке и в тестовой для своего iPhone.
 private struct DebugSection: View {
     @Environment(AppState.self) private var state
@@ -184,3 +187,4 @@ private struct DebugSection: View {
         }
     }
 }
+#endif
