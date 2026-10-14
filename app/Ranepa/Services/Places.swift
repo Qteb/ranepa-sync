@@ -74,6 +74,10 @@ enum MapApp: String, CaseIterable, Identifiable {
 
     @MainActor var installed: Bool {
         guard let scheme else { return true }
+        #if targetEnvironment(simulator) && DEBUG
+        // На симуляторе других карт нет — показываем все, чтобы проверить выбор.
+        return true
+        #endif
         return UIApplication.shared.canOpenURL(URL(string: "\(scheme)://")!)
     }
 

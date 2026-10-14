@@ -12,7 +12,9 @@ struct LessonSheet: View {
     @State private var copied = false
     /// Точка корпуса: из кэша или геокодера, пока не нашлась — nil.
     @State private var coordinate: CLLocationCoordinate2D?
-    @State private var choosingMaps = false
+    /// Откуда открыт выбор карт: окно всплывает у этого элемента.
+    @State private var mapsFromMap = false
+    @State private var mapsFromRow = false
     /// Высота листа по содержимому: шапка, строки и отступы.
     @State private var fitted: CGFloat = 320
     @State private var detent = PresentationDetent.height(320)
@@ -79,17 +81,6 @@ struct LessonSheet: View {
             .task {
                 if let address { coordinate = await Places.locate(address) }
             }
-            // Карты, установленные на телефоне, как в Telegram и Яндекс Go:
-            // системного выбора приложения карт в iOS нет.
-            .confirmationDialog(address.map(Places.query(for:)) ?? lesson.shortLocation,
-                                isPresented: $choosingMaps, titleVisibility: .visible) {
-                ForEach(MapApp.installedApps) { app in
-                    Button(app.title) { open(in: app) }
-                }
-                Button("Скопировать адрес") {
-                    UIPasteboard.general.string = address.map(Places.query(for:)) ?? lesson.room
-                }
-            }
         // Лист открывается ровно по содержимому; длинную карточку можно
         // растянуть на весь экран.
         .presentationDetents([.height(fitted), .large], selection: $detent)
@@ -130,6 +121,7 @@ struct LessonSheet: View {
         }
         .disabled(address == nil)
         .copyable(lesson.room)
+        .modifier(mapsDialog($mapsFromRow))
     }
 
     /// Подпись булавки: «Корпус 1» для кампуса, иначе аудитория.
@@ -140,7 +132,7 @@ struct LessonSheet: View {
 
     /// Корпус на карте. Карта не листается: нажатие открывает приложение карт.
     private func mapPreview(_ c: CLLocationCoordinate2D) -> some View {
-        Button { openPlace() } label: {
+        Button { openPlace(fromMap: true) } label: {
             let building = address.flatMap(Campus.building(for:))
             Map(initialPosition: .camera(MapCamera(centerCoordinate: c, distance: building == nil ? 600 : 450))) {
                 // Нужный корпус залит цветом акцента, номер — подписью
@@ -170,14 +162,23 @@ struct LessonSheet: View {
         .buttonStyle(.plain)
         .listRowInsets(EdgeInsets())
         .accessibilityLabel("Корпус на карте")
+        .modifier(mapsDialog($mapsFromMap))
     }
 
-    private func openPlace() {
+    /// Карты, установленные на телефоне, как в Telegram и Яндекс Go:
+    /// системного выбора приложения карт в iOS нет. В iOS 26 окно всплывает
+    /// у элемента, к которому привязано, — поэтому у адреса и у карты своё.
+    private func mapsDialog(_ isPresented: Binding<Bool>) -> MapsDialog {
+        MapsDialog(isPresented: isPresented, title: address ?? lesson.shortLocation,
+                   copyText: address.map(Places.query(for:)) ?? lesson.room, open: open(in:))
+    }
+
+    private func openPlace(fromMap: Bool = false) {
         if let app = MapApp.preferred { return open(in: app) }
         let apps = MapApp.installedApps
         // Кроме Карт ничего не установлено — спрашивать не о чем.
         if apps.count == 1 { return open(in: apps[0]) }
-        choosingMaps = true
+        if fromMap { mapsFromMap = true } else { mapsFromRow = true }
     }
 
     private func open(in app: MapApp) {
@@ -238,6 +239,22 @@ extension View {
             Button("Скопировать", systemImage: "doc.on.doc") {
                 UIPasteboard.general.string = text
             }
+        }
+    }
+}
+
+private struct MapsDialog: ViewModifier {
+    @Binding var isPresented: Bool
+    let title: String
+    let copyText: String
+    let open: (MapApp) -> Void
+
+    func body(content: Content) -> some View {
+        content.confirmationDialog(title, isPresented: $isPresented, titleVisibility: .visible) {
+            ForEach(MapApp.installedApps) { app in
+                Button(app.title) { open(app) }
+            }
+            Button("Скопировать адрес") { UIPasteboard.general.string = copyText }
         }
     }
 }
