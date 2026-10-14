@@ -14,7 +14,7 @@ cd "$(dirname "$0")/.."
 device="${1:-}"
 if [[ -z "$device" ]]; then
   device=$(xcrun devicectl list devices 2>/dev/null \
-    | awk '/(connected|available)/ && /iPhone/ { for (i = 1; i <= NF; i++) if ($i ~ /^[0-9A-F-]{36}$/) { print $i; exit } }')
+    | awk '/(connected|available)/ && !/unavailable/ && /iPhone/ { for (i = 1; i <= NF; i++) if ($i ~ /^[0-9A-F-]{36}$/) { print $i; exit } }')
 fi
 if [[ -z "$device" ]]; then
   echo "iPhone не найден. Подключи кабелем или по Wi-Fi, разблокируй и нажми «Доверять»." >&2
