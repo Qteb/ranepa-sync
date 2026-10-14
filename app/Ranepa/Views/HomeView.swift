@@ -33,12 +33,33 @@ struct HomeView: View {
                 }
             }
             .background(Color(.systemGroupedBackground))
+            // Мягкий край под строкой «Обновлено…»: лента вложена в листание
+            // дней, и система не находит её, чтобы размыть край сама.
+            .overlay {
+                GeometryReader { geometry in
+                    VStack(spacing: 0) {
+                        Spacer()
+                        LinearGradient(colors: [Color(.systemGroupedBackground).opacity(0),
+                                                Color(.systemGroupedBackground)],
+                                       startPoint: .top, endPoint: .bottom)
+                            .frame(height: 40)
+                        Color(.systemGroupedBackground)
+                            .frame(height: geometry.safeAreaInsets.bottom + 8)
+                    }
+                    .ignoresSafeArea(edges: .bottom)
+                }
+                .allowsHitTesting(false)
+            }
             .safeAreaBar(edge: .top) { header }
             .toolbar(.hidden, for: .navigationBar)
             .toolbar {
-                // Строка состояния без стеклянной подложки, как в Почте.
-                ToolbarItem(placement: .status) { status.fixedSize() }
-                    .sharedBackgroundVisibility(.hidden)
+                // Строка состояния без подложки, как в Почте: лента уходит
+                // под неё в фон (см. overlay выше).
+                ToolbarItem(placement: .status) {
+                    status.fixedSize()
+                        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+                }
+                .sharedBackgroundVisibility(.hidden)
             }
             .overlay(alignment: .top) {
                 if let banner {
@@ -159,9 +180,14 @@ struct HomeView: View {
             }
             .padding(.horizontal, 16)
             .animation(.snappy, value: selected.sameDay(Clock.now))
+            // Крупный заголовок растёт со шрифтом меньше текста, как в системных
+            // приложениях.
+            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
             WeekPager(selected: selected, firstDay: firstDay, weeks: state.dayCount / 7,
                       hasLessons: { day in state.lessons(on: day).contains { !$0.cancelled } },
                       onSelect: { goTo($0) })
+                // Семь дней в ряд: крупнее числа не помещаются.
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         }
         .padding(.bottom, 6)
     }
@@ -273,13 +299,16 @@ struct NowCard: View {
 
         Button { if let target { open(target) } } label: {
             VStack(alignment: .leading, spacing: 0) {
-                HStack {
-                    Text(caption(current: current, upcoming: upcoming))
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.tint)
-                    Spacer()
-                    if let trailing = trailing(current: current, upcoming: upcoming, now: now) {
-                        Text(trailing).font(.footnote).foregroundStyle(.secondary)
+                // Не помещается в строку (крупный шрифт) — «ещё 40 мин» под подписью.
+                ViewThatFits(in: .horizontal) {
+                    HStack {
+                        captionText(current: current, upcoming: upcoming)
+                        Spacer()
+                        trailingText(current: current, upcoming: upcoming, now: now)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        captionText(current: current, upcoming: upcoming)
+                        trailingText(current: current, upcoming: upcoming, now: now)
                     }
                 }
                 .padding(.bottom, 6)
@@ -311,6 +340,20 @@ struct NowCard: View {
         .disabled(target == nil)
     }
 
+    private func captionText(current: Lesson?, upcoming: Lesson?) -> some View {
+        Text(caption(current: current, upcoming: upcoming))
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(.tint)
+            .fixedSize()
+    }
+
+    @ViewBuilder
+    private func trailingText(current: Lesson?, upcoming: Lesson?, now: Date) -> some View {
+        if let trailing = trailing(current: current, upcoming: upcoming, now: now) {
+            Text(trailing).font(.footnote).foregroundStyle(.secondary).fixedSize()
+        }
+    }
+
     private func caption(current: Lesson?, upcoming: Lesson?) -> String {
         if current != nil { return "СЕЙЧАС" }
         if upcoming != nil { return "ДАЛЕЕ" }
@@ -333,11 +376,34 @@ struct TimelineRow: View {
     let now: Date
     let action: () -> Void
     @ScaledMetric(relativeTo: .subheadline) private var timeWidth = 48
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         let ongoing = lesson.isOngoing(at: now)
         let dimmed = lesson.cancelled || now > lesson.end
         Button(action: action) {
+            // На крупных размерах шрифта время встаёт над названием, иначе
+            // колонка времени съедает ширину и название рвётся по слогам.
+            if typeSize.isAccessibilitySize {
+                HStack(alignment: .top, spacing: 10) {
+                    RoundedRectangle(cornerRadius: 1.5)
+                        .fill(kindColor(lesson.kind))
+                        .frame(width: 3)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(hm(lesson.start))–\(hm(lesson.end))")
+                            .font(.subheadline.weight(ongoing ? .semibold : .medium))
+                            .foregroundStyle(ongoing ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+                        Text(lesson.subject)
+                            .font(.body.weight(ongoing ? .semibold : .regular))
+                            .strikethrough(lesson.cancelled)
+                        lessonDetails(lesson, icon: true).font(.subheadline).foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.vertical, 6)
+                .contentShape(.rect)
+            } else {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .trailing, spacing: 0) {
                     Text(hm(lesson.start))
@@ -360,6 +426,7 @@ struct TimelineRow: View {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.vertical, 6)
             .contentShape(.rect)
+            }
         }
         .buttonStyle(.plain)
         .opacity(dimmed ? 0.45 : 1)
@@ -380,6 +447,7 @@ struct GapRow: View {
     let from: Date
     let to: Date
     @ScaledMetric(relativeTo: .subheadline) private var timeWidth = 48
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         let gap = to.timeIntervalSince(from)
@@ -387,7 +455,7 @@ struct GapRow: View {
             Text("\(gap >= 3600 ? "Окно" : "Перерыв") \(durationText(gap))")
                 .font(.footnote)
                 .foregroundStyle(.tertiary)
-                .padding(.leading, timeWidth + 23)
+                .padding(.leading, typeSize.isAccessibilitySize ? 13 : timeWidth + 23)
                 .padding(.vertical, 2)
         } else {
             Spacer().frame(height: 4)

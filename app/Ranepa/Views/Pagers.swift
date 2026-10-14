@@ -175,7 +175,6 @@ private struct DayCell: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .accessibilityLabel("\(today ? "Сегодня, " : "")\(dayTitle(day))\(dot ? "" : ", пар нет")")
         .accessibilityAddTraits(selected ? .isSelected : [])
     }

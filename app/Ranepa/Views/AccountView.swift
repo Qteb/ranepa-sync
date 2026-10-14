@@ -97,6 +97,9 @@ struct AccountView: View {
                         }
                 }
             }
+            // Строки с переключателями: на самых крупных размерах подписи
+            // не помещаются даже в несколько строк.
+            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
             // Профиль сразу под крестиком, как в аккаунте App Store.
             .contentMargins(.top, 0, for: .scrollContent)
             .toolbar {

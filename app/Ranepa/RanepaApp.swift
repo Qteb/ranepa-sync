@@ -29,6 +29,9 @@ struct RanepaApp: App {
             }
             .environment(state)
             .preferredColorScheme(state.colorScheme)
+            // Крупный шрифт из настроек iOS, но не самый большой: дальше
+            // названия пар рвутся по слогам на каждой строке.
+            .dynamicTypeSize(...DynamicTypeSize.accessibility3)
             .animation(.default, value: state.loggedIn)
             .onAppear {
                 delegate.state = state

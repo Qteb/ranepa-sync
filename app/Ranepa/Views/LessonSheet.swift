@@ -71,6 +71,9 @@ struct LessonSheet: View {
         // Лист открывается ровно по содержимому; длинную карточку можно
         // растянуть на весь экран.
         .presentationDetents([.height(fitted), .large], selection: $detent)
+        // На самых крупных размерах шрифта название и адрес рвутся по
+        // слогам, а на экране помещается одна строка.
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .presentationBackground(Color(.systemGroupedBackground))
     }
 
