@@ -12,9 +12,12 @@ enum Notifications {
     private static let keepAliveID = "keepAlive"
     private static let testID = "test"
 
-    /// Через сколько после последнего обновления напомнить открыть приложение.
-    /// Refresh-токен ЛК живёт 24 часа — нужен запас.
+    /// Через сколько после последнего обновления напомнить открыть приложение,
+    /// если срок сессии неизвестен. Refresh-токен без «Запомнить меня» живёт
+    /// 24 часа — нужен запас.
     static let keepAliveAfter: TimeInterval = 20 * 3600
+    /// За сколько до конца сессии ЛК напомнить, если её срок известен.
+    static let keepAliveBefore: TimeInterval = 4 * 3600
 
     /// Ключ начала пары в userInfo: нажатие открывает её карточку.
     static let lessonKey = "lesson"
@@ -122,14 +125,16 @@ enum Notifications {
     }
 
     /// «Таймер мёртвой руки»: каждое успешное обновление переносит уведомление
-    /// на [keepAliveAfter] вперёд. Если iOS перестала будить приложение,
-    /// пользователь узнает об этом до того, как истечёт сессия ЛК.
-    static func scheduleKeepAlive(lastSync: Date) async {
+    /// вперёд — за [keepAliveBefore] до конца сессии ЛК, а если срок
+    /// неизвестен, на [keepAliveAfter] после обновления. Если iOS перестала
+    /// будить приложение, пользователь узнает об этом до того, как сессия истечёт.
+    static func scheduleKeepAlive(lastSync: Date, sessionUntil: Date?) async {
         cancelKeepAlive()
-        let at = lastSync.addingTimeInterval(keepAliveAfter)
+        let at = sessionUntil.map { $0.addingTimeInterval(-keepAliveBefore) }
+            ?? lastSync.addingTimeInterval(keepAliveAfter)
         guard at > Date() else { return }
         await show(keepAliveID, title: "Открой приложение",
-                   body: "Расписание не обновлялось почти сутки. Открой приложение, иначе придётся заново входить в ЛК.",
+                   body: "Расписание давно не обновлялось. Открой приложение, иначе придётся заново входить в ЛК.",
                    at: at)
     }
 

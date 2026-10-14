@@ -82,6 +82,7 @@ struct LoginView: View {
     @State private var lk = LKWebView()
     @State private var pageLoading = true
     @State private var sawLoginForm = false
+    @State private var onLoginForm = false
     @State private var fetching = false
     @State private var requested = false
     @State private var error: String?
@@ -101,6 +102,21 @@ struct LoginView: View {
                     .background(Color(.systemBackground))
                 }
             }
+            // Без «Запомнить меня» сессия ЛК живёт сутки, с ней — 30 дней.
+            // Сверху: снизу на странице кнопки входа, их нельзя закрывать.
+            .safeAreaBar(edge: .top) {
+                if onLoginForm && !fetching && error == nil {
+                    Label("Отметь «Запомнить меня» — входить заново придётся раз в месяц, а не каждый день",
+                          systemImage: "checkmark.square")
+                        .font(.subheadline)
+                        .padding(14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+                        .padding(.horizontal, 16)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.default, value: onLoginForm)
             .overlay(alignment: .bottom) {
                 if let error {
                     Label(error, systemImage: "exclamationmark.circle.fill")
@@ -128,6 +144,7 @@ struct LoginView: View {
     }
 
     private func onURL(_ url: URL?) {
+        onLoginForm = LKWebView.isLoginPage(url)
         if LKWebView.isLoginPage(url) {
             sawLoginForm = true
             if fetching && !requested { fail("Не удалось войти, попробуй ещё раз") }

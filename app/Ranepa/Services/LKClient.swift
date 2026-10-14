@@ -29,6 +29,9 @@ struct FetchResult {
     /// data:image/…;base64,… — nil, если фото не запрашивали; пустая
     /// строка, если в ЛК его нет.
     var photo: String?
+    /// Когда истекает refresh-токен: сутки, а с «Запомнить меня» — 30 дней.
+    /// Сам токен из страницы не выходит, только его срок.
+    var sessionUntil: Date?
 }
 
 enum LKError: LocalizedError {
@@ -155,7 +158,8 @@ final class LKWebView: NSObject, WKNavigationDelegate {
         }
         return FetchResult(days: data["days"] as? [Any] ?? [], group: data["group"] as? String,
                            program: data["program"] as? String, fullName: data["name"] as? String,
-                           photo: data["photo"] as? String)
+                           photo: data["photo"] as? String,
+                           sessionUntil: (data["sessionUntil"] as? Double).map(Date.init(timeIntervalSince1970:)))
     }
 
     // MARK: Без экрана
@@ -291,6 +295,12 @@ final class LKWebView: NSObject, WKNavigationDelegate {
       if (withPhoto) {
         try { out.photo = (await get(photoUrl)).result || ''; } catch (e) {}
       }
+      // Только срок refresh-токена (поле exp), не сам токен.
+      try {
+        const part = (localStorage.getItem('refresh_token') || '').split('.')[1];
+        const exp = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/'))).exp;
+        if (exp) out.sessionUntil = exp;
+      } catch (e) {}
       return JSON.stringify(out);
     } catch (e) {
       return JSON.stringify({ error: String(e.message || e) });
