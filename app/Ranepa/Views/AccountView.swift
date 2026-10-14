@@ -61,6 +61,16 @@ struct AccountView: View {
                             Label { Text("Live Activity") } icon: { SettingsIcon("timer", .green) }
                         }
                     }
+                    // Какими картами открывать адрес корпуса: если их больше одной.
+                    if MapApp.installedApps.count > 1 {
+                        Picker(selection: Binding(get: { MapApp.preferred?.rawValue ?? "" },
+                                                  set: { MapApp.preferred = MapApp(rawValue: $0) })) {
+                            Text("Спрашивать").tag("")
+                            ForEach(MapApp.installedApps) { Text($0.title).tag($0.rawValue) }
+                        } label: {
+                            Label { Text("Карты") } icon: { SettingsIcon("map.fill", .teal) }
+                        }
+                    }
                     Picker(selection: Binding(get: { state.themeMode }, set: { state.setThemeMode($0) })) {
                         Text("Авто").tag(0)
                         Text("Светлое").tag(1)

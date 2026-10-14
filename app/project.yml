@@ -62,6 +62,8 @@ targets:
         NSCalendarsFullAccessUsageDescription: Чтобы добавлять пары в календарь «РАНХиГС» и обновлять их при изменениях.
         NSCalendarsUsageDescription: Чтобы добавлять пары в календарь «РАНХиГС» и обновлять их при изменениях.
         NSSupportsLiveActivities: true
+        # Какие приложения карт установлены — для выбора, где открыть корпус.
+        LSApplicationQueriesSchemes: [yandexmaps, dgis, comgooglemaps]
         UIBackgroundModes: [fetch]
         UILaunchScreen: {}
         UIApplicationSceneManifest:

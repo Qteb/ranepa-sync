@@ -1,3 +1,4 @@
+import MapKit
 import SwiftUI
 import TipKit
 
@@ -9,6 +10,9 @@ struct LessonSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @State private var copied = false
+    /// Точка корпуса: из кэша или геокодера, пока не нашлась — nil.
+    @State private var coordinate: CLLocationCoordinate2D?
+    @State private var choosingMaps = false
     /// Высота листа по содержимому: шапка, строки и отступы.
     @State private var fitted: CGFloat = 320
     @State private var detent = PresentationDetent.height(320)
@@ -16,9 +20,13 @@ struct LessonSheet: View {
     var body: some View {
         List {
                 Section {
-                    if !lesson.location.isEmpty {
-                        row(lesson.isRemote ? "Дистанционно" : lesson.room,
-                            symbol: lesson.isRemote ? "video" : "mappin.and.ellipse")
+                    if lesson.isRemote {
+                        row("Дистанционно", symbol: "video")
+                    } else if !lesson.room.isEmpty {
+                        if let coordinate {
+                            mapPreview(coordinate)
+                        }
+                        placeRow
                     }
                     if !lesson.lecturer.isEmpty { row(lesson.lecturer, symbol: "person") }
                     if !lesson.email.isEmpty {
@@ -68,6 +76,20 @@ struct LessonSheet: View {
                 if wasFitted { detent = .height(height) }
             }
             .alert("Адрес скопирован", isPresented: $copied) {} message: { Text(lesson.email) }
+            .task {
+                if let address { coordinate = await Places.locate(address) }
+            }
+            // Карты, установленные на телефоне, как в Telegram и Яндекс Go:
+            // системного выбора приложения карт в iOS нет.
+            .confirmationDialog(address.map(Places.query(for:)) ?? lesson.shortLocation,
+                                isPresented: $choosingMaps, titleVisibility: .visible) {
+                ForEach(MapApp.installedApps) { app in
+                    Button(app.title) { open(in: app) }
+                }
+                Button("Скопировать адрес") {
+                    UIPasteboard.general.string = address.map(Places.query(for:)) ?? lesson.room
+                }
+            }
         // Лист открывается ровно по содержимому; длинную карточку можно
         // растянуть на весь экран.
         .presentationDetents([.height(fitted), .large], selection: $detent)
@@ -75,6 +97,67 @@ struct LessonSheet: View {
         // слогам, а на экране помещается одна строка.
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .presentationBackground(Color(.systemGroupedBackground))
+    }
+
+    /// «Вернадского, 84, корпус 1» из строки аудитории.
+    private var address: String? { Places.address(from: lesson.room) }
+
+    /// «1 - 2262, блок 2F».
+    private var placeTitle: String {
+        guard let block = lesson.room.firstMatch(of: /Блок\s+(\S+)/) else { return lesson.shortLocation }
+        return "\(lesson.shortLocation), блок \(block.1)"
+    }
+
+    /// Аудитория и адрес корпуса; нажатие открывает карты.
+    private var placeRow: some View {
+        Button { openPlace() } label: {
+            HStack {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(placeTitle).foregroundStyle(Color(.label))
+                        if let address {
+                            Text(address).font(.subheadline).foregroundStyle(Color(.secondaryLabel))
+                        }
+                    }
+                } icon: {
+                    Image(systemName: "mappin.and.ellipse").foregroundStyle(Color(.secondaryLabel))
+                }
+                Spacer()
+                if address != nil {
+                    Image(systemName: "arrow.up.right").foregroundStyle(Color(.tertiaryLabel))
+                }
+            }
+        }
+        .disabled(address == nil)
+        .copyable(lesson.room)
+    }
+
+    /// Корпус на карте. Карта не листается: нажатие открывает приложение карт.
+    private func mapPreview(_ c: CLLocationCoordinate2D) -> some View {
+        Button { openPlace() } label: {
+            Map(initialPosition: .camera(MapCamera(centerCoordinate: c, distance: 700))) {
+                Marker(lesson.shortLocation, systemImage: "building.columns.fill", coordinate: c)
+                    .tint(Color.accentColor)
+            }
+            .allowsHitTesting(false)
+            .frame(height: 150)
+        }
+        .buttonStyle(.plain)
+        .listRowInsets(EdgeInsets())
+        .accessibilityLabel("Корпус на карте")
+    }
+
+    private func openPlace() {
+        if let app = MapApp.preferred { return open(in: app) }
+        let apps = MapApp.installedApps
+        // Кроме Карт ничего не установлено — спрашивать не о чем.
+        if apps.count == 1 { return open(in: apps[0]) }
+        choosingMaps = true
+    }
+
+    private func open(in app: MapApp) {
+        guard let address else { return }
+        openURL(coordinate.map { app.url($0, name: placeTitle) } ?? app.url(search: Places.query(for: address)))
     }
 
     private var header: some View {
