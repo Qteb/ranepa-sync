@@ -54,7 +54,9 @@ enum Sync {
     private static let photoMaxAge: TimeInterval = 7 * 24 * 3600
 
     private static func since(_ d: UserDefaults, _ key: String, _ now: Date) -> TimeInterval {
-        d.time(key).map { now.timeIntervalSince($0) } ?? 365 * 24 * 3600
+        // Отметка из будущего (часы переводили назад) — считаем давней,
+        // иначе обновления встанут до этой даты.
+        d.time(key).map { now.timeIntervalSince($0) }.flatMap { $0 >= 0 ? $0 : nil } ?? 365 * 24 * 3600
     }
 
     /// Обновление стоит на паузе после ошибки сервера.
@@ -126,6 +128,9 @@ enum Sync {
     @MainActor
     static func run(_ trigger: SyncTrigger, _ d: UserDefaults = .standard) async throws -> SyncResult {
         if d.bool(forKey: Keys.demo) { return await Demo.sync(trigger, d) }
+        // Часы переведены для скриншотов: в ЛК не ходим, иначе загрузка
+        // «из будущего» перепишет настоящее расписание.
+        if Clock.screenshotMode { return SyncResult(skipped: .notNeeded) }
         let now = Clock.now
         if let reason = skipReason(d, trigger, now: now) { return SyncResult(skipped: reason) }
 
