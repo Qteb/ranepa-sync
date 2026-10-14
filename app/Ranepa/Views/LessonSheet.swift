@@ -11,7 +11,6 @@ struct LessonSheet: View {
     var from: Route? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
-    @State private var copied = false
     /// Точка корпуса: из кэша или геокодера, пока не нашлась — nil.
     @State private var coordinate: CLLocationCoordinate2D?
     /// Откуда открыт выбор карт: окно всплывает у этого элемента.
@@ -69,14 +68,6 @@ struct LessonSheet: View {
                             .copyable(lesson.lecturer)
                         }
                     }
-                    if !lesson.email.isEmpty {
-                        Button {
-                            openMail(lesson.email, openURL: openURL) { copied = true }
-                        } label: {
-                            Label(lesson.email, systemImage: "envelope")
-                        }
-                        .copyable(lesson.email)
-                    }
                     if !lesson.groups.isEmpty {
                         row(lesson.groups.joined(separator: ", "), symbol: "person.3")
                     }
@@ -125,7 +116,6 @@ struct LessonSheet: View {
                 fitted = height
                 if wasFitted { detent = .height(height) }
             }
-            .alert("Адрес скопирован", isPresented: $copied) {} message: { Text(lesson.email) }
             .task {
                 if let address { coordinate = await Places.locate(address) }
             }
