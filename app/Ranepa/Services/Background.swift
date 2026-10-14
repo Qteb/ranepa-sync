@@ -1,17 +1,17 @@
 import BackgroundTasks
 import Foundation
 
-/// Фоновое обновление примерно раз в 4 часа: refresh-токен ЛК живёт сутки
-/// и продлевается при каждом обновлении, так что сессия с запасом не
-/// истекает. Время запуска выбирает система.
+/// Фоновое обновление: в будни днём — раз в час, ночью и в воскресенье днём —
+/// никогда (`Sync.interval`). Система запускает задачу не раньше заданного
+/// времени, а когда именно — решает сама. Каждое обновление продлевает
+/// сессию ЛК.
 enum Background {
     /// Совпадает с BGTaskSchedulerPermittedIdentifiers в Info.plist.
     static let taskID = "com.qteb.ranepaTimetable.refresh"
-    private static let period: TimeInterval = 4 * 3600
 
     static func schedule() {
         let request = BGAppRefreshTaskRequest(identifier: taskID)
-        request.earliestBeginDate = Date(timeIntervalSinceNow: period)
+        request.earliestBeginDate = Sync.nextRun(after: Date())
         try? BGTaskScheduler.shared.submit(request)
     }
 
@@ -32,14 +32,11 @@ enum Background {
             await Notifications.showChanges(result.changes)
             outcome = switch result.skipped {
             case nil: result.changes.isEmpty ? "без изменений" : "изменений: \(result.changes.count)"
-            case .paused: "обновление остановлено"
             case .backoff: "пауза после ошибки ЛК"
-            case .quietHours: "ночь, пропущено"
+            case .quietHours: "тихие часы, пропущено"
             case .tooSoon: "рано, пропущено"
             case .notNeeded: "нет пар, пропущено"
             }
-            // Пока обновление остановлено, напоминать об истекающей сессии незачем.
-            if result.skipped == .paused { Notifications.cancelKeepAlive() }
         } catch LKError.needLogin {
             d.set(false, forKey: Keys.loggedIn)
             Notifications.cancelKeepAlive()

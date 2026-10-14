@@ -13,20 +13,14 @@ final class SyncPolicyTests: XCTestCase {
         d.setTime(tuesday.addingTimeInterval(-3600), Keys.lastFullAt)
     }
 
-    private func skip(_ trigger: SyncTrigger, _ now: Date, config: RemoteConfig = RemoteConfig()) -> SkipReason? {
-        Sync.skipReason(d, trigger, config: config, now: now)
+    private func skip(_ trigger: SyncTrigger, _ now: Date) -> SkipReason? {
+        Sync.skipReason(d, trigger, now: now)
     }
 
     private func lesson(on day: Date) {
         let stamp = moscowStamp(day.dateOnly).prefix(10)
         saveDays([["date": "\(stamp)T00:00:00",
                    "discs": [["start_date": "\(stamp)T10:00:00", "end_date": "\(stamp)T11:30:00"]]]], d)
-    }
-
-    func testKillSwitch() {
-        var config = RemoteConfig()
-        config.sync = false
-        XCTAssertEqual(skip(.manual, tuesday, config: config), .paused)
     }
 
     func testBackoffAfterServerError() {
@@ -39,15 +33,36 @@ final class SyncPolicyTests: XCTestCase {
     }
 
     func testBackgroundInterval() {
-        d.setTime(tuesday.addingTimeInterval(-3 * 3600), Keys.lastAttemptAt)
+        lesson(on: date(2026, 10, 14, 0))
+        d.setTime(tuesday.addingTimeInterval(-30 * 60), Keys.lastAttemptAt)
         XCTAssertEqual(skip(.background, tuesday), .tooSoon)
+        // Будни днём — раз в час.
+        d.setTime(tuesday.addingTimeInterval(-3600), Keys.lastAttemptAt)
+        XCTAssertNil(skip(.background, tuesday))
     }
 
-    func testSundayOnlyDailyFullLoad() {
-        let sunday = date(2026, 10, 18, 12)
-        d.setTime(sunday.addingTimeInterval(-3600), Keys.lastFullAt)
+    func testIntervals() {
+        XCTAssertNil(Sync.interval(at: date(2026, 10, 13, 5, 59)))      // ночь
+        XCTAssertEqual(Sync.interval(at: date(2026, 10, 13, 6)), 3600)  // будни утром
+        XCTAssertEqual(Sync.interval(at: date(2026, 10, 13, 22)), 3 * 3600)
+        XCTAssertEqual(Sync.interval(at: date(2026, 10, 17, 12)), 2 * 3600)  // суббота
+        XCTAssertNil(Sync.interval(at: date(2026, 10, 18, 12)))         // воскресенье днём
+        XCTAssertEqual(Sync.interval(at: date(2026, 10, 18, 19)), 3 * 3600)  // воскресенье вечером
+    }
+
+    func testNextRunSkipsQuietTime() {
+        // Вторник 23:30 → не ночью, а в среду в 6:00.
+        XCTAssertEqual(Sync.nextRun(after: date(2026, 10, 13, 23, 30)), date(2026, 10, 14, 6))
+        // Суббота 23:00 → воскресенье 18:00.
+        XCTAssertEqual(Sync.nextRun(after: date(2026, 10, 17, 23)), date(2026, 10, 18, 18))
+        // Будни днём — через час.
+        XCTAssertEqual(Sync.nextRun(after: tuesday), tuesday.addingTimeInterval(3600))
+    }
+
+    func testSundayDaytimeIsQuiet() {
         lesson(on: date(2026, 10, 19, 0))
-        XCTAssertEqual(skip(.background, sunday), .notNeeded)
+        XCTAssertEqual(skip(.background, date(2026, 10, 18, 12)), .quietHours)
+        XCTAssertNil(skip(.background, date(2026, 10, 18, 19)))
     }
 
     func testHolidaysOnlyDailyFullLoad() {
@@ -65,8 +80,11 @@ final class SyncPolicyTests: XCTestCase {
     }
 
     func testOpenWithFreshData() {
-        d.setTime(tuesday.addingTimeInterval(-3600), Keys.fetchedAt)
+        d.setTime(tuesday.addingTimeInterval(-30 * 60), Keys.fetchedAt)
         XCTAssertEqual(skip(.open, tuesday), .notNeeded)
+        // Днём в будни данные старше часа обновляются при открытии.
+        d.setTime(tuesday.addingTimeInterval(-3600), Keys.fetchedAt)
+        XCTAssertNil(skip(.open, tuesday))
     }
 }
 

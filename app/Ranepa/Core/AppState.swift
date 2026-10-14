@@ -40,14 +40,15 @@ final class AppState {
 
     init() {
         d.migrateFromFlutter()
+        // Удалённого конфига больше нет — стираем то, что от него осталось.
+        for key in ["remoteConfig", "remoteConfigCheckedAt"] { d.removeObject(forKey: key) }
         loadCache()
     }
 
     var lastBackgroundRun: Date? { d.time(Keys.lastBackgroundRun) }
     var lastBackgroundResult: String? { d.string(forKey: Keys.lastBackgroundResult) }
-    /// Обновление остановлено конфигом или стоит на паузе после ошибки ЛК.
+    /// Обновление стоит на паузе после ошибки ЛК.
     var syncPaused: Bool { Sync.paused(d) }
-    var pausedMessage: String? { RemoteConfig.cached(d).message }
 
 
     /// Первый день загруженного диапазона — понедельник текущей недели.
@@ -140,7 +141,9 @@ final class AppState {
             if sync.skipped == .tooSoon { try? await Task.sleep(for: .milliseconds(500)) }
             pendingChanges = sync.changes
             error = sync.sideEffectError
-            if sync.skipped == .paused && trigger == .manual { error = pausedMessage }
+            if sync.skipped == .backoff && trigger == .manual {
+                error = LKError.serverBusy(status: 503, retryAfter: nil).errorDescription
+            }
         } catch LKError.needLogin {
             d.set(false, forKey: Keys.loggedIn)
             Background.cancel()
