@@ -377,10 +377,10 @@ private struct NowLine: View {
                 .padding(.horizontal, 5)
                 .padding(.vertical, 2)
                 .background(Color.red, in: .capsule)
-                .frame(width: timeWidth + 6, alignment: .trailing)
             Rectangle().fill(Color.red).frame(height: 1.5)
         }
-        .padding(.vertical, 4)
+        .padding(.top, 8)
+        .padding(.bottom, 2)
         .accessibilityHidden(true)
     }
 }
@@ -396,79 +396,69 @@ private struct NowCaption: View {
         Text(text)
             .font(.footnote.weight(secondary ? .regular : .semibold))
             .foregroundStyle(secondary ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.red))
-            .padding(.leading, typeSize.isAccessibilitySize ? 13 : timeWidth + 23)
-            .padding(.bottom, 4)
+            .padding(.leading, 30)
+            .padding(.bottom, secondary ? 8 : 2)
     }
 }
 
-/// Пара в ленте: время столбиком слева, цветная полоска, название.
+/// Пара в ленте карточкой: время, название, тип и аудитория, преподаватель.
+/// Слева цветная полоска типа; у идущей пары она заполняется по ходу пары,
+/// а справа от времени — остаток.
 struct TimelineRow: View {
     let lesson: Lesson
     let now: Date
-    /// «ещё 40 мин» у идущей пары: красным в конце подписи.
+    /// «ещё 40 мин» у идущей пары.
     var remaining: String? = nil
     let action: () -> Void
-    @ScaledMetric(relativeTo: .subheadline) private var timeWidth = 48
-    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         let ongoing = lesson.isOngoing(at: now)
         let dimmed = lesson.cancelled || now > lesson.end
         let progress = ongoing ? now.timeIntervalSince(lesson.start) / lesson.end.timeIntervalSince(lesson.start) : nil
-        let details = remaining.map {
-            Text("\(lessonDetails(lesson, icon: true)) · \(Text($0).foregroundStyle(Color.red).fontWeight(.semibold))")
-        } ?? lessonDetails(lesson, icon: true)
         Button(action: action) {
-            // На крупных размерах шрифта время встаёт над названием, иначе
-            // колонка времени съедает ширину и название рвётся по слогам.
-            if typeSize.isAccessibilitySize {
-                HStack(alignment: .top, spacing: 10) {
-                    KindStripe(kind: lesson.kind, progress: progress)
-                    VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .top, spacing: 12) {
+                KindStripe(kind: lesson.kind, progress: progress)
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(alignment: .firstTextBaseline) {
                         Text("\(hm(lesson.start))–\(hm(lesson.end))")
                             .font(.subheadline.weight(ongoing ? .semibold : .medium))
+                            .monospacedDigit()
                             .foregroundStyle(ongoing ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-                        Text(lesson.subject)
-                            .font(.body.weight(ongoing ? .semibold : .regular))
-                            .strikethrough(lesson.cancelled)
-                        details.font(.subheadline).foregroundStyle(.secondary)
+                        Spacer(minLength: 8)
+                        if let remaining {
+                            Text(remaining)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.red)
+                        }
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.vertical, 6)
-                .contentShape(.rect)
-            } else {
-            HStack(alignment: .top, spacing: 10) {
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text(hm(lesson.start))
-                        .font(.subheadline.weight(ongoing ? .semibold : .medium))
-                        .foregroundStyle(ongoing ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
-                    Text(hm(lesson.end)).font(.footnote).foregroundStyle(.secondary)
-                }
-                .frame(width: timeWidth, alignment: .trailing)
-                KindStripe(kind: lesson.kind, progress: progress)
-                VStack(alignment: .leading, spacing: 0) {
                     Text(lesson.subject)
-                        .font(.body.weight(ongoing ? .semibold : .regular))
+                        .font(.headline)
                         .strikethrough(lesson.cancelled)
-                    details.font(.subheadline).foregroundStyle(.secondary)
+                    lessonDetails(lesson, icon: true)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    if !lesson.lecturer.isEmpty {
+                        Text(lesson.lecturer)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .fixedSize(horizontal: false, vertical: true)
-            .padding(.vertical, 6)
-            .contentShape(.rect)
-            }
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
+            .contentShape(.rect(cornerRadius: 20))
         }
         .buttonStyle(.plain)
-        .opacity(dimmed ? 0.45 : 1)
-        // VoiceOver читает строку целиком: «10:40–12:00, Иностранный язык,
-        // семинар, 1 - 2317, идёт сейчас».
+        .opacity(dimmed ? 0.5 : 1)
+        // VoiceOver читает карточку целиком: «10:40–12:00, Иностранный язык,
+        // семинар, 1 - 2317, Морозова Ксения Олеговна, идёт сейчас».
         .accessibilityElement(children: .ignore)
         .accessibilityLabel([
             "\(hm(lesson.start))–\(hm(lesson.end))", lesson.subject, lesson.kind,
-            lesson.isRemote ? "дистанционно" : lesson.shortLocation,
+            lesson.isRemote ? "дистанционно" : lesson.shortLocation, lesson.lecturer,
             lesson.cancelled ? "отменена" : "", ongoing ? "идёт сейчас" : "", remaining ?? "",
         ].filter { !$0.isEmpty }.joined(separator: ", "))
         .accessibilityAddTraits(.isButton)
@@ -507,11 +497,11 @@ struct GapRow: View {
         if gap > 0 {
             Text("\(gap >= 3600 ? "Окно" : "Перерыв") \(durationText(gap))")
                 .font(.footnote)
-                .foregroundStyle(.tertiary)
-                .padding(.leading, typeSize.isAccessibilitySize ? 13 : timeWidth + 23)
-                .padding(.vertical, 2)
+                .foregroundStyle(.secondary)
+                .padding(.leading, 30)
+                .padding(.vertical, 6)
         } else {
-            Spacer().frame(height: 4)
+            Spacer().frame(height: 8)
         }
     }
 }
