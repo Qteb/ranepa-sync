@@ -83,9 +83,9 @@ enum Notifications {
         center.removePendingNotificationRequests(withIdentifiers: old)
         let now = Date()
         let shift = Clock.shift
-        guard let session = ExamSession(lessons: lessons, now: now.addingTimeInterval(shift)) else { return }
-        for (i, item) in session.items.prefix(maxExams).enumerated() {
-            let exam = item.exam
+        guard let session = ExamSession(lessons: lessons, plan: StudyPlan.cached(), now: now.addingTimeInterval(shift))
+        else { return }
+        for (i, exam) in session.all.compactMap(\.event).prefix(maxExams).enumerated() {
             // По настоящим часам: в сборке для скриншотов время сдвинуто.
             let start = exam.start.addingTimeInterval(-shift)
             guard let at = calendar.date(bySettingHour: examEveningHour, minute: 0, second: 0,

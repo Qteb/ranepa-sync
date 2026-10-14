@@ -1,56 +1,112 @@
 import Foundation
 
-/// Сессия: зачёты и экзамены впереди, у каждого — консультация по тому же
-/// предмету, если она есть.
+/// Сессия текущего семестра. Состав и даты — из плана обучения, конкретные
+/// дата и аудитория — из расписания, когда появятся. Без плана (демо, план
+/// не загрузился) — только события расписания.
 struct ExamSession {
-    struct Item: Identifiable {
-        let exam: Lesson
+    struct Entry: Identifiable {
+        let subject: String
+        /// «Экзамен», «Зачёт», «Диф. зачёт».
+        let form: String
+        /// Событие в расписании; nil — дата не назначена.
+        let event: Lesson?
         let consultation: Lesson?
-        var id: String { exam.id }
+        var id: String { subject + form }
     }
 
-    let items: [Item]
+    let exams: [Entry]
+    let credits: [Entry]
+    /// Даты сессии по плану.
+    let start: Date?
+    let end: Date?
 
-    /// Карточка на главном экране — за столько дней до первого зачёта или экзамена.
+    /// Карточка на главном экране — за столько дней до начала сессии.
     static let cardDays = 30
 
-    /// nil — впереди нет ни зачётов, ни экзаменов.
-    init?(lessons: [Lesson], now: Date) {
-        let active = lessons.filter { !$0.cancelled && $0.end > now }
-        let exams = active.filter { $0.kind == "экзамен" || $0.kind == "зачёт" }
-        guard !exams.isEmpty else { return nil }
-        var used = Set<String>()
-        items = exams.map { exam in
-            // Ближайшая перед экзаменом консультация по тому же предмету.
-            let consultation = active.last {
-                $0.kind == "консультация" && $0.subject == exam.subject && $0.start < exam.start && !used.contains($0.id)
+    init?(lessons: [Lesson], plan: StudyPlan?, now: Date) {
+        let active = lessons.filter { !$0.cancelled }
+        let all = active.filter { $0.kind == "экзамен" || $0.kind == "зачёт" }
+        let events = all.filter { $0.end > now }
+        func consultation(for exam: Lesson?) -> Lesson? {
+            guard let exam else { return nil }
+            return active.last { $0.kind == "консультация" && $0.subject == exam.subject && $0.start < exam.start }
+        }
+        // С планом — и прошедшие события: сданное остаётся в сессии.
+        func event(_ subject: String, exam: Bool) -> Lesson? {
+            let match = all.filter { $0.subject.lowercased() == subject.lowercased() && ($0.kind == "экзамен") == exam }
+            return match.first { $0.end > now } ?? match.last
+        }
+
+        if let plan, let semester = plan.currentSemester(now: now) {
+            let items = plan.subjects(semester: semester)
+            let sessions = plan.sessions(semester: semester)
+            start = sessions.first?.startDate
+            end = sessions.last?.endDate
+            var exams = items.filter(\.isExam).map { i in
+                let e = event(i.name, exam: true)
+                return Entry(subject: i.name, form: i.form ?? "Экзамен", event: e, consultation: consultation(for: e))
             }
-            if let consultation { used.insert(consultation.id) }
-            return Item(exam: exam, consultation: consultation)
+            var credits = items.filter(\.isCredit).map { i in
+                Entry(subject: i.name, form: i.form ?? "Зачёт", event: event(i.name, exam: false), consultation: nil)
+            }
+            // События расписания, которых нет в плане, — тоже показываем.
+            for e in events where !(exams + credits).contains(where: { $0.subject.lowercased() == e.subject.lowercased() }) {
+                let entry = Entry(subject: e.subject, form: e.kind.capitalizedFirst, event: e, consultation: consultation(for: e))
+                if e.kind == "экзамен" { exams.append(entry) } else { credits.append(entry) }
+            }
+            self.exams = exams.sorted(by: Self.order)
+            self.credits = credits.sorted(by: Self.order)
+        } else {
+            start = nil
+            end = nil
+            exams = events.filter { $0.kind == "экзамен" }
+                .map { Entry(subject: $0.subject, form: "Экзамен", event: $0, consultation: consultation(for: $0)) }
+            credits = events.filter { $0.kind == "зачёт" }.map { Entry(subject: $0.subject, form: "Зачёт", event: $0, consultation: nil) }
+        }
+        guard !exams.isEmpty || !credits.isEmpty else { return nil }
+        // Сессия прошла.
+        if let end, end <= now, (exams + credits).allSatisfy({ $0.event == nil }) { return nil }
+    }
+
+    /// С датой — по времени, без даты — в конце по названию.
+    private static func order(_ a: Entry, _ b: Entry) -> Bool {
+        switch (a.event, b.event) {
+        case let (x?, y?): x.start < y.start
+        case (.some, nil): true
+        case (nil, .some): false
+        case (nil, nil): a.subject < b.subject
         }
     }
 
-    var first: Lesson { items[0].exam }
-    var last: Lesson { items[items.count - 1].exam }
+    var all: [Entry] { exams + credits }
 
-    /// Показывать ли карточку: до первого зачёта или экзамена не больше месяца.
-    func showsCard(now: Date) -> Bool { first.start.days(since: now) <= Self.cardDays }
+    func isDone(_ e: Entry, now: Date) -> Bool { e.event.map { $0.end <= now } ?? false }
+    /// Сколько ещё сдавать: без даты или впереди.
+    func remaining(now: Date) -> Int { all.filter { !isDone($0, now: now) }.count }
+    /// До конца сессии (последний день), «идёт» — после начала.
+    func daysLeft(now: Date) -> Int? { lastDate.map { max(0, $0.days(since: now)) } }
+    /// Ближайшее событие с датой, которое ещё впереди.
+    var nextEvent: Lesson? { all.compactMap(\.event).filter { $0.end > Clock.now }.min { $0.start < $1.start } }
+    /// С чего считать «через N дней»: начало сессии или первое событие.
+    var firstDate: Date? { [start, nextEvent?.start].compactMap { $0 }.min() }
+    /// Последний день: конец сессии или последнее событие.
+    var lastDate: Date? { [end.map { $0.adding(days: -1) }, all.compactMap(\.event).map(\.start).max()].compactMap { $0 }.max() }
 
-    /// «2 экзамена и зачёт», «3 зачёта», «экзамен».
+    func isRunning(now: Date) -> Bool { (firstDate.map { $0 <= now } ?? false) }
+
+    /// Показывать ли карточку: до начала не больше месяца.
+    func showsCard(now: Date) -> Bool { firstDate.map { $0.days(since: now) <= Self.cardDays } ?? false }
+
+    /// «2 экзамена и 7 зачётов».
     var summary: String {
-        let exams = items.filter { $0.exam.kind == "экзамен" }.count
-        let credits = items.count - exams
-        let parts = [countLabel(exams, "экзамен", "экзамена", "экзаменов"),
-                     countLabel(credits, "зачёт", "зачёта", "зачётов")].compactMap { $0 }
-        return parts.joined(separator: " и ")
+        [countLabel(exams.count, "экзамен", "экзамена", "экзаменов"),
+         countLabel(credits.count, "зачёт", "зачёта", "зачётов")].compactMap { $0 }.joined(separator: " и ")
     }
 
-    /// «18–26 января», «28 декабря – 26 января», «18 января».
+    /// «11–30 января».
     var dates: String {
-        let a = first.start, b = last.start
-        if a.sameDay(b) { return "\(a.day) \(monthsGenitive[a.month - 1])" }
-        if a.month == b.month { return "\(a.day)–\(b.day) \(monthsGenitive[b.month - 1])" }
-        return "\(a.day) \(monthsGenitive[a.month - 1]) – \(b.day) \(monthsGenitive[b.month - 1])"
+        guard let a = firstDate, let b = lastDate else { return "" }
+        return dateRange(a, b)
     }
 }
 

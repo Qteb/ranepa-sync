@@ -15,7 +15,6 @@ struct HomeView: View {
     @State private var jumping = false
     @State private var sheetLesson: Lesson?
     @State private var showAccount = false
-    @State private var showExams = false
     @State private var banner: Banner?
     /// Перерисовка раз в минуту: «идёт сейчас» и «ещё N мин».
     @State private var minute = Date()
@@ -56,34 +55,8 @@ struct HomeView: View {
                 }
             }
             .background(Color(.systemGroupedBackground))
-            // Мягкий край под строкой «Обновлено…»: лента вложена в листание
-            // дней, и система не находит её, чтобы размыть край сама.
-            .overlay {
-                GeometryReader { geometry in
-                    VStack(spacing: 0) {
-                        Spacer()
-                        LinearGradient(colors: [Color(.systemGroupedBackground).opacity(0),
-                                                Color(.systemGroupedBackground)],
-                                       startPoint: .top, endPoint: .bottom)
-                            .frame(height: 40)
-                        Color(.systemGroupedBackground)
-                            .frame(height: geometry.safeAreaInsets.bottom + 8)
-                    }
-                    .ignoresSafeArea(edges: .bottom)
-                }
-                .allowsHitTesting(false)
-            }
             .safeAreaBar(edge: .top) { header }
             .toolbar(.hidden, for: .navigationBar)
-            .toolbar {
-                // Строка состояния без подложки, как в Почте: лента уходит
-                // под неё в фон (см. overlay выше).
-                ToolbarItem(placement: .status) {
-                    status.fixedSize()
-                        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
-                }
-                .sharedBackgroundVisibility(.hidden)
-            }
             .overlay(alignment: .top) {
                 if let banner {
                     BannerView(banner: banner)
@@ -99,9 +72,6 @@ struct HomeView: View {
         .onGeometryChange(for: Bool.self) { $0.size.width >= 1100 } action: { wide = $0 }
         .sheet(item: $sheetLesson) { LessonSheet(lesson: $0) }
         .sheet(isPresented: $showAccount) { AccountView() }
-        .sheet(isPresented: $showExams) {
-            if let session = ExamSession(lessons: state.lessons, now: Clock.now) { ExamsView(session: session) }
-        }
         .onAppear {
             dayPage = index(of: selected)
             openPendingLesson()
@@ -209,16 +179,10 @@ struct HomeView: View {
                         .buttonStyle(.glass)
                         .transition(.opacity)
                 }
-                Button {
-                    AccountTip().invalidate(reason: .actionPerformed)
-                    showAccount = true
-                } label: {
-                    AvatarView(size: 36)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Аккаунт и настройки")
+                AccountButton { showAccount = true }
             }
-            .padding(.horizontal, 16)
+            // Как у крупного заголовка системной навигации.
+            .padding(.horizontal, 20)
             .animation(.snappy, value: selected.sameDay(Clock.now))
             // Крупный заголовок растёт со шрифтом меньше текста, как в системных
             // приложениях.
@@ -235,34 +199,13 @@ struct HomeView: View {
         .padding(.bottom, 6)
     }
 
-    private var status: some View {
-        HStack(spacing: 6) {
-            if state.loading {
-                ProgressView().controlSize(.mini)
-                Text("Обновление…")
-            } else {
-                Text(statusText)
-            }
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-    }
-
-    private var statusText: String {
-        guard let at = state.fetchedAt else { return "Расписание ещё не загружено" }
-        let today = at.sameDay(Clock.now)
-        // На паузе без объяснений про ЛК: по дате видно, насколько данные старые.
-        if state.syncPaused { return "Расписание от \(today ? "" : "\(shortDate(at)), ")\(hm(at))" }
-        return "Обновлено \(today ? "сегодня" : shortDate(at)) в \(hm(at))"
-    }
-
     // MARK: Лента дней
 
     private var dayPager: some View {
         ScrollView(.horizontal) {
             LazyHStack(spacing: 0) {
                 ForEach(0..<state.dayCount, id: \.self) { i in
-                    DayPage(day: dayAt(i), minute: minute, open: { sheetLesson = $0 }, openExams: { showExams = true })
+                    DayPage(day: dayAt(i), minute: minute, open: { sheetLesson = $0 }, openExams: { state.tab = .session })
                         .containerRelativeFrame(.horizontal)
                         .id(i)
                 }
@@ -300,7 +243,7 @@ private struct DayPage: View {
                         .padding(.bottom, 12)
                 }
                 // Сессия скоро — карточка над сегодняшним днём.
-                if isToday, let session = ExamSession(lessons: state.lessons, now: Clock.now),
+                if isToday, let session = state.session,
                    session.showsCard(now: Clock.now) {
                     ExamCard(session: session, open: openExams)
                         .padding(.bottom, 12)
@@ -468,8 +411,8 @@ struct TimelineRow: View {
             .fixedSize(horizontal: false, vertical: true)
             .padding(.vertical, 12)
             .padding(.horizontal, 14)
-            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 20))
-            .contentShape(.rect(cornerRadius: 20))
+            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 26))
+            .contentShape(.rect(cornerRadius: 26))
         }
         .buttonStyle(.plain)
         .opacity(dimmed ? 0.5 : 1)
@@ -486,12 +429,14 @@ struct TimelineRow: View {
 }
 
 /// Цветная полоска типа. У идущей пары заполняется сверху вниз по ходу пары.
-private struct KindStripe: View {
+struct KindStripe: View {
     let kind: String
-    let progress: Double?
+    var progress: Double? = nil
+    /// Без даты (сессия) — серая.
+    var muted = false
 
     var body: some View {
-        let color = kindColor(kind)
+        let color = muted ? Color(.systemGray3) : kindColor(kind)
         Capsule()
             .fill(progress == nil ? color : color.opacity(0.25))
             .overlay(alignment: .top) {

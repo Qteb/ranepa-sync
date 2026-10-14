@@ -31,13 +31,15 @@ enum Keys {
     static let demoFastFrom = "demoFastFrom"
     /// Когда истекает сессия ЛК (refresh-токен), по настоящим часам.
     static let sessionUntil = "sessionUntil"
+    /// План обучения из ЛК (JSON StudyPlan).
+    static let plan = "plan"
 
     /// Всё, что относится к сессии и удаляется при выходе.
     static let session = [
         loggedIn, days, group, fetchedAt, rangeStart, sessionExpiredNotified,
         lastBackgroundRun, lastBackgroundResult, fullName, program, photo,
         photoFetchedAt, lastFullAt, lastSemesterAt, lastAttemptAt, backoffUntil, backoffFailures,
-        demo, demoRevision, demoShift, demoFastFrom, sessionUntil,
+        demo, demoRevision, demoShift, demoFastFrom, sessionUntil, plan,
     ]
 }
 

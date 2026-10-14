@@ -7,9 +7,10 @@ import TipKit
 /// можно скопировать через контекстное меню.
 struct LessonSheet: View {
     let lesson: Lesson
+    /// Откуда открыта: ссылку на этот же экран не показываем.
+    var from: Route? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
-    @State private var copied = false
     /// Точка корпуса: из кэша или геокодера, пока не нашлась — nil.
     @State private var coordinate: CLLocationCoordinate2D?
     /// Откуда открыт выбор карт: окно всплывает у этого элемента.
@@ -18,8 +19,32 @@ struct LessonSheet: View {
     /// Высота листа по содержимому: шапка, строки и отступы.
     @State private var fitted: CGFloat = 320
     @State private var detent = PresentationDetent.height(320)
+    /// Переходы к предмету и преподавателю — внутри листа.
+    @State private var path: [Route] = []
 
     var body: some View {
+        NavigationStack(path: $path) {
+            content
+                .toolbar(.hidden, for: .navigationBar)
+                // Предмет и преподаватель — длинные экраны: лист раскрывается.
+                // Сразу во время перехода iOS высоту листа не меняет — после него.
+                .routes {
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(350))
+                        withAnimation { detent = .large }
+                    }
+                }
+        }
+        // Лист открывается ровно по содержимому; длинную карточку можно
+        // растянуть на весь экран.
+        .presentationDetents([.height(fitted), .large], selection: $detent)
+        // На самых крупных размерах шрифта название и адрес рвутся по
+        // слогам, а на экране помещается одна строка.
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+        .presentationBackground(Color(.systemGroupedBackground))
+    }
+
+    private var content: some View {
         List {
                 Section {
                     if lesson.isRemote {
@@ -30,17 +55,31 @@ struct LessonSheet: View {
                         }
                         placeRow
                     }
-                    if !lesson.lecturer.isEmpty { row(lesson.lecturer, symbol: "person") }
-                    if !lesson.email.isEmpty {
-                        Button {
-                            openMail(lesson.email, openURL: openURL) { copied = true }
-                        } label: {
-                            Label(lesson.email, systemImage: "envelope")
+                    if !lesson.lecturer.isEmpty {
+                        if from == .lecturer(lesson.lecturer) {
+                            row(lesson.lecturer, symbol: "person")
+                        } else {
+                            NavigationLink(value: Route.lecturer(lesson.lecturer)) {
+                                Label { Text(lesson.lecturer) } icon: {
+                                    Image(systemName: "person").foregroundStyle(.secondary)
+                                }
+                            }
+                            .foregroundStyle(Color(.label))
+                            .copyable(lesson.lecturer)
                         }
-                        .copyable(lesson.email)
                     }
                     if !lesson.groups.isEmpty {
                         row(lesson.groups.joined(separator: ", "), symbol: "person.3")
+                    }
+                }
+                if from != .subject(lesson.subject) {
+                    Section {
+                        NavigationLink(value: Route.subject(lesson.subject)) {
+                            Label { Text("Все пары и экзамен по предмету") } icon: {
+                                Image(systemName: "books.vertical").foregroundStyle(.secondary)
+                            }
+                        }
+                        .foregroundStyle(Color(.label))
                     }
                 }
                 if !lesson.comment.isEmpty {
@@ -77,17 +116,9 @@ struct LessonSheet: View {
                 fitted = height
                 if wasFitted { detent = .height(height) }
             }
-            .alert("Адрес скопирован", isPresented: $copied) {} message: { Text(lesson.email) }
             .task {
                 if let address { coordinate = await Places.locate(address) }
             }
-        // Лист открывается ровно по содержимому; длинную карточку можно
-        // растянуть на весь экран.
-        .presentationDetents([.height(fitted), .large], selection: $detent)
-        // На самых крупных размерах шрифта название и адрес рвутся по
-        // слогам, а на экране помещается одна строка.
-        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
-        .presentationBackground(Color(.systemGroupedBackground))
     }
 
     /// «Вернадского, 84, корпус 1» из строки аудитории.

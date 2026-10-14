@@ -54,7 +54,9 @@ enum Sync {
     private static let photoMaxAge: TimeInterval = 7 * 24 * 3600
 
     private static func since(_ d: UserDefaults, _ key: String, _ now: Date) -> TimeInterval {
-        d.time(key).map { now.timeIntervalSince($0) } ?? 365 * 24 * 3600
+        // Отметка из будущего (часы переводили назад) — считаем давней,
+        // иначе обновления встанут до этой даты.
+        d.time(key).map { now.timeIntervalSince($0) }.flatMap { $0 >= 0 ? $0 : nil } ?? 365 * 24 * 3600
     }
 
     /// Обновление стоит на паузе после ошибки сервера.
@@ -126,6 +128,9 @@ enum Sync {
     @MainActor
     static func run(_ trigger: SyncTrigger, _ d: UserDefaults = .standard) async throws -> SyncResult {
         if d.bool(forKey: Keys.demo) { return await Demo.sync(trigger, d) }
+        // Часы переведены для скриншотов: в ЛК не ходим, иначе загрузка
+        // «из будущего» перепишет настоящее расписание.
+        if Clock.screenshotMode { return SyncResult(skipped: .notNeeded) }
         let now = Clock.now
         if let reason = skipReason(d, trigger, now: now) { return SyncResult(skipped: reason) }
 
@@ -138,7 +143,7 @@ enum Sync {
         do {
             result = try await LKWebView.refresh(monday: monday, weeks: weeks,
                                                  stopAfterEmpty: semester ? emptyWeeksToStop : nil,
-                                                 withProfile: full, withPhoto: full && photoStale(d))
+                                                 withProfile: full, withPhoto: full && photoStale(d), withPlan: semester)
         } catch LKError.serverBusy(let status, let retryAfter) {
             startBackoff(d, retryAfter: retryAfter)
             throw LKError.serverBusy(status: status, retryAfter: retryAfter)
@@ -192,7 +197,8 @@ enum Sync {
         let full = weeks >= fetchWeeks
         let hadCache = d.object(forKey: Keys.days) != nil
         let before = cachedLessons(d)
-        let days = replaceAll ? result.days : merge(d, fresh: result.days, monday: monday, weeks: weeks)
+        let days = replaceAll ? keepRecent(d, monday: monday) + result.days
+                              : merge(d, fresh: result.days, monday: monday, weeks: weeks)
         let after = parseLessons(days)
 
         saveDays(days, d)
@@ -210,6 +216,7 @@ enum Sync {
         }
         d.setTime(Clock.now, Keys.fetchedAt)
         if let until = result.sessionUntil { d.setTime(until, Keys.sessionUntil) }
+        if let plan = result.plan { d.set(plan, forKey: Keys.plan) }
         if full { d.setTime(Clock.now, Keys.lastFullAt) }
         if replaceAll {
             d.setTime(monday, Keys.rangeStart)
@@ -223,6 +230,20 @@ enum Sync {
     }
 
     /// Сохранённые дни вне загруженных недель + свежие дни.
+    /// Прошедшие дни за последние 60 дней: сданные зачёты и экзамены
+    /// остаются в сессии, а пройденные пары — на экране предмета.
+    private static func keepRecent(_ d: UserDefaults, monday: Date) -> [Any] {
+        let from = monday.adding(days: -60)
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return cachedDays(d).filter { day in
+            let raw = "\((day as? [String: Any])?["date"] ?? "")"
+            guard let date = f.date(from: String(raw.prefix(19))) else { return false }
+            return date >= from && date < monday
+        }
+    }
+
     private static func merge(_ d: UserDefaults, fresh: [Any], monday: Date, weeks: Int) -> [Any] {
         let end = monday.adding(days: 7 * weeks)
         // Дата дня — без зоны, сравниваем как местную, как и раньше.

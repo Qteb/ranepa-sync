@@ -37,6 +37,13 @@ final class AppState {
     var group: String?
     var program: String?
     var photo: UIImage?
+    /// План обучения из ЛК; nil — ещё не загружался или в демо.
+    var plan: StudyPlan?
+    /// Открытая вкладка: уведомления и карточка сессии её переключают.
+    var tab = RootTab.schedule
+
+    /// Сессия текущего семестра: план + события расписания.
+    var session: ExamSession? { ExamSession(lessons: lessons, plan: plan, now: Clock.now) }
 
     init() {
         d.migrateFromFlutter()
@@ -47,8 +54,6 @@ final class AppState {
 
     var lastBackgroundRun: Date? { d.time(Keys.lastBackgroundRun) }
     var lastBackgroundResult: String? { d.string(forKey: Keys.lastBackgroundResult) }
-    /// Обновление стоит на паузе после ошибки ЛК.
-    var syncPaused: Bool { Sync.paused(d) }
 
 
     /// Первый день загруженного диапазона — понедельник текущей недели.
@@ -78,6 +83,7 @@ final class AppState {
         fullName = d.string(forKey: Keys.fullName)
         group = d.string(forKey: Keys.group)
         program = d.string(forKey: Keys.program)
+        plan = StudyPlan.cached(d)
         photo = d.string(forKey: Keys.photo).flatMap { Data(base64Encoded: $0) }.flatMap(UIImage.init(data:))
         if !loggedIn && d.bool(forKey: Keys.sessionExpiredNotified) {
             error = "Сессия ЛК истекла, войди заново"

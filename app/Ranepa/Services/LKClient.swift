@@ -32,6 +32,8 @@ struct FetchResult {
     /// Когда истекает refresh-токен: сутки, а с «Запомнить меня» — 30 дней.
     /// Сам токен из страницы не выходит, только его срок.
     var sessionUntil: Date?
+    /// План обучения (JSON StudyPlan) — при загрузке семестра.
+    var plan: String?
 }
 
 enum LKError: LocalizedError {
@@ -134,7 +136,7 @@ final class LKWebView: NSObject, WKNavigationDelegate {
     /// С [stopAfterEmpty] останавливается после стольких пустых недель подряд
     /// (но не раньше месяца): дальше семестр кончился.
     func fetch(_ template: ScheduleTemplate, monday: Date, weeks: Int, stopAfterEmpty: Int? = nil,
-               withProfile: Bool = true, withPhoto: Bool = false) async throws -> FetchResult {
+               withProfile: Bool = true, withPhoto: Bool = false, withPlan: Bool = false) async throws -> FetchResult {
         let urls = (0..<weeks).map { w in
             template.with(dates: (0..<7).map { monday.adding(days: w * 7 + $0) })
         }
@@ -145,7 +147,7 @@ final class LKWebView: NSObject, WKNavigationDelegate {
                 "urls": urls, "headers": headers,
                 "stopAfterEmpty": stopAfterEmpty ?? 0, "minWeeks": fetchWeeks,
                 "groupsUrl": Self.groupsURL, "profileUrl": Self.profileURL, "photoUrl": Self.photoURL,
-                "withProfile": withProfile, "withPhoto": withPhoto,
+                "withProfile": withProfile, "withPhoto": withPhoto, "withPlan": withPlan && withProfile,
             ], contentWorld: .page)
         } catch {
             throw LKError.message("Ошибка WebView: \(error.localizedDescription)")
@@ -163,7 +165,9 @@ final class LKWebView: NSObject, WKNavigationDelegate {
         return FetchResult(days: data["days"] as? [Any] ?? [], group: data["group"] as? String,
                            program: data["program"] as? String, fullName: data["name"] as? String,
                            photo: data["photo"] as? String,
-                           sessionUntil: (data["sessionUntil"] as? Double).map(Date.init(timeIntervalSince1970:)))
+                           sessionUntil: (data["sessionUntil"] as? Double).map(Date.init(timeIntervalSince1970:)),
+                           plan: (data["plan"] as? [String: Any]).flatMap { try? JSONSerialization.data(withJSONObject: $0) }
+                               .map { String(decoding: $0, as: UTF8.self) })
     }
 
     // MARK: Без экрана
@@ -171,7 +175,7 @@ final class LKWebView: NSObject, WKNavigationDelegate {
     /// Обновление без интерфейса: невидимый WebView открывает ЛК с сохранёнными
     /// cookie и токенами. Страница сама обновит токен и запросит расписание.
     static func refresh(monday: Date, weeks: Int, stopAfterEmpty: Int? = nil,
-                        withProfile: Bool, withPhoto: Bool) async throws -> FetchResult {
+                        withProfile: Bool, withPhoto: Bool, withPlan: Bool = false) async throws -> FetchResult {
         let lk = LKWebView()
         // Вне окна WebKit усыпляет страницу: держим её в окне, но невидимой.
         if let window = UIApplication.shared.connectedScenes
@@ -184,7 +188,7 @@ final class LKWebView: NSObject, WKNavigationDelegate {
         defer { lk.webView.removeFromSuperview() }
         let template = try await lk.waitForTemplate(timeout: 60)
         return try await lk.fetch(template, monday: monday, weeks: weeks, stopAfterEmpty: stopAfterEmpty,
-                                  withProfile: withProfile, withPhoto: withPhoto)
+                                  withProfile: withProfile, withPhoto: withPhoto, withPlan: withPlan)
     }
 
     private func waitForTemplate(timeout: TimeInterval) async throws -> ScheduleTemplate {
@@ -318,7 +322,33 @@ final class LKWebView: NSObject, WKNavigationDelegate {
         const sg = ((await get(groupsUrl)).items || [])[0] || {};
         out.group = sg.academic_group;
         out.program = sg.edu_program_title;
+        out.uid = sg.uid_student;
       } catch (e) {}
+      // План обучения: все семестры, формы контроля, даты сессий.
+      if (withPlan && out.uid) try {
+        const base = groupsUrl.replace('manual/student-groups', '');
+        const plan = await get(base + 'education/plan?uid_student=' + out.uid);
+        const sessions = await get(base + 'education/plan/sessions?uid_student=' + out.uid);
+        const refs = (await get(base + 'manual/references?name[]=Semestry&name[]=VidyAttestacii')).result || {};
+        // Справочник — вложенный объект; нужен словарь «uid → название».
+        const flat = x => {
+          if (!x || typeof x !== 'object') return null;
+          const v = Object.values(x);
+          if (v.length && v.every(s => typeof s === 'string')) return x;
+          for (const y of v) { const r = flat(y); if (r) return r; }
+          return null;
+        };
+        const sem = flat(refs.Semestry) || {}, vid = flat(refs.VidyAttestacii) || {};
+        out.plan = {
+          items: (plan.items || []).map(i => ({
+            name: i.discipline, control: vid[i.uid_control] || null, hours: i.hours || 0, ze: i.ze || 0,
+            course: i.course || 0, semester: sem[i.uid_semestr] || '', elective: !!i.elective,
+            practice: !!i.practice, courseWork: !!i.course_work, facultative: !!i.facultative,
+            selected: i.is_selected !== false })),
+          sessions: (sessions.items || []).map(s => ({ course: s.cours, semester: s.semestr, start: s.start_date, end: s.end_date })),
+        };
+      } catch (e) {}
+      delete out.uid;
       if (withProfile) try {
         const p = (await get(profileUrl)).item || {};
         out.name = [p.last_name, p.first_name, p.middle_name].filter(Boolean).join(' ');
