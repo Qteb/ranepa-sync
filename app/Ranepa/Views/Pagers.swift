@@ -143,6 +143,7 @@ private struct DayCell: View {
     let day: Date
     let selected: Bool
     let dot: Bool
+    var showWeekday = true
     let action: () -> Void
     @ScaledMetric(relativeTo: .title3) private var size = 34
 
@@ -151,9 +152,11 @@ private struct DayCell: View {
         let weekend = day.isoWeekday >= 6
         Button(action: action) {
             VStack(spacing: 4) {
-                Text(weekdaysShort[day.isoWeekday - 1])
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if showWeekday {
+                    Text(weekdaysShort[day.isoWeekday - 1])
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Text("\(day.day)")
                     .font(.title3.weight(selected || today ? .semibold : .regular))
                     .monospacedDigit()
@@ -177,6 +180,51 @@ private struct DayCell: View {
         .buttonStyle(.plain)
         .accessibilityLabel("\(today ? "Сегодня, " : "")\(dayTitle(day))\(dot ? "" : ", пар нет")")
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// Боковая панель iPad: все загруженные недели одной сеткой, как мини-
+/// календарь. Выбранная неделя подсвечена, нажатие открывает день.
+struct RangeCalendar: View {
+    let selected: Date
+    let firstDay: Date
+    let weeks: Int
+    let hasLessons: (Date) -> Bool
+    let onSelect: (Date) -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 0) {
+                    ForEach(weekdaysShort, id: \.self) {
+                        Text($0).font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.bottom, 4)
+                ForEach(0..<weeks, id: \.self) { w in
+                    let monday = firstDay.adding(days: w * 7)
+                    // Название месяца над неделей, где он начинается.
+                    if let first = (0..<7).map({ monday.adding(days: $0) }).first(where: { $0.day == 1 }) ?? (w == 0 ? monday : nil) {
+                        Text(monthsNominative[first.month - 1])
+                            .font(.headline)
+                            .padding(.top, w == 0 ? 0 : 12)
+                            .padding(.leading, 8)
+                    }
+                    HStack(spacing: 0) {
+                        ForEach(0..<7, id: \.self) { i in
+                            let day = monday.adding(days: i)
+                            DayCell(day: day, selected: day.sameDay(selected), dot: hasLessons(day),
+                                    showWeekday: false) { onSelect(day) }
+                        }
+                    }
+                    .background(monday.sameDay(selected.monday) ? Color(.tertiarySystemFill) : .clear,
+                                in: .rect(cornerRadius: 14))
+                }
+            }
+            .padding(.horizontal, 12)
+            .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+        }
+        .navigationTitle("Расписание")
     }
 }
 

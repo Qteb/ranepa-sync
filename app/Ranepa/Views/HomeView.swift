@@ -18,12 +18,34 @@ struct HomeView: View {
     @State private var banner: Banner?
     /// Перерисовка раз в минуту: «идёт сейчас» и «ещё N мин».
     @State private var minute = Date()
+    /// Экран шире 1100 pt (iPad в альбомной ориентации): слева боковая
+    /// панель с календарём загруженных недель.
+    @State private var wide = false
+
+    private var showSidebar: Bool { sizeClass == .regular && wide }
 
     private var firstDay: Date { state.firstDay }
     private func dayAt(_ i: Int) -> Date { firstDay.adding(days: i) }
     private func index(of day: Date) -> Int { min(max(day.days(since: firstDay), 0), state.dayCount - 1) }
 
-    var body: some View {
+    @ViewBuilder
+    private var root: some View {
+        if showSidebar {
+            NavigationSplitView(columnVisibility: .constant(.all)) {
+                RangeCalendar(selected: selected, firstDay: firstDay, weeks: state.dayCount / 7,
+                              hasLessons: { day in state.lessons(on: day).contains { !$0.cancelled } },
+                              onSelect: { goTo($0) })
+                    .toolbar(removing: .sidebarToggle)
+                    .navigationSplitViewColumnWidth(320)
+            } detail: {
+                mainStack
+            }
+        } else {
+            mainStack
+        }
+    }
+
+    private var mainStack: some View {
         NavigationStack {
             Group {
                 if sizeClass == .regular {
@@ -69,6 +91,11 @@ struct HomeView: View {
                 }
             }
         }
+    }
+
+    var body: some View {
+        root
+        .onGeometryChange(for: Bool.self) { $0.size.width >= 1100 } action: { wide = $0 }
         .sheet(item: $sheetLesson) { LessonSheet(lesson: $0) }
         .sheet(isPresented: $showAccount) { AccountView() }
         .onAppear {
@@ -184,11 +211,14 @@ struct HomeView: View {
             // Крупный заголовок растёт со шрифтом меньше текста, как в системных
             // приложениях.
             .dynamicTypeSize(...DynamicTypeSize.accessibility1)
-            WeekPager(selected: selected, firstDay: firstDay, weeks: state.dayCount / 7,
-                      hasLessons: { day in state.lessons(on: day).contains { !$0.cancelled } },
-                      onSelect: { goTo($0) })
-                // Семь дней в ряд: крупнее числа не помещаются.
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            // С боковой панелью недели выбирают в её календаре.
+            if !showSidebar {
+                WeekPager(selected: selected, firstDay: firstDay, weeks: state.dayCount / 7,
+                          hasLessons: { day in state.lessons(on: day).contains { !$0.cancelled } },
+                          onSelect: { goTo($0) })
+                    // Семь дней в ряд: крупнее числа не помещаются.
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            }
         }
         .padding(.bottom, 6)
     }
