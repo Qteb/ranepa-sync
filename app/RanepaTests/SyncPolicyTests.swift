@@ -74,6 +74,14 @@ final class SyncPolicyTests: XCTestCase {
         XCTAssertNil(skip(.background, tuesday))
     }
 
+    func testSemesterWeekly() {
+        XCTAssertTrue(Sync.isSemesterDue(d, now: tuesday))
+        d.setTime(tuesday.addingTimeInterval(-6 * 24 * 3600), Keys.lastSemesterAt)
+        XCTAssertFalse(Sync.isSemesterDue(d, now: tuesday))
+        d.setTime(tuesday.addingTimeInterval(-7 * 24 * 3600), Keys.lastSemesterAt)
+        XCTAssertTrue(Sync.isSemesterDue(d, now: tuesday))
+    }
+
     func testManualRightAfterPrevious() {
         d.setTime(tuesday.addingTimeInterval(-30), Keys.fetchedAt)
         XCTAssertEqual(skip(.manual, tuesday), .tooSoon)

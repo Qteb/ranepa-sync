@@ -131,7 +131,9 @@ final class LKWebView: NSObject, WKNavigationDelegate {
     // MARK: Загрузка расписания
 
     /// Скачивает [weeks] недель начиная с [monday] в уже авторизованной странице.
-    func fetch(_ template: ScheduleTemplate, monday: Date, weeks: Int,
+    /// С [stopAfterEmpty] останавливается после стольких пустых недель подряд
+    /// (но не раньше месяца): дальше семестр кончился.
+    func fetch(_ template: ScheduleTemplate, monday: Date, weeks: Int, stopAfterEmpty: Int? = nil,
                withProfile: Bool = true, withPhoto: Bool = false) async throws -> FetchResult {
         let urls = (0..<weeks).map { w in
             template.with(dates: (0..<7).map { monday.adding(days: w * 7 + $0) })
@@ -141,6 +143,7 @@ final class LKWebView: NSObject, WKNavigationDelegate {
         do {
             value = try await webView.callAsyncJavaScript(Self.fetchJS, arguments: [
                 "urls": urls, "headers": headers,
+                "stopAfterEmpty": stopAfterEmpty ?? 0, "minWeeks": fetchWeeks,
                 "groupsUrl": Self.groupsURL, "profileUrl": Self.profileURL, "photoUrl": Self.photoURL,
                 "withProfile": withProfile, "withPhoto": withPhoto,
             ], contentWorld: .page)
@@ -167,7 +170,8 @@ final class LKWebView: NSObject, WKNavigationDelegate {
 
     /// Обновление без интерфейса: невидимый WebView открывает ЛК с сохранёнными
     /// cookie и токенами. Страница сама обновит токен и запросит расписание.
-    static func refresh(monday: Date, weeks: Int, withProfile: Bool, withPhoto: Bool) async throws -> FetchResult {
+    static func refresh(monday: Date, weeks: Int, stopAfterEmpty: Int? = nil,
+                        withProfile: Bool, withPhoto: Bool) async throws -> FetchResult {
         let lk = LKWebView()
         // Вне окна WebKit усыпляет страницу: держим её в окне, но невидимой.
         if let window = UIApplication.shared.connectedScenes
@@ -179,7 +183,7 @@ final class LKWebView: NSObject, WKNavigationDelegate {
         }
         defer { lk.webView.removeFromSuperview() }
         let template = try await lk.waitForTemplate(timeout: 60)
-        return try await lk.fetch(template, monday: monday, weeks: weeks,
+        return try await lk.fetch(template, monday: monday, weeks: weeks, stopAfterEmpty: stopAfterEmpty,
                                   withProfile: withProfile, withPhoto: withPhoto)
     }
 
@@ -300,7 +304,14 @@ final class LKWebView: NSObject, WKNavigationDelegate {
     }
     try {
       const days = [];
-      for (const u of urls) days.push(...((await get(u)).days || []));
+      let empty = 0;
+      for (let i = 0; i < urls.length; i++) {
+        const week = (await get(urls[i])).days || [];
+        days.push(...week);
+        const count = week.reduce((n, day) => n + ((day.discs || []).length), 0);
+        empty = count ? 0 : empty + 1;
+        if (stopAfterEmpty && i + 1 >= minWeeks && empty >= stopAfterEmpty) break;
+      }
       // Профиль — необязательная часть: ошибка не должна ломать расписание.
       const out = { days: days };
       if (withProfile) try {

@@ -6,7 +6,9 @@ enum Notifications {
     private static var center: UNUserNotificationCenter { .current() }
 
     /// iOS держит не больше 64 запланированных уведомлений на приложение.
-    private static let maxScheduled = 60
+    /// У iOS лимит 64 запланированных уведомления на приложение.
+    private static let maxScheduled = 52
+    private static let maxExams = 8
     private static let changesID = "changes"
     private static let sessionID = "session"
     private static let keepAliveID = "keepAlive"
@@ -54,7 +56,7 @@ enum Notifications {
         // Только запланированные: уже показанное «расписание изменилось» не трогаем.
         let pending = await center.pendingNotificationRequests()
             .map(\.identifier)
-            .filter { ![changesID, sessionID, keepAliveID].contains($0) }
+            .filter { ![changesID, sessionID, keepAliveID].contains($0) && !$0.hasPrefix("exam-") }
         center.removePendingNotificationRequests(withIdentifiers: pending)
         await removeStale()
         guard minutes > 0 else { return }
@@ -68,6 +70,33 @@ enum Notifications {
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: at.timeIntervalSinceNow, repeats: false)
             try? await center.add(UNNotificationRequest(identifier: "lesson-\(i)",
                                                         content: reminder(lesson, minutes: minutes), trigger: trigger))
+        }
+    }
+
+    /// Накануне зачёта или экзамена в это время — напоминание.
+    private static let examEveningHour = 19
+
+    /// Вечером накануне каждого зачёта и экзамена. Не зависит от напоминаний
+    /// о парах: их можно выключить, а про экзамен знать нужно.
+    static func scheduleExamReminders(_ lessons: [Lesson]) async {
+        let old = await center.pendingNotificationRequests().map(\.identifier).filter { $0.hasPrefix("exam-") }
+        center.removePendingNotificationRequests(withIdentifiers: old)
+        let now = Date()
+        let shift = Clock.shift
+        guard let session = ExamSession(lessons: lessons, now: now.addingTimeInterval(shift)) else { return }
+        for (i, item) in session.items.prefix(maxExams).enumerated() {
+            let exam = item.exam
+            // По настоящим часам: в сборке для скриншотов время сдвинуто.
+            let start = exam.start.addingTimeInterval(-shift)
+            guard let at = calendar.date(bySettingHour: examEveningHour, minute: 0, second: 0,
+                                         of: start.adding(days: -1)), at > now else { continue }
+            let content = UNMutableNotificationContent()
+            content.title = "Завтра \(exam.kind): \(exam.subject)"
+            content.body = "\(hm(exam.start)) · \(exam.isRemote ? "дистанционно" : exam.placeLabel)"
+            content.sound = .default
+            content.userInfo = [lessonKey: start.timeIntervalSince1970]
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: at.timeIntervalSinceNow, repeats: false)
+            try? await center.add(UNNotificationRequest(identifier: "exam-\(i)", content: content, trigger: trigger))
         }
     }
 

@@ -1,8 +1,15 @@
 import UIKit
 
 /// Полная загрузка: месяц вперёд, то есть текущая неделя и ещё 4.
-/// Делается при входе и первым обновлением за день.
+/// Делается первым обновлением за день.
 let fetchWeeks = 5
+
+/// Загрузка до конца семестра — при входе и раз в неделю. ЛК отдаёт
+/// расписание вместе с сессией; 20 недель хватает на любой семестр.
+let semesterWeeks = 20
+/// Столько пустых недель подряд — значит, семестр кончился. Меньше нельзя:
+/// перед сессией бывают каникулы на пару недель.
+let emptyWeeksToStop = 4
 
 /// Напоминание о паре по умолчанию, пока пользователь не выбрал своё.
 let defaultReminderMinutes = 15
@@ -108,30 +115,37 @@ enum Sync {
         return !last.sameDay(now)
     }
 
+    /// Раз в неделю — весь семестр: дальние недели тоже меняются, но редко.
+    static func isSemesterDue(_ d: UserDefaults, now: Date) -> Bool {
+        since(d, Keys.lastSemesterAt, now) >= 7 * 24 * 3600
+    }
+
     /// Решает, идти ли в ЛК и сколько грузить, и загружает расписание через
-    /// невидимый WebView. Месяц — первым обновлением за день, иначе текущую
-    /// неделю (с пятницы — и следующую).
+    /// невидимый WebView. Семестр — раз в неделю, месяц — первым обновлением
+    /// за день, иначе текущую неделю (с пятницы — и следующую).
     @MainActor
     static func run(_ trigger: SyncTrigger, _ d: UserDefaults = .standard) async throws -> SyncResult {
         if d.bool(forKey: Keys.demo) { return await Demo.sync(trigger, d) }
         let now = Clock.now
         if let reason = skipReason(d, trigger, now: now) { return SyncResult(skipped: reason) }
 
-        let full = isFullDue(d, now: now)
+        let semester = isSemesterDue(d, now: now)
+        let full = semester || isFullDue(d, now: now)
         d.setTime(now, Keys.lastAttemptAt)
         let monday = now.monday
-        let weeks = full ? fetchWeeks : (now.isoWeekday >= 5 ? 2 : 1)
+        let weeks = semester ? semesterWeeks : full ? fetchWeeks : (now.isoWeekday >= 5 ? 2 : 1)
         let result: FetchResult
         do {
-            result = try await LKWebView.refresh(monday: monday, weeks: weeks, withProfile: full,
-                                                 withPhoto: full && photoStale(d))
+            result = try await LKWebView.refresh(monday: monday, weeks: weeks,
+                                                 stopAfterEmpty: semester ? emptyWeeksToStop : nil,
+                                                 withProfile: full, withPhoto: full && photoStale(d))
         } catch LKError.serverBusy(let status, let retryAfter) {
             startBackoff(d, retryAfter: retryAfter)
             throw LKError.serverBusy(status: status, retryAfter: retryAfter)
         }
         d.removeObject(forKey: Keys.backoffUntil)
         d.removeObject(forKey: Keys.backoffFailures)
-        return await save(result, monday: monday, weeks: weeks, d)
+        return await save(result, monday: monday, weeks: weeks, replaceAll: semester, d)
     }
 
     /// Есть ли пары в ближайшие 14 дней — если нет, это каникулы.
@@ -170,15 +184,15 @@ enum Sync {
     }
 
     /// Сохраняет загруженное расписание, сравнивает с прошлым и обновляет
-    /// напоминания, виджет и календарь. Полная загрузка заменяет всё
-    /// расписание, лёгкая — только загруженные недели.
+    /// напоминания, виджет и календарь. Семестр (при входе и раз в неделю)
+    /// заменяет всё расписание, остальные загрузки — только свои недели.
     @MainActor
-    static func save(_ result: FetchResult, monday: Date, weeks: Int = fetchWeeks,
+    static func save(_ result: FetchResult, monday: Date, weeks: Int = semesterWeeks, replaceAll: Bool = true,
                      _ d: UserDefaults = .standard) async -> SyncResult {
         let full = weeks >= fetchWeeks
         let hadCache = d.object(forKey: Keys.days) != nil
         let before = cachedLessons(d)
-        let days = full ? result.days : merge(d, fresh: result.days, monday: monday, weeks: weeks)
+        let days = replaceAll ? result.days : merge(d, fresh: result.days, monday: monday, weeks: weeks)
         let after = parseLessons(days)
 
         saveDays(days, d)
@@ -196,9 +210,10 @@ enum Sync {
         }
         d.setTime(Clock.now, Keys.fetchedAt)
         if let until = result.sessionUntil { d.setTime(until, Keys.sessionUntil) }
-        if full {
+        if full { d.setTime(Clock.now, Keys.lastFullAt) }
+        if replaceAll {
             d.setTime(monday, Keys.rangeStart)
-            d.setTime(Clock.now, Keys.lastFullAt)
+            d.setTime(Clock.now, Keys.lastSemesterAt)
         }
         d.set(true, forKey: Keys.loggedIn)
         d.removeObject(forKey: Keys.sessionExpiredNotified)
@@ -229,6 +244,7 @@ enum Sync {
         let minutes = d.object(forKey: Keys.reminderMinutes) == nil
             ? defaultReminderMinutes : d.integer(forKey: Keys.reminderMinutes)
         await Notifications.scheduleReminders(lessons, minutes: minutes)
+        await Notifications.scheduleExamReminders(lessons)
         // В демо сессии ЛК нет — напоминать о ней незачем.
         if let fetchedAt = d.time(Keys.fetchedAt), !d.bool(forKey: Keys.demo) {
             await Notifications.scheduleKeepAlive(lastSync: fetchedAt, sessionUntil: d.time(Keys.sessionUntil))
@@ -237,7 +253,8 @@ enum Sync {
         await LiveActivities.update(lessons, enabled: d.bool(Keys.liveActivity, default: true))
         guard d.bool(forKey: Keys.calendarExport) else { return nil }
         let from = d.time(Keys.rangeStart) ?? Clock.now.monday
-        return await CalendarExport.export(lessons, from: from, to: from.adding(days: 7 * fetchWeeks),
+        let last = lessons.map(\.start).max().map { $0.dateOnly.adding(days: 1) } ?? from
+        return await CalendarExport.export(lessons, from: from, to: max(from.adding(days: 7 * fetchWeeks), last),
                                            reminderMinutes: minutes)
     }
 }
