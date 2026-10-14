@@ -53,7 +53,11 @@ final class AppState {
 
     /// Первый день загруженного диапазона — понедельник текущей недели.
     var firstDay: Date { Clock.now.monday }
-    var dayCount: Int { fetchWeeks * 7 }
+    /// Дней в ленте: до конца последней недели с парами, но не меньше месяца.
+    var dayCount: Int {
+        let weeks = lessons.map(\.start).max().map { $0.monday.days(since: firstDay) / 7 + 1 } ?? 0
+        return max(fetchWeeks, weeks) * 7
+    }
 
     func lessons(on day: Date) -> [Lesson] { lessons.filter { $0.start.sameDay(day) } }
 

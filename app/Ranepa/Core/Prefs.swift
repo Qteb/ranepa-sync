@@ -18,6 +18,8 @@ enum Keys {
     static let photo = "photo"
     static let photoFetchedAt = "photoFetchedAt"
     static let lastFullAt = "lastFullAt"
+    /// Когда последний раз загружали весь семестр.
+    static let lastSemesterAt = "lastSemesterAt"
     static let lastAttemptAt = "lastAttemptAt"
     static let backoffUntil = "backoffUntil"
     static let backoffFailures = "backoffFailures"
@@ -34,7 +36,7 @@ enum Keys {
     static let session = [
         loggedIn, days, group, fetchedAt, rangeStart, sessionExpiredNotified,
         lastBackgroundRun, lastBackgroundResult, fullName, program, photo,
-        photoFetchedAt, lastFullAt, lastAttemptAt, backoffUntil, backoffFailures,
+        photoFetchedAt, lastFullAt, lastSemesterAt, lastAttemptAt, backoffUntil, backoffFailures,
         demo, demoRevision, demoShift, demoFastFrom, sessionUntil,
     ]
 }

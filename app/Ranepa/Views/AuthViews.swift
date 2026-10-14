@@ -162,7 +162,8 @@ struct LoginView: View {
         showLoading()
         do {
             let monday = Date().monday
-            let result = try await lk.fetch(template, monday: monday, weeks: fetchWeeks, withPhoto: true)
+            let result = try await lk.fetch(template, monday: monday, weeks: semesterWeeks,
+                                            stopAfterEmpty: emptyWeeksToStop, withPhoto: true)
             timeout?.cancel()
             await state.completeLogin(result, monday: monday)
         } catch {
