@@ -50,7 +50,7 @@ struct AboutView: View {
                 }
                 Link(destination: Links.repo) {
                     externalRow("Исходный код на GitHub",
-                                icon: SettingsIcon("chevron.left.forwardslash.chevron.right", Color(white: 0.15)))
+                                icon: SettingsIcon(asset: "GitHub", Color(red: 0x1F / 255, green: 0x23 / 255, blue: 0x28 / 255)))
                 }
             } footer: {
                 Text("Неофициальное приложение. Не связано с РАНХиГС.")

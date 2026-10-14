@@ -37,20 +37,34 @@ func lessonDetails(_ l: Lesson, icon: Bool = false) -> Text {
 
 /// Цветная плашка с иконкой, как в «Настройках» iPhone.
 struct SettingsIcon: View {
-    let symbol: String
+    private let symbol: String?
+    private let asset: String?
     let color: Color
 
     init(_ symbol: String, _ color: Color) {
         self.symbol = symbol
+        asset = nil
+        self.color = color
+    }
+
+    /// Значок из каталога ресурсов, например логотип GitHub.
+    init(asset: String, _ color: Color) {
+        symbol = nil
+        self.asset = asset
         self.color = color
     }
 
     var body: some View {
-        Image(systemName: symbol)
-            .font(.system(size: 16, weight: .medium))
-            .foregroundStyle(.white)
-            .frame(width: 30, height: 30)
-            .background(color.gradient, in: .rect(cornerRadius: 8))
+        Group {
+            if let symbol {
+                Image(systemName: symbol).font(.system(size: 16, weight: .medium))
+            } else if let asset {
+                Image(asset).resizable().scaledToFit().frame(width: 19, height: 19)
+            }
+        }
+        .foregroundStyle(.white)
+        .frame(width: 30, height: 30)
+        .background(color.gradient, in: .rect(cornerRadius: 8))
     }
 }
 
