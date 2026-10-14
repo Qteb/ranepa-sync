@@ -177,6 +177,7 @@ enum Sync {
             d.setTime(Clock.now, Keys.photoFetchedAt)
         }
         d.setTime(Clock.now, Keys.fetchedAt)
+        if let until = result.sessionUntil { d.setTime(until, Keys.sessionUntil) }
         if full {
             d.setTime(monday, Keys.rangeStart)
             d.setTime(Clock.now, Keys.lastFullAt)
@@ -212,7 +213,7 @@ enum Sync {
         await Notifications.scheduleReminders(lessons, minutes: minutes)
         // В демо сессии ЛК нет — напоминать о ней незачем.
         if let fetchedAt = d.time(Keys.fetchedAt), !d.bool(forKey: Keys.demo) {
-            await Notifications.scheduleKeepAlive(lastSync: fetchedAt)
+            await Notifications.scheduleKeepAlive(lastSync: fetchedAt, sessionUntil: d.time(Keys.sessionUntil))
         }
         Outputs.update(lessons)
         await LiveActivities.update(lessons, enabled: d.bool(Keys.liveActivity, default: true))

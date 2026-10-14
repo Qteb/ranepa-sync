@@ -27,6 +27,8 @@ enum Keys {
     static let demoRevision = "demoRevision"
     static let demoShift = "demoShift"
     static let demoFastFrom = "demoFastFrom"
+    /// Когда истекает сессия ЛК (refresh-токен), по настоящим часам.
+    static let sessionUntil = "sessionUntil"
     static let remoteConfig = "remoteConfig"
     static let remoteConfigCheckedAt = "remoteConfigCheckedAt"
 
@@ -35,7 +37,7 @@ enum Keys {
         loggedIn, days, group, fetchedAt, rangeStart, sessionExpiredNotified,
         lastBackgroundRun, lastBackgroundResult, fullName, program, photo,
         photoFetchedAt, lastFullAt, lastAttemptAt, backoffUntil, backoffFailures,
-        demo, demoRevision, demoShift, demoFastFrom,
+        demo, demoRevision, demoShift, demoFastFrom, sessionUntil,
     ]
 }
 

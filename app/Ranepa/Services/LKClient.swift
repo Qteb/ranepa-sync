@@ -29,6 +29,9 @@ struct FetchResult {
     /// data:image/…;base64,… — nil, если фото не запрашивали; пустая
     /// строка, если в ЛК его нет.
     var photo: String?
+    /// Когда истекает refresh-токен: сутки, а с «Запомнить меня» — 30 дней.
+    /// Сам токен из страницы не выходит, только его срок.
+    var sessionUntil: Date?
 }
 
 enum LKError: LocalizedError {
@@ -74,6 +77,7 @@ final class LKWebView: NSObject, WKNavigationDelegate {
         let scripts = config.userContentController
         scripts.addUserScript(WKUserScript(source: Self.hookJS, injectionTime: .atDocumentStart, forMainFrameOnly: false))
         scripts.addUserScript(WKUserScript(source: Self.noZoomJS, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        scripts.addUserScript(WKUserScript(source: Self.rememberMeJS, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         webView = WKWebView(frame: .zero, configuration: config)
         super.init()
         scripts.add(MessageProxy(self), name: "scheduleRequest")
@@ -155,7 +159,8 @@ final class LKWebView: NSObject, WKNavigationDelegate {
         }
         return FetchResult(days: data["days"] as? [Any] ?? [], group: data["group"] as? String,
                            program: data["program"] as? String, fullName: data["name"] as? String,
-                           photo: data["photo"] as? String)
+                           photo: data["photo"] as? String,
+                           sessionUntil: (data["sessionUntil"] as? Double).map(Date.init(timeIntervalSince1970:)))
     }
 
     // MARK: Без экрана
@@ -263,6 +268,25 @@ final class LKWebView: NSObject, WKNavigationDelegate {
     })();
     """#
 
+    /// Ставит «Запомнить меня» на форме входа: с ней сессия ЛК живёт 30 дней,
+    /// без неё — сутки. Нажимаем сами, как пользователь, — так Vue узнаёт
+    /// о галочке. Один раз на форму: если её сняли, не возвращаем.
+    private static let rememberMeJS = #"""
+    (function () {
+      function apply() {
+        document.querySelectorAll('label').forEach(function (label) {
+          if (label.textContent.indexOf('Запомнить') === -1) return;
+          var input = document.getElementById(label.htmlFor);
+          if (!input || input.type !== 'checkbox' || input.dataset.rtRemember) return;
+          input.dataset.rtRemember = '1';
+          if (!input.checked) input.click();
+        });
+      }
+      apply();
+      new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: true });
+    })();
+    """#
+
     private static let fetchJS = #"""
     const auth = { authorization: 'Bearer ' + localStorage.getItem('access_token') };
     async function get(url) {
@@ -291,6 +315,12 @@ final class LKWebView: NSObject, WKNavigationDelegate {
       if (withPhoto) {
         try { out.photo = (await get(photoUrl)).result || ''; } catch (e) {}
       }
+      // Только срок refresh-токена (поле exp), не сам токен.
+      try {
+        const part = (localStorage.getItem('refresh_token') || '').split('.')[1];
+        const exp = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/'))).exp;
+        if (exp) out.sessionUntil = exp;
+      } catch (e) {}
       return JSON.stringify(out);
     } catch (e) {
       return JSON.stringify({ error: String(e.message || e) });
