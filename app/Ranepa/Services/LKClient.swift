@@ -77,6 +77,7 @@ final class LKWebView: NSObject, WKNavigationDelegate {
         let scripts = config.userContentController
         scripts.addUserScript(WKUserScript(source: Self.hookJS, injectionTime: .atDocumentStart, forMainFrameOnly: false))
         scripts.addUserScript(WKUserScript(source: Self.noZoomJS, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        scripts.addUserScript(WKUserScript(source: Self.rememberMeJS, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         webView = WKWebView(frame: .zero, configuration: config)
         super.init()
         scripts.add(MessageProxy(self), name: "scheduleRequest")
@@ -264,6 +265,25 @@ final class LKWebView: NSObject, WKNavigationDelegate {
       }
       apply();
       new MutationObserver(apply).observe(document.head, { childList: true, subtree: true, attributes: true });
+    })();
+    """#
+
+    /// Ставит «Запомнить меня» на форме входа: с ней сессия ЛК живёт 30 дней,
+    /// без неё — сутки. Нажимаем сами, как пользователь, — так Vue узнаёт
+    /// о галочке. Один раз на форму: если её сняли, не возвращаем.
+    private static let rememberMeJS = #"""
+    (function () {
+      function apply() {
+        document.querySelectorAll('label').forEach(function (label) {
+          if (label.textContent.indexOf('Запомнить') === -1) return;
+          var input = document.getElementById(label.htmlFor);
+          if (!input || input.type !== 'checkbox' || input.dataset.rtRemember) return;
+          input.dataset.rtRemember = '1';
+          if (!input.checked) input.click();
+        });
+      }
+      apply();
+      new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: true });
     })();
     """#
 
