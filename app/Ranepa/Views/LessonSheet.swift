@@ -1,14 +1,17 @@
 import SwiftUI
 import TipKit
 
-/// Подробности пары листом, как карточка места в Картах: сначала на пол-
-/// экрана, тянется вверх, закрывается свайпом или крестиком. Любую строку
+/// Подробности пары листом, как карточка места в Картах: высотой по
+/// содержимому, тянется вверх, закрывается свайпом или крестиком. Любую строку
 /// можно скопировать через контекстное меню.
 struct LessonSheet: View {
     let lesson: Lesson
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @State private var copied = false
+    /// Высота листа по содержимому: шапка, строки и отступы.
+    @State private var fitted: CGFloat = 320
+    @State private var detent = PresentationDetent.height(320)
 
     var body: some View {
         List {
@@ -48,11 +51,26 @@ struct LessonSheet: View {
             }
             .listSectionSpacing(.compact)
             .contentMargins(.top, 8, for: .scrollContent)
+            // Под последним блоком — столько же, сколько сбоку.
+            .contentMargins(.bottom, 20, for: .scrollContent)
             // Название в одной строке с крестиком, как в карточке места
             // в Картах. Список прокручивается под шапкой.
             .safeAreaBar(edge: .top) { header }
+            .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                // Зона полосы «домой» не нужна: лист iOS 26 и так висит
+                // над краем экрана, иначе снизу остаётся лишняя пустота.
+                geometry.contentSize.height + geometry.contentInsets.top - geometry.contentInsets.bottom
+            } action: { _, height in
+                let height = height.rounded()
+                guard height > 0, abs(height - fitted) > 1 else { return }
+                let wasFitted = detent != .large
+                fitted = height
+                if wasFitted { detent = .height(height) }
+            }
             .alert("Адрес скопирован", isPresented: $copied) {} message: { Text(lesson.email) }
-        .presentationDetents([.medium, .large])
+        // Лист открывается ровно по содержимому; длинную карточку можно
+        // растянуть на весь экран.
+        .presentationDetents([.height(fitted), .large], selection: $detent)
         .presentationBackground(Color(.systemGroupedBackground))
     }
 
