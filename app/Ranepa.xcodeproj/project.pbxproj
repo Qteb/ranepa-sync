@@ -37,6 +37,7 @@
 		99C406B97FE8252E9AC4AA78 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C732ECF6116ECED4EF6BF3B0 /* Assets.xcassets */; };
 		A69E536E4D4403208A47153C /* Lessons.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50AFFAA75BD71DF9CEC62A6 /* Lessons.swift */; };
 		ACB3C01A7C0DF48C110ED7F5 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E390453ED75403003A12A1C /* HomeView.swift */; };
+		AEA2CA9088B0658FBF6807A0 /* Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16240585307204C7B401A29 /* Controls.swift */; };
 		AF32F42A386C984FC03CFBAD /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1037ADF40B8613343E39C2E /* AboutView.swift */; };
 		AF85C23F939596E9BE924FD1 /* Lesson.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2E0E62DF9E1AAE98262BE1 /* Lesson.swift */; };
 		B51B733A8834F9AB03B0A860 /* RanepaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EF316051A221AE25EEEC15E /* RanepaApp.swift */; };
@@ -46,6 +47,7 @@
 		BDCC1CA01F59D9E233FF2390 /* LessonLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D828BADE50E01ABB6CF1363 /* LessonLiveActivity.swift */; };
 		C3D0995C1E45DFDC6B2A54B5 /* Changes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BF5605E35BFEC841A2FC4D0 /* Changes.swift */; };
 		CE35F73666D81AB487A4126B /* AuthViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30F9545DFDEF7BD52107DCE7 /* AuthViews.swift */; };
+		D1BE0786A0265E5D17F62E69 /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F538F56A16A556943D9D89A /* WidgetViews.swift */; };
 		D1F974E9760F1E41D743CE5A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B884B80DDC4664D677EEED98 /* PrivacyInfo.xcprivacy */; };
 		D31550B2BFF62C4BAB407505 /* RanepaWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2DDC720F1AF98933BD3F958 /* RanepaWidget.swift */; };
 		DD131A2CEBAF89EEBDBB70E5 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 26E4E1FC4532AB0DC23038FE /* PrivacyInfo.xcprivacy */; };
@@ -130,6 +132,7 @@
 		26E4E1FC4532AB0DC23038FE /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2B9669D1302E3DFF395022ED /* RanepaWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RanepaWatch.entitlements; sourceTree = "<group>"; };
 		2C2E0E62DF9E1AAE98262BE1 /* Lesson.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lesson.swift; sourceTree = "<group>"; };
+		2F538F56A16A556943D9D89A /* WidgetViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetViews.swift; sourceTree = "<group>"; };
 		30257E6E310E76C9372B281E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		30F9545DFDEF7BD52107DCE7 /* AuthViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViews.swift; sourceTree = "<group>"; };
 		31F47E45E969B537A1CE4783 /* Campus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Campus.swift; sourceTree = "<group>"; };
@@ -165,6 +168,7 @@
 		B884B80DDC4664D677EEED98 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C1A0708D3D56C4621444EE86 /* Background.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Background.swift; sourceTree = "<group>"; };
 		C732ECF6116ECED4EF6BF3B0 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D16240585307204C7B401A29 /* Controls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Controls.swift; sourceTree = "<group>"; };
 		D2DDC720F1AF98933BD3F958 /* RanepaWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RanepaWidget.swift; sourceTree = "<group>"; };
 		D939144E4737205E5461B6E8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DC5C906772AAF457F1E0C62F /* Demo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Demo.swift; sourceTree = "<group>"; };
@@ -239,11 +243,13 @@
 		6861F12E27393EF23D12586E /* RanepaWidget */ = {
 			isa = PBXGroup;
 			children = (
+				D16240585307204C7B401A29 /* Controls.swift */,
 				A213DBDB3CF51ECB6D9EA3FA /* Info.plist */,
 				6D828BADE50E01ABB6CF1363 /* LessonLiveActivity.swift */,
 				30257E6E310E76C9372B281E /* PrivacyInfo.xcprivacy */,
 				4801304716C6CC53BF64663F /* RanepaWidget.entitlements */,
 				D2DDC720F1AF98933BD3F958 /* RanepaWidget.swift */,
+				2F538F56A16A556943D9D89A /* WidgetViews.swift */,
 			);
 			path = RanepaWidget;
 			sourceTree = "<group>";
@@ -566,10 +572,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AEA2CA9088B0658FBF6807A0 /* Controls.swift in Sources */,
 				313F11021DC289EA76FD1BC8 /* LessonActivity.swift in Sources */,
 				BDCC1CA01F59D9E233FF2390 /* LessonLiveActivity.swift in Sources */,
 				5921E8600CC056515060B713 /* Lessons.swift in Sources */,
 				D31550B2BFF62C4BAB407505 /* RanepaWidget.swift in Sources */,
+				D1BE0786A0265E5D17F62E69 /* WidgetViews.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -732,7 +740,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 21;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = DXDPT4TQR4;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -748,7 +756,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 2.0.0;
+				MARKETING_VERSION = 2.1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -903,7 +911,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 21;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = DXDPT4TQR4;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -925,7 +933,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 2.0.0;
+				MARKETING_VERSION = 2.1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -1042,7 +1050,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 20;
+				CURRENT_PROJECT_VERSION = 21;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = DXDPT4TQR4;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -1058,7 +1066,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 2.0.0;
+				MARKETING_VERSION = 2.1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

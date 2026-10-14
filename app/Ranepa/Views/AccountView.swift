@@ -64,7 +64,11 @@ struct AccountView: View {
                     // Какими картами открывать адрес корпуса: если их больше одной.
                     if MapApp.installedApps.count > 1 {
                         Picker(selection: Binding(get: { MapApp.preferred?.rawValue ?? "" },
-                                                  set: { MapApp.preferred = MapApp(rawValue: $0) })) {
+                                                  set: {
+                                                      MapApp.preferred = MapApp(rawValue: $0)
+                                                      // Виджеты и «Корпус» в Пункте управления открывают те же Карты.
+                                                      Outputs.update(state.lessons)
+                                                  })) {
                             Text("Спрашивать").tag("")
                             ForEach(MapApp.installedApps) { Text($0.title).tag($0.rawValue) }
                         } label: {

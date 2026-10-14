@@ -65,14 +65,13 @@ def showcase(w_dir, title, sub, size, tsize, ssize, **_):
     W, H = size
     c = Image.new('RGBA', (W, H), BG + (255,))
     top = text_block(c, title, sub, int(H * 0.06), tsize, ssize)
-    k = 1.1
+    k = 1.08
     med = Image.open(f'{w_dir}/widget-medium-light.png')
     med = med.resize((int(med.width * k), int(med.height * k)), Image.LANCZOS)
-    sm = Image.open(f'{w_dir}/widget-small-light.png')
-    sm = sm.resize((int(sm.width * k), int(sm.height * k)), Image.LANCZOS)
-    icon = Image.open(f'{w_dir}/icon.png')
-    gap = 90
-    block = med.height + gap + sm.height
+    big = Image.open(f'{w_dir}/widget-large-light.png')
+    big = big.resize((int(big.width * k), int(big.height * k)), Image.LANCZOS)
+    gap = 80
+    block = med.height + gap + big.height
     y = top + (H - top - block) // 2
     x = (W - med.width) // 2
 
@@ -83,17 +82,7 @@ def showcase(w_dir, title, sub, size, tsize, ssize, **_):
         c.alpha_composite(img, xy)
 
     put(med, (x, y))
-    y2 = y + med.height + gap
-    put(sm, (x, y2))
-    # Иконка с подписью — в центре оставшегося места справа.
-    right = x + sm.width
-    cx = (right + x + med.width) // 2
-    iy = y2 + (sm.height - icon.height - 70) // 2
-    put(icon, (cx - icon.width // 2, iy), alpha=50)
-    d = ImageDraw.Draw(c)
-    f = font(46, 500)
-    label = 'Расписание'
-    d.text((cx - d.textlength(label, font=f) / 2, iy + icon.height + 22), label, font=f, fill=TITLE)
+    put(big, (x, y + med.height + gap))
     return c.convert('RGB')
 
 
@@ -127,7 +116,7 @@ slides = [
     ('iphone', split_home(), 'Твоё расписание.\nВсегда под рукой',
      'Прямо из личного кабинета,\nработает без интернета'),
     ('iphone', 'widgets', 'Пары\nна главном экране',
-     'Следующая пара видна,\nне открывая приложение'),
+     'Сколько до конца пары —\nне открывая приложение'),
     ('iphone', f'{RAW}/lesson.png', 'Где пара —\nвидно сразу',
      'Корпус на карте, аудитория\nи преподаватель'),
     ('iphone', f'{RAW}/change2.png', 'Узнаёшь о переносах\nпервым',

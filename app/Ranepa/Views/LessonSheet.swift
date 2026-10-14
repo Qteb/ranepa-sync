@@ -94,10 +94,7 @@ struct LessonSheet: View {
     private var address: String? { Places.address(from: lesson.room) }
 
     /// «1 - 2262, блок 2F».
-    private var placeTitle: String {
-        guard let block = lesson.room.firstMatch(of: /Блок\s+(\S+)/) else { return lesson.shortLocation }
-        return "\(lesson.shortLocation), блок \(block.1)"
-    }
+    private var placeTitle: String { lesson.mapTitle }
 
     /// Аудитория и адрес корпуса; нажатие открывает карты.
     private var placeRow: some View {

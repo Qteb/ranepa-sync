@@ -12,6 +12,20 @@ enum Outputs {
                    t: l.subject, k: l.kind, r: l.shortLocation, c: l.cancelled ? true : nil)
     }
 
+    /// Для виджетов — ещё преподаватель, адрес и корпус в Картах: сами они
+    /// не знают ни схемы кампуса, ни какие Карты установлены.
+    @MainActor private static func widgetItem(_ l: Lesson) -> LessonItem {
+        var item = item(l)
+        item.l = l.lecturer.isEmpty ? nil : l.lecturer
+        if !l.isRemote, let address = Places.address(from: l.room) {
+            item.a = address
+            let app = MapApp.preferred ?? .apple
+            item.m = (Places.cachedLocation(address).map { app.url($0, name: l.mapTitle) }
+                ?? app.url(search: Places.query(for: address))).absoluteString
+        }
+        return item
+    }
+
     private static func json(_ items: [LessonItem]) -> String {
         (try? JSONEncoder().encode(items)).map { String(decoding: $0, as: UTF8.self) } ?? "[]"
     }
@@ -19,15 +33,17 @@ enum Outputs {
     /// Виджету — пары на две недели вперёд: какие показать «сейчас», он решает
     /// сам по часам. Часам — ещё прошедшие дни недели и отменённые пары: там
     /// можно листать неделю.
-    static func update(_ lessons: [Lesson]) {
+    @MainActor static func update(_ lessons: [Lesson]) {
         let now = Clock.now
         let horizon = now.adding(days: 14)
-        let widget = lessons.filter { !$0.cancelled && $0.end > now && $0.start < horizon }.map(item)
+        // Отменённые тоже: виджет показывает их зачёркнутыми.
+        let widget = lessons.filter { $0.end > now && $0.start < horizon }.map(widgetItem)
         let watch = lessons.filter { $0.start >= now.monday && $0.start < horizon }.map(item)
         let shared = UserDefaults(suiteName: appGroup)
         shared?.set(json(widget), forKey: SharedKeys.lessons)
         shared?.set(Clock.shift, forKey: SharedKeys.nowShift)
         WidgetCenter.shared.reloadAllTimelines()
+        ControlCenter.shared.reloadAllControls()
         WatchSync.shared.send(lessons: json(watch))
     }
 }

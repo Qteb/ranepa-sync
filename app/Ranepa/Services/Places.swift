@@ -31,6 +31,14 @@ enum Places {
 
     private static let cacheKey = "places"
 
+    /// Точка корпуса без геокодера: по схеме кампуса или из кэша.
+    static func cachedLocation(_ address: String) -> CLLocationCoordinate2D? {
+        if let building = Campus.building(for: address) { return building.center }
+        guard let c = (UserDefaults.standard.dictionary(forKey: cacheKey) as? [String: [Double]])?[address],
+              c.count == 2 else { return nil }
+        return CLLocationCoordinate2D(latitude: c[0], longitude: c[1])
+    }
+
     /// Точка корпуса: из кэша или геокодером Apple. nil — не нашлось.
     static func locate(_ address: String) async -> CLLocationCoordinate2D? {
         let d = UserDefaults.standard
