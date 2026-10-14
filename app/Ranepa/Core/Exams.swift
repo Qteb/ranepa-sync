@@ -25,13 +25,16 @@ struct ExamSession {
 
     init?(lessons: [Lesson], plan: StudyPlan?, now: Date) {
         let active = lessons.filter { !$0.cancelled }
-        let events = active.filter { ($0.kind == "экзамен" || $0.kind == "зачёт") && $0.end > now }
+        let all = active.filter { $0.kind == "экзамен" || $0.kind == "зачёт" }
+        let events = all.filter { $0.end > now }
         func consultation(for exam: Lesson?) -> Lesson? {
             guard let exam else { return nil }
-            return active.last { $0.kind == "консультация" && $0.subject == exam.subject && $0.start < exam.start && $0.end > now }
+            return active.last { $0.kind == "консультация" && $0.subject == exam.subject && $0.start < exam.start }
         }
+        // С планом — и прошедшие события: сданное остаётся в сессии.
         func event(_ subject: String, exam: Bool) -> Lesson? {
-            events.first { $0.subject.lowercased() == subject.lowercased() && ($0.kind == "экзамен") == exam }
+            let match = all.filter { $0.subject.lowercased() == subject.lowercased() && ($0.kind == "экзамен") == exam }
+            return match.first { $0.end > now } ?? match.last
         }
 
         if let plan, let semester = plan.currentSemester(now: now) {
@@ -47,7 +50,7 @@ struct ExamSession {
                 Entry(subject: i.name, form: i.form ?? "Зачёт", event: event(i.name, exam: false), consultation: nil)
             }
             // События расписания, которых нет в плане, — тоже показываем.
-            for e in events where !(exams + credits).contains(where: { $0.event?.id == e.id }) {
+            for e in events where !(exams + credits).contains(where: { $0.subject.lowercased() == e.subject.lowercased() }) {
                 let entry = Entry(subject: e.subject, form: e.kind.capitalizedFirst, event: e, consultation: consultation(for: e))
                 if e.kind == "экзамен" { exams.append(entry) } else { credits.append(entry) }
             }
@@ -76,8 +79,14 @@ struct ExamSession {
     }
 
     var all: [Entry] { exams + credits }
-    /// Ближайшее событие с датой.
-    var nextEvent: Lesson? { all.compactMap(\.event).min { $0.start < $1.start } }
+
+    func isDone(_ e: Entry, now: Date) -> Bool { e.event.map { $0.end <= now } ?? false }
+    /// Сколько ещё сдавать: без даты или впереди.
+    func remaining(now: Date) -> Int { all.filter { !isDone($0, now: now) }.count }
+    /// До конца сессии (последний день), «идёт» — после начала.
+    func daysLeft(now: Date) -> Int? { lastDate.map { max(0, $0.days(since: now)) } }
+    /// Ближайшее событие с датой, которое ещё впереди.
+    var nextEvent: Lesson? { all.compactMap(\.event).filter { $0.end > Clock.now }.min { $0.start < $1.start } }
     /// С чего считать «через N дней»: начало сессии или первое событие.
     var firstDate: Date? { [start, nextEvent?.start].compactMap { $0 }.min() }
     /// Последний день: конец сессии или последнее событие.

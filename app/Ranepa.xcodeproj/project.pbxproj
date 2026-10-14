@@ -21,7 +21,6 @@
 		313F11021DC289EA76FD1BC8 /* LessonActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3507124DF6D45C996F40B198 /* LessonActivity.swift */; };
 		33BFC9300D589A7FFF36A03C /* Lessons.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50AFFAA75BD71DF9CEC62A6 /* Lessons.swift */; };
 		33D44A23DB356BAF49D1C610 /* Lessons.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50AFFAA75BD71DF9CEC62A6 /* Lessons.swift */; };
-		3674C8ACF525B5BDC9119FE1 /* ExamsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9681F30AE47E678F8B6E2F80 /* ExamsView.swift */; };
 		39D55AD8D56DF1C7B64EA63D /* DemoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8106CCE7A7ABA94724E47606 /* DemoTests.swift */; };
 		3C2C55FB94E27B6CFE531D0F /* Places.swift in Sources */ = {isa = PBXBuildFile; fileRef = 464C578967848BE5F3267C85 /* Places.swift */; };
 		4422FA7CEB4E92B2B03B084D /* RanepaWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFBEDBA7C68823446BDD9FF7 /* RanepaWatchApp.swift */; };
@@ -63,6 +62,7 @@
 		EB8AE2A5DA5DB11BCF8C368B /* SubjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA5B18DB357CA05A7ACAED5 /* SubjectView.swift */; };
 		F3A2F63D52766961AD6DC4C1 /* Sync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79BD1F4E8D133C34C295940F /* Sync.swift */; };
 		FAB44E89034F08B4BD58AE33 /* LKClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70173D848F872DD97E135A3C /* LKClient.swift */; };
+		FB5C4E42832357EEF920571C /* SessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FA0948F2A007B111E07DBED /* SessionView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -169,11 +169,11 @@
 		70173D848F872DD97E135A3C /* LKClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LKClient.swift; sourceTree = "<group>"; };
 		79BD1F4E8D133C34C295940F /* Sync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sync.swift; sourceTree = "<group>"; };
 		7AA5B18DB357CA05A7ACAED5 /* SubjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubjectView.swift; sourceTree = "<group>"; };
+		7FA0948F2A007B111E07DBED /* SessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionView.swift; sourceTree = "<group>"; };
 		8106CCE7A7ABA94724E47606 /* DemoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoTests.swift; sourceTree = "<group>"; };
 		8EF316051A221AE25EEEC15E /* RanepaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RanepaApp.swift; sourceTree = "<group>"; };
 		92125C291F3157D8E61B5056 /* Format.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Format.swift; sourceTree = "<group>"; };
 		9468FD91CB162D269B016603 /* CalendarExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarExport.swift; sourceTree = "<group>"; };
-		9681F30AE47E678F8B6E2F80 /* ExamsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamsView.swift; sourceTree = "<group>"; };
 		A1037ADF40B8613343E39C2E /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		A213DBDB3CF51ECB6D9EA3FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A29B04F3B1CAB517770673D8 /* SyncPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncPolicyTests.swift; sourceTree = "<group>"; };
@@ -241,13 +241,13 @@
 				444A9DDA20FE0282FF2CF1FC /* AccountView.swift */,
 				30F9545DFDEF7BD52107DCE7 /* AuthViews.swift */,
 				5DFB335EA1DCB3CAFB17F32C /* Components.swift */,
-				9681F30AE47E678F8B6E2F80 /* ExamsView.swift */,
 				6E390453ED75403003A12A1C /* HomeView.swift */,
 				1983755CA3C96F939265476E /* LecturerView.swift */,
 				61D4B3FAF3B8ED55D063D641 /* LessonSheet.swift */,
 				0B3F0933FDE3223C67BA291D /* Pagers.swift */,
 				45D43F9F77D7C9FB26A9616A /* PlanView.swift */,
 				4E16E3D726B71339E4452771 /* SearchView.swift */,
+				7FA0948F2A007B111E07DBED /* SessionView.swift */,
 				1BB7669F639E7DBDC5420FFC /* SubjectsView.swift */,
 				7AA5B18DB357CA05A7ACAED5 /* SubjectView.swift */,
 			);
@@ -560,7 +560,6 @@
 				172CC367A9EBFA8B14FFD3B0 /* Components.swift in Sources */,
 				765BDAFBAA8AD738914C1043 /* Demo.swift in Sources */,
 				BCF6DD8240CF8082E0382B04 /* Exams.swift in Sources */,
-				3674C8ACF525B5BDC9119FE1 /* ExamsView.swift in Sources */,
 				B862AA4EF76288DDDD31AB4F /* Format.swift in Sources */,
 				ACB3C01A7C0DF48C110ED7F5 /* HomeView.swift in Sources */,
 				FAB44E89034F08B4BD58AE33 /* LKClient.swift in Sources */,
@@ -577,6 +576,7 @@
 				7B8FDE878BFE34BED4461228 /* Prefs.swift in Sources */,
 				B51B733A8834F9AB03B0A860 /* RanepaApp.swift in Sources */,
 				B84E1AEE78E61848A2014308 /* SearchView.swift in Sources */,
+				FB5C4E42832357EEF920571C /* SessionView.swift in Sources */,
 				2AB589F4D1B5B8B8AE7C6C23 /* StudyPlan.swift in Sources */,
 				EB8AE2A5DA5DB11BCF8C368B /* SubjectView.swift in Sources */,
 				19357670AE3FAEC0E8B35818 /* Subjects.swift in Sources */,

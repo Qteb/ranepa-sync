@@ -192,7 +192,8 @@ enum Sync {
         let full = weeks >= fetchWeeks
         let hadCache = d.object(forKey: Keys.days) != nil
         let before = cachedLessons(d)
-        let days = replaceAll ? result.days : merge(d, fresh: result.days, monday: monday, weeks: weeks)
+        let days = replaceAll ? keepRecent(d, monday: monday) + result.days
+                              : merge(d, fresh: result.days, monday: monday, weeks: weeks)
         let after = parseLessons(days)
 
         saveDays(days, d)
@@ -224,6 +225,20 @@ enum Sync {
     }
 
     /// Сохранённые дни вне загруженных недель + свежие дни.
+    /// Прошедшие дни за последние 60 дней: сданные зачёты и экзамены
+    /// остаются в сессии, а пройденные пары — на экране предмета.
+    private static func keepRecent(_ d: UserDefaults, monday: Date) -> [Any] {
+        let from = monday.adding(days: -60)
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        return cachedDays(d).filter { day in
+            let raw = "\((day as? [String: Any])?["date"] ?? "")"
+            guard let date = f.date(from: String(raw.prefix(19))) else { return false }
+            return date >= from && date < monday
+        }
+    }
+
     private static func merge(_ d: UserDefaults, fresh: [Any], monday: Date, weeks: Int) -> [Any] {
         let end = monday.adding(days: 7 * weeks)
         // Дата дня — без зоны, сравниваем как местную, как и раньше.

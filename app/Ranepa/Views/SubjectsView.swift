@@ -1,30 +1,35 @@
 import SwiftUI
 
-/// Вкладки: расписание, предметы и поиск.
+/// Вкладки: расписание, предметы, сессия и поиск.
 struct RootView: View {
     @Environment(AppState.self) private var state
-    @State private var tab = RootTab.schedule
 
     var body: some View {
-        TabView(selection: $tab) {
+        @Bindable var state = state
+        let now = Clock.now
+        let session = state.session
+        // Во время сессии на значке — сколько осталось сдавать.
+        let badge = session.map { $0.isRunning(now: now) ? $0.remaining(now: now) : 0 } ?? 0
+        TabView(selection: $state.tab) {
             Tab("Расписание", systemImage: "calendar", value: .schedule) { HomeView() }
             Tab("Предметы", systemImage: "books.vertical", value: .subjects) { SubjectsView() }
+            Tab("Сессия", systemImage: "graduationcap", value: .session) { SessionTab() }
+                .badge(badge)
             Tab(value: .search, role: .search) { SearchView() }
         }
         // Уведомление, виджет или Пункт управления открывают расписание.
-        .onChange(of: state.pendingLesson) { _, start in if start != nil { tab = .schedule } }
-        .onChange(of: state.pendingToday) { _, today in if today { tab = .schedule } }
+        .onChange(of: state.pendingLesson) { _, start in if start != nil { state.tab = .schedule } }
+        .onChange(of: state.pendingToday) { _, today in if today { state.tab = .schedule } }
     }
 }
 
-enum RootTab: Hashable { case schedule, subjects, search }
+enum RootTab: Hashable { case schedule, subjects, session, search }
 
 /// Предметы семестра — из плана обучения (с формой контроля), иначе из
 /// расписания. Сессия — первой секцией, внизу — весь план.
 struct SubjectsView: View {
     @Environment(AppState.self) private var state
     @State private var showAccount = false
-    @State private var showExams = false
 
     /// Строка списка: предмет из плана и/или расписания.
     struct Entry: Identifiable {
@@ -58,12 +63,6 @@ struct SubjectsView: View {
         let semester = state.plan?.currentSemester(now: now)
         NavigationStack {
             List {
-                if let session = state.session {
-                    Section("Сессия") {
-                        Button { showExams = true } label: { SessionRow(session: session) }
-                            .foregroundStyle(Color(.label))
-                    }
-                }
                 Section(list.isEmpty ? "" : "Предметы семестра · \(list.count)") {
                     ForEach(list) { e in
                         NavigationLink(value: Route.subject(e.name)) { SubjectRow(entry: e) }
@@ -104,38 +103,6 @@ struct SubjectsView: View {
             }
         }
         .sheet(isPresented: $showAccount) { AccountView() }
-        .sheet(isPresented: $showExams) {
-            if let session = state.session { ExamsView(session: session) }
-        }
-    }
-}
-
-private struct SessionRow: View {
-    let session: ExamSession
-
-    var body: some View {
-        let now = Clock.now
-        HStack(spacing: 14) {
-            Image(systemName: "graduationcap.fill")
-                .font(.body.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(Circle().fill(kindColor("экзамен")))
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title(now)).font(.headline)
-                Text(session.summary.capitalizedFirst).font(.subheadline).foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
-        }
-        .padding(.vertical, 2)
-    }
-
-    private func title(_ now: Date) -> String {
-        guard let first = session.firstDate else { return session.dates }
-        let when = session.isRunning(now: now) ? "идёт" : daysUntil(first, from: now)
-        return [session.dates, when].filter { !$0.isEmpty }.joined(separator: " · ")
     }
 }
 

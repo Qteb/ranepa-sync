@@ -39,6 +39,8 @@ final class AppState {
     var photo: UIImage?
     /// План обучения из ЛК; nil — ещё не загружался или в демо.
     var plan: StudyPlan?
+    /// Открытая вкладка: уведомления и карточка сессии её переключают.
+    var tab = RootTab.schedule
 
     /// Сессия текущего семестра: план + события расписания.
     var session: ExamSession? { ExamSession(lessons: lessons, plan: plan, now: Clock.now) }

@@ -15,7 +15,6 @@ struct HomeView: View {
     @State private var jumping = false
     @State private var sheetLesson: Lesson?
     @State private var showAccount = false
-    @State private var showExams = false
     @State private var banner: Banner?
     /// Перерисовка раз в минуту: «идёт сейчас» и «ещё N мин».
     @State private var minute = Date()
@@ -73,9 +72,6 @@ struct HomeView: View {
         .onGeometryChange(for: Bool.self) { $0.size.width >= 1100 } action: { wide = $0 }
         .sheet(item: $sheetLesson) { LessonSheet(lesson: $0) }
         .sheet(isPresented: $showAccount) { AccountView() }
-        .sheet(isPresented: $showExams) {
-            if let session = state.session { ExamsView(session: session) }
-        }
         .onAppear {
             dayPage = index(of: selected)
             openPendingLesson()
@@ -215,7 +211,7 @@ struct HomeView: View {
         ScrollView(.horizontal) {
             LazyHStack(spacing: 0) {
                 ForEach(0..<state.dayCount, id: \.self) { i in
-                    DayPage(day: dayAt(i), minute: minute, open: { sheetLesson = $0 }, openExams: { showExams = true })
+                    DayPage(day: dayAt(i), minute: minute, open: { sheetLesson = $0 }, openExams: { state.tab = .session })
                         .containerRelativeFrame(.horizontal)
                         .id(i)
                 }
