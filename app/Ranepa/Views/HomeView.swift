@@ -111,6 +111,7 @@ struct HomeView: View {
             await state.refresh(.open)
             await state.showLiveActivity()
             await state.checkNotifications(request: true)
+            await WidgetTip.update()
         }
         .task {
             while !Task.isCancelled {
@@ -286,6 +287,7 @@ private struct DayPage: View {
     @State private var tips = TipGroup(.ordered) {
         RefreshTip()
         AccountTip()
+        WidgetTip()
     }
 
     var body: some View {

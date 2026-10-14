@@ -1,5 +1,6 @@
 import SwiftUI
 import TipKit
+import WidgetKit
 
 /// Подпись типа пары: в светлой теме темнее системного цвета, чтобы
 /// читалась на светлом фоне. Полоска и иконка — системный цвет
@@ -144,6 +145,37 @@ struct AccountTip: Tip {
     var title: Text { Text("Настройки — под фото") }
     var message: Text? { Text("Нажми на своё фото: там напоминания, календарь и выход из ЛК.") }
     var image: Image? { Image(systemName: "person.crop.circle") }
+}
+
+/// Через несколько дней пользования: про виджеты без подсказки мало кто узнаёт.
+struct WidgetTip: Tip {
+    /// Приложение открыли в новый день — считаем дни, а не запуски.
+    static let openedOnDay = Tips.Event(id: "openedOnDay")
+
+    var title: Text { Text("Добавь виджет") }
+    var message: Text? {
+        Text("Следующая пара будет видна на главном экране и экране блокировки. Долгое нажатие на пустое место → «+» → «Расписание».")
+    }
+    var image: Image? { Image(systemName: "square.grid.2x2") }
+
+    var rules: [Rule] {
+        #Rule(Self.openedOnDay) { $0.donations.count >= 3 }
+    }
+
+    /// Раз в день отмечает, что приложением пользуются, и прячет подсказку
+    /// навсегда, если виджет уже стоит.
+    @MainActor
+    static func update() async {
+        let d = UserDefaults.standard
+        let today = Clock.now.dateOnly
+        if d.time("tip.widget.day").map({ !$0.sameDay(today) }) ?? true {
+            d.setTime(today, "tip.widget.day")
+            await openedOnDay.donate()
+        }
+        if let widgets = try? await WidgetCenter.shared.currentConfigurations(), !widgets.isEmpty {
+            WidgetTip().invalidate(reason: .actionPerformed)
+        }
+    }
 }
 
 /// Открывает письмо; если почтового приложения нет (его можно удалить),
