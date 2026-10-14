@@ -47,7 +47,7 @@ enum Campus {
 
     /// Корпус по адресу из ЛК: «Вернадского, 84, корпус 1» → корпус 1.
     static func building(for address: String) -> Building? {
-        if address.hasSuffix("стадион") { return stadium }
+        if address.contains("стадион") { return stadium }
         guard address.contains("Вернадского"),
               let m = address.firstMatch(of: /корпус\s*(\d+)/), let n = Int(m.1) else { return nil }
         return buildings[n]

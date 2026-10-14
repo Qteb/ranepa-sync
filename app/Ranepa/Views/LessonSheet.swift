@@ -132,7 +132,7 @@ struct LessonSheet: View {
 
     /// Подпись булавки: «Корпус 1» для кампуса, иначе аудитория.
     private var markerTitle: String {
-        if address?.hasSuffix("стадион") == true { return "Стадион" }
+        if address?.contains("стадион") == true { return "Стадион" }
         guard let address, let m = address.firstMatch(of: /корпус\s*(\d+)/) else { return lesson.shortLocation }
         return "Корпус \(m.1)"
     }
