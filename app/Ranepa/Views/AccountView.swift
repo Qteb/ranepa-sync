@@ -85,6 +85,16 @@ struct AccountView: View {
                 Section {
                     Button(logoutTitle, role: .destructive) { confirmLogout = true }
                         .frame(maxWidth: .infinity)
+                        .confirmationDialog(logoutTitle, isPresented: $confirmLogout, titleVisibility: .hidden) {
+                            Button(logoutTitle, role: .destructive) {
+                                dismiss()
+                                Task { await state.logout() }
+                            }
+                        } message: {
+                            Text(state.demo
+                                 ? "Демо-расписание, напоминания и календарь «\(CalendarExport.name)» будут удалены."
+                                 : "Расписание, напоминания и календарь «\(CalendarExport.name)» будут удалены с этого iPhone.")
+                        }
                 }
             }
             // Профиль сразу под крестиком, как в аккаунте App Store.
@@ -93,16 +103,6 @@ struct AccountView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(role: .close) { dismiss() }
                 }
-            }
-            .confirmationDialog(logoutTitle, isPresented: $confirmLogout, titleVisibility: .hidden) {
-                Button(logoutTitle, role: .destructive) {
-                    dismiss()
-                    Task { await state.logout() }
-                }
-            } message: {
-                Text(state.demo
-                     ? "Демо-расписание, напоминания и календарь «\(CalendarExport.name)» будут удалены."
-                     : "Расписание, напоминания и календарь «\(CalendarExport.name)» будут удалены с этого iPhone.")
             }
             .alert("Уведомления выключены", isPresented: $explainNotifications) {
                 Button("Отмена", role: .cancel) {}

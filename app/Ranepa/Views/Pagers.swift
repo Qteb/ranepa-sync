@@ -230,9 +230,12 @@ private struct DayColumn: View {
                             KindIcon(kind: lesson.kind, size: 12)
                             Text("\(hm(lesson.start))–\(hm(lesson.end))")
                                 .font(.caption.weight(.medium)).foregroundStyle(.secondary)
+                                .lineLimit(1).minimumScaleFactor(0.8)
                         }
+                        // Колонки узкие (iPad mini — около 100 pt): шрифт мельче,
+                        // чтобы длинные слова реже переносились по буквам.
                         Text(lesson.subject)
-                            .font(.subheadline.weight(.semibold))
+                            .font(.footnote.weight(.semibold))
                             .strikethrough(lesson.cancelled)
                             .lineLimit(3)
                         Text(lesson.isRemote ? "Дистанционно" : lesson.shortLocation)
