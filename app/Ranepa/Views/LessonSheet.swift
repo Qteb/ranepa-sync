@@ -12,10 +12,6 @@ struct LessonSheet: View {
 
     var body: some View {
         List {
-                TipView(CopyTip())
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets())
-
                 Section {
                     if !lesson.location.isEmpty {
                         row(lesson.isRemote ? "Дистанционно" : lesson.room,
@@ -107,12 +103,11 @@ struct LessonSheet: View {
 }
 
 extension View {
-    /// Контекстное меню «Скопировать». Заодно закрывает подсказку про копирование.
+    /// Контекстное меню «Скопировать».
     func copyable(_ text: String) -> some View {
         contextMenu {
             Button("Скопировать", systemImage: "doc.on.doc") {
                 UIPasteboard.general.string = text
-                CopyTip().invalidate(reason: .actionPerformed)
             }
         }
     }

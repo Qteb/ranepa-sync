@@ -16,7 +16,6 @@ struct RanepaApp: App {
         d.migrateFromFlutter()
         if d.bool(forKey: "tip.refresh") { RefreshTip().invalidate(reason: .actionPerformed) }
         if d.bool(forKey: "tip.account") { AccountTip().invalidate(reason: .actionPerformed) }
-        if d.bool(forKey: "tip.copy") { CopyTip().invalidate(reason: .actionPerformed) }
     }
 
     var body: some Scene {

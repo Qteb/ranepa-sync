@@ -132,12 +132,6 @@ struct AccountTip: Tip {
     var image: Image? { Image(systemName: "person.crop.circle") }
 }
 
-struct CopyTip: Tip {
-    var title: Text { Text("Удерживай строку, чтобы скопировать") }
-    var message: Text? { Text("Так можно скопировать аудиторию, преподавателя, почту или группу.") }
-    var image: Image? { Image(systemName: "doc.on.doc") }
-}
-
 /// Открывает письмо; если почтового приложения нет (его можно удалить),
 /// копирует адрес, чтобы написать из другого.
 @MainActor
