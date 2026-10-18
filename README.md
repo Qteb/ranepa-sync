@@ -8,7 +8,7 @@
 
 <p align="center">
   <img src="docs/images/schedule.jpg" width="24%" alt="Расписание">
-  <img src="docs/images/widgets.jpg" width="24%" alt="Виджеты">
+  <img src="docs/images/lesson.jpg" width="24%" alt="Карточка пары">
   <img src="docs/images/session.jpg" width="24%" alt="Сессия">
   <img src="docs/images/subject.jpg" width="24%" alt="Экран предмета">
 </p>
