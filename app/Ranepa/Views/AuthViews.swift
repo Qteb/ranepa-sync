@@ -1,6 +1,32 @@
 import SwiftUI
 import WebKit
 
+/// Почему не удалось войти — для окна на стартовом экране.
+struct LoginFailure: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
+
+    init(_ error: Error) {
+        switch error {
+        case LKError.serverBusy:
+            title = "Личный кабинет недоступен"
+            message = "Не удалось получить данные из ЛК. Попробуй войти позже."
+        case LKLoginError.timeout:
+            title = "Личный кабинет не отвечает"
+            message = "Попробуй войти позже."
+        case LKLoginError.bounced:
+            title = "Не удалось войти"
+            message = "Попробуй ещё раз."
+        default:
+            title = "Не удалось войти"
+            message = error.localizedDescription
+        }
+    }
+}
+
+enum LKLoginError: Error { case timeout, bounced }
+
 /// Стартовый экран → вход в ЛК.
 struct AuthFlow: View {
     @Environment(AppState.self) private var state
@@ -8,6 +34,14 @@ struct AuthFlow: View {
     var body: some View {
         NavigationStack {
             OnboardingView()
+        }
+        .alert(state.loginFailure?.title ?? "", isPresented: Binding(
+            get: { state.loginFailure != nil },
+            set: { if !$0 { state.loginFailure = nil } }
+        ), presenting: state.loginFailure) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { failure in
+            Text(failure.message)
         }
     }
 }
@@ -79,12 +113,13 @@ struct OnboardingView: View {
 /// приложение его не видит и не хранит.
 struct LoginView: View {
     @Environment(AppState.self) private var state
+    @Environment(\.dismiss) private var dismiss
     @State private var lk = LKWebView()
     @State private var pageLoading = true
     @State private var sawLoginForm = false
     @State private var fetching = false
     @State private var requested = false
-    @State private var error: String?
+    @State private var failed = false
     @State private var timeout: Task<Void, Never>?
 
     var body: some View {
@@ -101,15 +136,6 @@ struct LoginView: View {
                     .background(Color(.systemBackground))
                 }
             }
-            .overlay(alignment: .bottom) {
-                if let error {
-                    Label(error, systemImage: "exclamationmark.circle.fill")
-                        .padding(16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 24))
-                        .padding(16)
-                }
-            }
             .navigationTitle(fetching ? "Расписание" : "Вход в ЛК")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(fetching)
@@ -121,6 +147,7 @@ struct LoginView: View {
             .onAppear {
                 lk.onLoading = { pageLoading = $0 }
                 lk.onURL = onURL
+                lk.onFailure = { fail($0) }
                 lk.onTemplate = { template in Task { await onTemplate(template) } }
                 lk.load()
             }
@@ -130,7 +157,7 @@ struct LoginView: View {
     private func onURL(_ url: URL?) {
         if LKWebView.isLoginPage(url) {
             sawLoginForm = true
-            if fetching && !requested { fail("Не удалось войти, попробуй ещё раз") }
+            if fetching && !requested { fail(LKLoginError.bounced) }
         } else if sawLoginForm {
             // Ушли с формы входа — значит, вход прошёл. Сайт дальше грузится под
             // экраном загрузки: нам нужен только его запрос расписания.
@@ -141,19 +168,20 @@ struct LoginView: View {
     private func showLoading() {
         guard !fetching else { return }
         fetching = true
-        error = nil
         timeout?.cancel()
         timeout = Task {
             try? await Task.sleep(for: .seconds(60))
-            if !Task.isCancelled && !requested { fail("ЛК не ответил за минуту, попробуй ещё раз") }
+            if !Task.isCancelled && !requested { fail(LKLoginError.timeout) }
         }
     }
 
-    private func fail(_ message: String) {
+    /// Возвращает на стартовый экран, а он покажет, что случилось.
+    private func fail(_ error: Error) {
         timeout?.cancel()
-        fetching = false
-        requested = false
-        error = message
+        guard !failed else { return }
+        failed = true
+        state.loginFailure = LoginFailure(error)
+        dismiss()
     }
 
     private func onTemplate(_ template: ScheduleTemplate) async {
@@ -167,7 +195,7 @@ struct LoginView: View {
             timeout?.cancel()
             await state.completeLogin(result, monday: monday)
         } catch {
-            fail(error.localizedDescription)
+            fail(error)
         }
     }
 }
