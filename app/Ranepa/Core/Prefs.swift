@@ -24,6 +24,8 @@ enum Keys {
     static let backoffUntil = "backoffUntil"
     static let backoffFailures = "backoffFailures"
     static let liveActivity = "liveActivity"
+    /// Когда запустится Live Activity по расписанию.
+    static let liveActivityStartAt = "liveActivityStartAt"
     static let themeMode = "themeMode"
     static let demo = "demo"
     static let demoRevision = "demoRevision"

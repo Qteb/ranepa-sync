@@ -92,35 +92,124 @@ final class WatchSync: NSObject, WCSessionDelegate {
     func sessionDidDeactivate(_ session: WCSession) { session.activate() }
 }
 
+/// Что Live Activity должна показывать сейчас. Без побочных эффектов —
+/// для тестов.
+struct LiveActivityPlan: Equatable {
+    typealias A = LessonActivityAttributes
+    /// Показываем, когда пара идёт или начнётся в эти 2 часа.
+    static let lead: TimeInterval = 2 * 3600
+
+    /// Пары оставшейся части дня; nil — активность сегодня не нужна.
+    var today: A.ContentState?
+    /// Запустить сейчас (если приложение открыто): пара идёт или скоро.
+    var startNow = false
+    /// Запуск по расписанию вместе с напоминанием о первой паре дня.
+    var scheduled: Scheduled?
+
+    struct Scheduled: Equatable {
+        let state: A.ContentState
+        let at: Date
+    }
+
+    /// [lessons] — по настоящим часам, отменённые уже убраны.
+    /// [running] — активность уже идёт: держим её до конца дня.
+    /// [reminderMinutes] — 0, если напоминания выключены: тогда без
+    /// запуска по расписанию, только из открытого приложения.
+    init(_ lessons: [A.Lesson], now: Date, running: Bool, reminderMinutes: Int) {
+        let upcoming = lessons.filter { $0.end > now }.sorted { $0.start < $1.start }
+        let todays = upcoming.filter { $0.start.sameDay(now) }
+        if let first = todays.first {
+            today = A.ContentState(lesson: first, next: todays.dropFirst().first, isCurrent: first.start <= now)
+            startNow = !running && first.start.timeIntervalSince(now) <= Self.lead
+        }
+        let started = running || startNow
+        // Сегодняшние пары ещё не начались — по расписанию запустится сегодня,
+        // иначе — в следующий день с парами.
+        let day = !todays.isEmpty && !started ? todays : {
+            let later = upcoming.filter { !$0.start.sameDay(now) }
+            return later.filter { $0.start.sameDay(later.first?.start ?? now) }
+        }()
+        if reminderMinutes > 0, let first = day.first {
+            let at = first.start.addingTimeInterval(-Double(reminderMinutes) * 60)
+            if at > now.addingTimeInterval(60) {
+                scheduled = Scheduled(state: A.ContentState(lesson: first, next: day.dropFirst().first, isCurrent: false),
+                                      at: at)
+            }
+        }
+    }
+}
+
 /// Пара на экране блокировки и в Dynamic Island. Запустить активность iOS
-/// разрешает только из открытого приложения, обновлять и завершать — и из фона.
+/// разрешает только из открытого приложения (или по расписанию, о котором
+/// попросили оттуда же), обновлять и завершать — и из фона.
 enum LiveActivities {
-    static func update(_ lessons: [Lesson], enabled: Bool) async {
-        typealias A = LessonActivityAttributes
+    typealias A = LessonActivityAttributes
+
+    /// Начало пары (по часам приложения), о которой напомнит запуск
+    /// активности по расписанию: обычное напоминание о ней не нужно.
+    static var scheduledLesson: Date? {
+        Activity<A>.activities.first { $0.activityState == .pending }
+            .map { $0.content.state.lesson.start.addingTimeInterval(Clock.shift) }
+    }
+
+    /// Когда закончится последняя пара дня, если активность сейчас видна:
+    /// к этому времени фон должен её убрать.
+    static func dayEnd(_ lessons: [Lesson]) -> Date? {
+        guard Activity<A>.activities.contains(where: { [.active, .stale].contains($0.activityState) }) else { return nil }
         let now = Clock.now
+        return lessons.filter { !$0.cancelled && $0.start.sameDay(now) }.map(\.end).max()?
+            .addingTimeInterval(-Clock.shift)
+    }
+
+    static func update(_ lessons: [Lesson], enabled: Bool, reminderMinutes: Int) async {
+        let source = enabled ? lessons.filter { !$0.cancelled } : []
         // Таймеры активности идут по настоящим часам — убираем сдвиг скриншотов.
-        let items = enabled ? lessons.filter { !$0.cancelled && $0.start.sameDay(now) && $0.end > now } : []
-        let real = items.map {
+        let real = source.map {
             A.Lesson(title: $0.subject, kind: $0.kind, room: $0.shortLocation, fullRoom: $0.location,
                      start: $0.start.addingTimeInterval(-Clock.shift), end: $0.end.addingTimeInterval(-Clock.shift))
         }
-        let running = Activity<A>.activities
-        guard let first = real.first else {
+        let all = Activity<A>.activities
+        let running = all.filter { [.active, .stale].contains($0.activityState) }
+        let pending = all.filter { $0.activityState == .pending }
+        let plan = LiveActivityPlan(real, now: Date(), running: !running.isEmpty, reminderMinutes: reminderMinutes)
+        let canStart = await MainActor.run { UIApplication.shared.applicationState == .active }
+            && ActivityAuthorizationInfo().areActivitiesEnabled
+
+        // Сегодня.
+        if let state = plan.today {
+            let content = ActivityContent(state: state, staleDate: state.isCurrent ? state.lesson.end : state.lesson.start)
+            if let current = running.first {
+                await current.update(content)
+                for extra in running.dropFirst() { await extra.end(nil, dismissalPolicy: .immediate) }
+            } else if plan.startNow && canStart {
+                _ = try? Activity<A>.request(attributes: A(), content: content)
+            }
+        } else {
             for a in running { await a.end(nil, dismissalPolicy: .immediate) }
-            return
         }
-        let realNow = Date()
-        let state = A.ContentState(lesson: first, next: real.dropFirst().first, isCurrent: first.start <= realNow)
-        // Когда пара закончится, расширение покажет перемену или «пары
-        // закончились», даже если приложение не успеет обновить активность.
-        let content = ActivityContent(state: state, staleDate: first.start > realNow ? first.start : first.end)
-        if let current = running.first {
-            await current.update(content)
-            for extra in running.dropFirst() { await extra.end(nil, dismissalPolicy: .immediate) }
-            return
+
+        // По расписанию. Запрос на будущее iOS тоже принимает только из
+        // открытого приложения: из фона можно лишь отменить устаревший.
+        let d = UserDefaults.standard
+        let wanted = plan.scheduled
+        let keep = pending.first { wanted?.state == $0.content.state && wanted?.at == d.time(Keys.liveActivityStartAt) }
+        var changed = false
+        for p in pending where p.id != keep?.id {
+            await p.end(nil, dismissalPolicy: .immediate)
+            changed = true
         }
-        let active = await MainActor.run { UIApplication.shared.applicationState == .active }
-        guard active, ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        _ = try? Activity<A>.request(attributes: A(), content: content)
+        if keep == nil, let wanted, canStart, let lesson = source.first(where: {
+            $0.start.addingTimeInterval(-Clock.shift) == wanted.state.lesson.start
+        }) {
+            let text = Notifications.reminderText(lesson, minutes: reminderMinutes)
+            let alert = AlertConfiguration(title: "\(text.title)", body: "\(text.body)", sound: .default)
+            if (try? Activity<A>.request(attributes: A(), content: ActivityContent(state: wanted.state, staleDate: wanted.state.lesson.start),
+                                         style: .standard, alertConfiguration: alert, start: wanted.at)) != nil {
+                d.setTime(wanted.at, Keys.liveActivityStartAt)
+                changed = true
+            }
+        }
+        // Напоминание о паре с запуском по расписанию — уже в нём.
+        if changed { await Notifications.scheduleReminders(lessons, minutes: reminderMinutes) }
     }
 }

@@ -11,7 +11,10 @@ enum Background {
 
     static func schedule() {
         let request = BGAppRefreshTaskRequest(identifier: taskID)
-        request.earliestBeginDate = Sync.nextRun(after: Date())
+        var at = Sync.nextRun(after: Date())
+        // Live Activity видна — проснуться к концу последней пары и убрать её.
+        if let end = LiveActivities.dayEnd(cachedLessons()), end > Date() { at = min(at, end.addingTimeInterval(60)) }
+        request.earliestBeginDate = at
         try? BGTaskScheduler.shared.submit(request)
     }
 
@@ -47,6 +50,12 @@ enum Background {
         } catch {
             outcome = "ошибка: \(error.localizedDescription)"
         }
+        // Активность — по сохранённому расписанию, даже если ЛК не ответил:
+        // после последней пары её нужно убрать.
+        let minutes = d.object(forKey: Keys.reminderMinutes) == nil
+            ? defaultReminderMinutes : d.integer(forKey: Keys.reminderMinutes)
+        await LiveActivities.update(cachedLessons(d), enabled: d.bool(Keys.liveActivity, default: true),
+                                    reminderMinutes: minutes)
         d.setTime(Date(), Keys.lastBackgroundRun)
         d.set(outcome, forKey: Keys.lastBackgroundResult)
     }
