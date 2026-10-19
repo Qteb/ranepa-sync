@@ -51,8 +51,51 @@ struct OnboardingView: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
+        // Всё помещается — по центру; нет (крупный шрифт) — прокрутка.
+        ViewThatFits(in: .vertical) {
+            intro.frame(maxHeight: .infinity)
+            ScrollView { intro }
+        }
+        .safeAreaBar(edge: .bottom) {
+            VStack(spacing: 0) {
+                if let error = state.error {
+                    Text(error)
+                        .foregroundStyle(.red)
+                        .multilineTextAlignment(.center)
+                        .padding(.bottom, 12)
+                }
+                NavigationLink {
+                    LoginView()
+                } label: {
+                    Text("Войти").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.glassProminent)
+                .controlSize(.large)
+                VStack(spacing: 4) {
+                    Text("Неофициальное приложение")
+                    Link(destination: URL(string: "https://github.com/Qteb/ranepa-sync")!) {
+                        Label {
+                            Text("Открытый код")
+                        } icon: {
+                            Image("GitHub").resizable().scaledToFit().frame(width: 13, height: 13)
+                        }
+                        .labelStyle(.titleAndIcon)
+                    }
+                    .tint(.secondary)
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.top, 16)
+            }
+            .padding(.horizontal, 28)
+            .padding(.bottom, 16)
+            .frame(maxWidth: 560)
+        }
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private var intro: some View {
         VStack(spacing: 0) {
-            Spacer()
             Image("Logo")
                 .resizable()
                 .frame(width: 88, height: 88)
@@ -66,46 +109,36 @@ struct OnboardingView: View {
             Text("Расписание студента")
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 20)
-            VStack(alignment: .leading, spacing: 18) {
-                block("Что это", "Твоё расписание из личного кабинета РАНХиГС.")
-                block("Как работает", "Входишь в ЛК на странице сайта. Логин и пароль приложение не видит и не хранит.")
-                block("Что умеет", "Работает без интернета, напоминает о парах, добавляет их в календарь и виджет.")
+            VStack(alignment: .leading, spacing: 22) {
+                feature("calendar", "Расписание", "Пары до конца семестра, без интернета")
+                feature("books.vertical", "Предметы", "Преподаватели, аудитории и все пары по предмету")
+                feature("graduationcap", "Сессия", "Экзамены и зачёты по плану обучения")
+                feature("lock", "Вход на сайте ЛК", "Логин и пароль приложение не видит")
             }
-            .padding(.top, 32)
-            Spacer(minLength: 24)
-            Spacer()
-            if let error = state.error {
-                Text(error)
-                    .foregroundStyle(.red)
-                    .multilineTextAlignment(.center)
-                    .padding(.bottom, 12)
-            }
-            NavigationLink {
-                LoginView()
-            } label: {
-                Text("Войти через ЛК").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.glassProminent)
-            .controlSize(.large)
-            Text("Неофициальное приложение\nс [открытым кодом](https://github.com/Qteb/ranepa-sync)")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.top, 14)
+            .padding(.top, 36)
         }
         .padding(.horizontal, 28)
-        .padding(.bottom, 16)
+        .padding(.vertical, 24)
         .frame(maxWidth: 560)
-        .toolbar(.hidden, for: .navigationBar)
+        .frame(maxWidth: .infinity)
     }
 
-    private func block(_ title: String, _ text: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.headline)
-            Text(text).foregroundStyle(.secondary)
+    private func feature(_ symbol: String, _ title: String, _ text: String) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            Image(systemName: symbol)
+                .font(.title2)
+                .foregroundStyle(.tint)
+                .frame(width: 36)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.headline)
+                Text(text).font(.subheadline).foregroundStyle(.secondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }
 
