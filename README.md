@@ -13,6 +13,11 @@
   <img src="docs/images/subject.jpg" width="24%" alt="Экран предмета">
 </p>
 
+## Установка
+
+Бета-версия — через [TestFlight](https://testflight.apple.com/join/evTDn2DB).
+Нужен iPhone или iPad с iOS 26.
+
 ## Что умеет
 
 - Пары дня с текущей и следующей парой, на iPad — вся неделя.
