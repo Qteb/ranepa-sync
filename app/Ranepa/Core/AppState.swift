@@ -14,6 +14,8 @@ final class AppState {
     var rangeStart: Date?
     var loading = false
     var error: String?
+    /// Вход не удался: стартовый экран показывает это окном.
+    var loginFailure: LoginFailure?
     /// Изменения, найденные последним ручным обновлением: главный экран
     /// показывает их баннером и сбрасывает.
     var pendingChanges: [String] = []

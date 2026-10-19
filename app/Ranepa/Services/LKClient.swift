@@ -364,7 +364,13 @@ final class LKWebView: NSObject, WKNavigationDelegate {
       } catch (e) {}
       return JSON.stringify(out);
     } catch (e) {
-      return JSON.stringify({ error: String(e.message || e) });
+      let error = String(e.message || e);
+      // Если ЛК не отдаёт группы (5xx), страница строит запрос расписания
+      // без них и получает 400. Это сбой сайта, а не неверный запрос.
+      if (error.indexOf('http 400') === 0) try { await get(groupsUrl); } catch (g) {
+        if (/^http 5/.test(String(g.message))) error = String(g.message);
+      }
+      return JSON.stringify({ error: error });
     }
     """#
 }
