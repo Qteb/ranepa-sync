@@ -28,6 +28,14 @@ final class SyncPolicyTests: XCTestCase {
         XCTAssertEqual(skip(.manual, tuesday), .backoff)
     }
 
+    /// Сессия истекла: фон и открытие в ЛК не ходят, «потянуть вниз» пробует.
+    func testExpiredSessionSkipsAutomatic() {
+        d.set(true, forKey: Keys.sessionExpired)
+        XCTAssertEqual(skip(.background, tuesday), .needLogin)
+        XCTAssertEqual(skip(.open, tuesday), .needLogin)
+        XCTAssertNil(skip(.manual, tuesday))
+    }
+
     /// Ночью тоже ходим — иначе сессия ЛК истечёт.
     func testNightStillRuns() {
         XCTAssertNil(skip(.background, date(2026, 10, 13, 3)))

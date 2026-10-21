@@ -11,6 +11,8 @@ enum Keys {
     static let reminderMinutes = "reminderMinutes"
     static let calendarExport = "calendarExport"
     static let sessionExpiredNotified = "sessionExpiredNotified"
+    /// Сессия ЛК истекла: расписание показываем из кэша и просим войти заново.
+    static let sessionExpired = "sessionExpired"
     static let lastBackgroundRun = "lastBackgroundRun"
     static let lastBackgroundResult = "lastBackgroundResult"
     static let fullName = "fullName"
@@ -38,7 +40,7 @@ enum Keys {
 
     /// Всё, что относится к сессии и удаляется при выходе.
     static let session = [
-        loggedIn, days, group, fetchedAt, rangeStart, sessionExpiredNotified,
+        loggedIn, days, group, fetchedAt, rangeStart, sessionExpiredNotified, sessionExpired,
         lastBackgroundRun, lastBackgroundResult, fullName, program, photo,
         photoFetchedAt, lastFullAt, lastSemesterAt, lastAttemptAt, backoffUntil, backoffFailures,
         demo, demoRevision, demoShift, demoFastFrom, sessionUntil, plan,

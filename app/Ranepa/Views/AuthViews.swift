@@ -35,14 +35,6 @@ struct AuthFlow: View {
         NavigationStack {
             OnboardingView()
         }
-        .alert(state.loginFailure?.title ?? "", isPresented: Binding(
-            get: { state.loginFailure != nil },
-            set: { if !$0 { state.loginFailure = nil } }
-        ), presenting: state.loginFailure) { _ in
-            Button("OK", role: .cancel) {}
-        } message: { failure in
-            Text(failure.message)
-        }
     }
 }
 
@@ -147,12 +139,16 @@ struct OnboardingView: View {
 struct LoginView: View {
     @Environment(AppState.self) private var state
     @Environment(\.dismiss) private var dismiss
+    /// Повторный вход листом поверх расписания.
+    var inSheet = false
     @State private var lk = LKWebView()
     @State private var pageLoading = true
     @State private var sawLoginForm = false
     @State private var fetching = false
     @State private var requested = false
     @State private var failed = false
+    /// Ошибка повторного входа: окно поверх листа, по «OK» лист закрывается.
+    @State private var sheetFailure: LoginFailure?
     @State private var timeout: Task<Void, Never>?
 
     var body: some View {
@@ -176,6 +172,11 @@ struct LoginView: View {
                 if pageLoading && !fetching {
                     ToolbarItem(placement: .topBarTrailing) { ProgressView() }
                 }
+                if inSheet && !fetching {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(role: .close) { dismiss() }
+                    }
+                }
             }
             .onAppear {
                 lk.onLoading = { pageLoading = $0 }
@@ -185,6 +186,14 @@ struct LoginView: View {
                 lk.load()
             }
             .onDisappear { timeout?.cancel() }
+            .alert(sheetFailure?.title ?? "", isPresented: Binding(
+                get: { sheetFailure != nil },
+                set: { if !$0 { sheetFailure = nil } }
+            ), presenting: sheetFailure) { _ in
+                Button("OK", role: .cancel) { dismiss() }
+            } message: { failure in
+                Text(failure.message)
+            }
     }
 
     private func onURL(_ url: URL?) {
@@ -213,8 +222,13 @@ struct LoginView: View {
         timeout?.cancel()
         guard !failed else { return }
         failed = true
-        state.loginFailure = LoginFailure(error)
-        dismiss()
+        fetching = false
+        if inSheet {
+            sheetFailure = LoginFailure(error)
+        } else {
+            state.loginFailure = LoginFailure(error)
+            dismiss()
+        }
     }
 
     private func onTemplate(_ template: ScheduleTemplate) async {
@@ -227,6 +241,7 @@ struct LoginView: View {
                                             stopAfterEmpty: emptyWeeksToStop, withPhoto: true, withPlan: true)
             timeout?.cancel()
             await state.completeLogin(result, monday: monday)
+            if inSheet { dismiss() }
         } catch {
             fail(error)
         }

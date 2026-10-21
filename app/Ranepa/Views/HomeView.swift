@@ -21,6 +21,7 @@ struct HomeView: View {
     /// Экран шире 1100 pt (iPad в альбомной ориентации): слева боковая
     /// панель с календарём загруженных недель.
     @State private var wide = false
+    @State private var relogin = false
 
     private var showSidebar: Bool { sizeClass == .regular && wide }
 
@@ -72,6 +73,7 @@ struct HomeView: View {
         .onGeometryChange(for: Bool.self) { $0.size.width >= 1100 } action: { wide = $0 }
         .sheet(item: $sheetLesson) { LessonSheet(lesson: $0) }
         .sheet(isPresented: $showAccount) { AccountView() }
+        .sheet(isPresented: $relogin) { NavigationStack { LoginView(inSheet: true) } }
         .onAppear {
             dayPage = index(of: selected)
             openPendingLesson()
@@ -197,6 +199,16 @@ struct HomeView: View {
             }
         }
         .padding(.bottom, 6)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if state.sessionExpired && !state.sessionCardHidden && !state.demo {
+                SessionExpiredCard(login: { relogin = true },
+                                   later: { withAnimation(.snappy) { state.sessionCardHidden = true } })
+                    .frame(maxWidth: 700)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
     }
 
     // MARK: Лента дней
