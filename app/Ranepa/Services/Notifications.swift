@@ -37,13 +37,17 @@ enum Notifications {
 
     /// Как в карточке Live Activity: название, под ним «Лекция · аудитория»,
     /// затем когда.
-    private static func reminder(_ lesson: Lesson, minutes: Int) -> UNMutableNotificationContent {
-        let content = UNMutableNotificationContent()
-        content.title = lesson.subject
-        content.body = [
+    /// Текст напоминания — и для запуска Live Activity по расписанию.
+    static func reminderText(_ lesson: Lesson, minutes: Int) -> (title: String, body: String) {
+        (lesson.subject, [
             [lesson.kind.capitalizedFirst, lesson.placeLabel].filter { !$0.isEmpty }.joined(separator: " · "),
             "Через \(durationText(Double(minutes) * 60)), в \(hm(lesson.start))",
-        ].joined(separator: "\n")
+        ].joined(separator: "\n"))
+    }
+
+    private static func reminder(_ lesson: Lesson, minutes: Int) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        (content.title, content.body) = reminderText(lesson, minutes: minutes)
         content.sound = .default
         // В одну стопку, чтобы напоминания за день не расползались по экрану.
         content.threadIdentifier = "lessons"
@@ -61,8 +65,10 @@ enum Notifications {
         await removeStale()
         guard minutes > 0 else { return }
         let now = Date()
+        // О первой паре дня напомнит запуск Live Activity по расписанию.
+        let viaActivity = LiveActivities.scheduledLesson
         let upcoming = lessons
-            .filter { !$0.cancelled }
+            .filter { !$0.cancelled && $0.start != viaActivity }
             .map { ($0, $0.start.addingTimeInterval(-Double(minutes) * 60)) }
             .filter { $0.1 > now }
             .prefix(maxScheduled)

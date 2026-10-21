@@ -199,12 +199,14 @@ final class AppState {
     func setLiveActivity(_ enabled: Bool) async {
         d.set(enabled, forKey: Keys.liveActivity)
         liveActivity = enabled
-        await LiveActivities.update(lessons, enabled: enabled)
+        await LiveActivities.update(lessons, enabled: enabled, reminderMinutes: reminderMinutes)
     }
 
     /// При открытии приложения: запустить активность iOS разрешает только сейчас.
     func showLiveActivity() async {
-        await LiveActivities.update(lessons, enabled: loggedIn && liveActivity)
+        await LiveActivities.update(lessons, enabled: loggedIn && liveActivity, reminderMinutes: reminderMinutes)
+        // Если активность видна, фон уберёт её после последней пары.
+        if loggedIn && !demo { Background.schedule() }
     }
 
     func setThemeMode(_ mode: Int) {
@@ -230,7 +232,7 @@ final class AppState {
         Notifications.cancelAll()
         if calendarExport { CalendarExport.remove() }
         Outputs.update([])
-        await LiveActivities.update([], enabled: false)
+        await LiveActivities.update([], enabled: false, reminderMinutes: 0)
         for key in Keys.session { d.removeObject(forKey: key) }
         error = nil
         pendingChanges = []

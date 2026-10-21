@@ -269,6 +269,8 @@ enum Sync {
     static func applySideEffects(_ lessons: [Lesson], _ d: UserDefaults = .standard) async -> String? {
         let minutes = d.object(forKey: Keys.reminderMinutes) == nil
             ? defaultReminderMinutes : d.integer(forKey: Keys.reminderMinutes)
+        // Сначала активность: от её запуска по расписанию зависят напоминания.
+        await LiveActivities.update(lessons, enabled: d.bool(Keys.liveActivity, default: true), reminderMinutes: minutes)
         await Notifications.scheduleReminders(lessons, minutes: minutes)
         await Notifications.scheduleExamReminders(lessons)
         // В демо сессии ЛК нет — напоминать о ней незачем.
@@ -276,7 +278,6 @@ enum Sync {
             await Notifications.scheduleKeepAlive(lastSync: fetchedAt, sessionUntil: d.time(Keys.sessionUntil))
         }
         Outputs.update(lessons)
-        await LiveActivities.update(lessons, enabled: d.bool(Keys.liveActivity, default: true))
         guard d.bool(forKey: Keys.calendarExport) else { return nil }
         let from = d.time(Keys.rangeStart) ?? Clock.now.monday
         let last = lessons.map(\.start).max().map { $0.dateOnly.adding(days: 1) } ?? from
