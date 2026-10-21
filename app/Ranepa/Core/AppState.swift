@@ -14,6 +14,10 @@ final class AppState {
     var rangeStart: Date?
     var loading = false
     var error: String?
+    /// Сессия ЛК истекла: расписание из кэша, на главном экране — карточка.
+    var sessionExpired = false
+    /// «Позже» на карточке: до следующего открытия приложения.
+    var sessionCardHidden = false
     /// Вход не удался: стартовый экран показывает это окном.
     var loginFailure: LoginFailure?
     /// Изменения, найденные последним ручным обновлением: главный экран
@@ -76,6 +80,7 @@ final class AppState {
         fetchedAt = d.time(Keys.fetchedAt)
         rangeStart = d.time(Keys.rangeStart)
         loggedIn = d.bool(forKey: Keys.loggedIn)
+        sessionExpired = loggedIn && d.bool(forKey: Keys.sessionExpired)
         demo = d.bool(forKey: Keys.demo)
         reminderMinutes = d.object(forKey: Keys.reminderMinutes) == nil
             ? defaultReminderMinutes : d.integer(forKey: Keys.reminderMinutes)
@@ -157,10 +162,10 @@ final class AppState {
                 error = LKError.serverBusy(status: 503, retryAfter: nil).errorDescription
             }
         } catch LKError.needLogin {
-            d.set(false, forKey: Keys.loggedIn)
-            Background.cancel()
+            d.set(true, forKey: Keys.sessionExpired)
+            sessionExpired = true
+            sessionCardHidden = false
             Notifications.cancelKeepAlive()
-            error = LKError.needLogin.errorDescription
         } catch {
             self.error = error.localizedDescription
         }
@@ -169,6 +174,7 @@ final class AppState {
     /// Фоновая задача и расширения могли поменять данные, пока приложение
     /// было свёрнуто.
     func resumed() async {
+        sessionCardHidden = false
         loadCache()
         await checkNotifications()
         await Notifications.removeStale()

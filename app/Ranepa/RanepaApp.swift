@@ -28,6 +28,15 @@ struct RanepaApp: App {
                 }
             }
             .environment(state)
+            // Вход не удался — и со стартового экрана, и из листа повторного входа.
+            .alert(state.loginFailure?.title ?? "", isPresented: Binding(
+                get: { state.loginFailure != nil },
+                set: { if !$0 { state.loginFailure = nil } }
+            ), presenting: state.loginFailure) { _ in
+                Button("OK", role: .cancel) {}
+            } message: { failure in
+                Text(failure.message)
+            }
             // Крупный шрифт из настроек iOS, но не самый большой: дальше
             // названия пар рвутся по слогам на каждой строке.
             .dynamicTypeSize(...DynamicTypeSize.accessibility3)

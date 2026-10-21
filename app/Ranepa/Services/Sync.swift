@@ -27,6 +27,8 @@ enum SkipReason {
     case tooSoon
     /// Обновлять нечего: каникулы или данные свежие.
     case notNeeded
+    /// Сессия ЛК истекла — сначала войти заново.
+    case needLogin
 }
 
 struct SyncResult {
@@ -97,6 +99,9 @@ enum Sync {
     /// проверять правила тестами.
     static func skipReason(_ d: UserDefaults, _ trigger: SyncTrigger, now: Date) -> SkipReason? {
         if let until = d.time(Keys.backoffUntil), until > now { return .backoff }
+        // Без сессии страница ЛК всё равно уйдёт на вход: сами не ходим,
+        // а «потянуть вниз» пробует — вдруг вошли в браузере.
+        if d.bool(forKey: Keys.sessionExpired), trigger == .background || trigger == .open { return .needLogin }
         let full = isFullDue(d, now: now)
         switch trigger {
         case .background:
@@ -229,6 +234,7 @@ enum Sync {
         }
         d.set(true, forKey: Keys.loggedIn)
         d.removeObject(forKey: Keys.sessionExpiredNotified)
+        d.removeObject(forKey: Keys.sessionExpired)
 
         return SyncResult(changes: hadCache ? describeChanges(before: before, after: after, now: Clock.now) : [],
                           sideEffectError: await applySideEffects(after, d))

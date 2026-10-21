@@ -80,11 +80,13 @@ final class LKWebView: NSObject, WKNavigationDelegate {
         scripts.addUserScript(WKUserScript(source: Self.hookJS, injectionTime: .atDocumentStart, forMainFrameOnly: false))
         scripts.addUserScript(WKUserScript(source: Self.noZoomJS, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         scripts.addUserScript(WKUserScript(source: Self.rememberMeJS, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        scripts.addUserScript(WKUserScript(source: Self.keyboardJS, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         webView = WKWebView(frame: .zero, configuration: config)
         super.init()
         scripts.add(MessageProxy(self), name: "scheduleRequest")
         webView.navigationDelegate = self
         webView.scrollView.contentInsetAdjustmentBehavior = .automatic
+        webView.scrollView.keyboardDismissMode = .interactive
         // Сайт — одностраничное приложение: вход и уход с формы входа
         // меняют адрес без новой загрузки страницы.
         urlObservation = webView.observe(\.url) { [weak self] view, _ in
@@ -292,6 +294,45 @@ final class LKWebView: NSObject, WKNavigationDelegate {
       }
       apply();
       new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: true });
+    })();
+    """#
+
+    /// Убирает клавиатуру, когда менеджер паролей подставил логин и пароль,
+    /// иначе она закрывает кнопку «Войти». Набор с клавиатуры не трогаем.
+    /// Касание мимо полей тоже убирает клавиатуру.
+    private static let keyboardJS = #"""
+    (function () {
+      if (window.__rtKeyboard) return;
+      window.__rtKeyboard = true;
+      function filled() {
+        var pass = document.querySelector('input[type=password]');
+        if (!pass || !pass.value) return false;
+        var login = (pass.form || document).querySelector('input:not([type=password]):not([type=checkbox]):not([type=hidden])');
+        return !login || !!login.value;
+      }
+      function autofilled(el) {
+        try { return el.matches(':-webkit-autofill') || el.matches(':autofill'); } catch (e) { return false; }
+      }
+      function check(e) {
+        var el = e.target;
+        if (!el || el.tagName !== 'INPUT') return;
+        // Буквы с клавиатуры приходят с inputType insertText и т. п.;
+        // автозаполнение — без него или с insertReplacementText.
+        var typed = e.type === 'input' && e.inputType && e.inputType !== 'insertReplacementText';
+        setTimeout(function () {
+          if (!filled() || (typed && !autofilled(el))) return;
+          var a = document.activeElement;
+          if (a && a.tagName === 'INPUT') a.blur();
+        }, 150);
+      }
+      document.addEventListener('input', check, true);
+      document.addEventListener('change', check, true);
+      document.addEventListener('touchend', function (e) {
+        var t = e.target;
+        if (t && t.closest && t.closest('input, textarea, select, button, a, label')) return;
+        var a = document.activeElement;
+        if (a && a.tagName === 'INPUT') a.blur();
+      }, true);
     })();
     """#
 

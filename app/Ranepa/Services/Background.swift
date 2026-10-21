@@ -38,9 +38,12 @@ enum Background {
             case .backoff: "пауза после ошибки ЛК"
             case .tooSoon: "рано, пропущено"
             case .notNeeded: "нет пар, пропущено"
+            case .needLogin: "нужно войти в ЛК"
             }
         } catch LKError.needLogin {
-            d.set(false, forKey: Keys.loggedIn)
+            // Остаёмся в приложении с сохранённым расписанием, на главном
+            // экране — просьба войти заново.
+            d.set(true, forKey: Keys.sessionExpired)
             Notifications.cancelKeepAlive()
             if !d.bool(forKey: Keys.sessionExpiredNotified) {
                 await Notifications.showSessionExpired()

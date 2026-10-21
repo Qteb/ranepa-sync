@@ -196,6 +196,42 @@ func openMail(_ address: String, subject: String? = nil, openURL: OpenURLAction,
 
 /// Шапка вкладки как у расписания: крупный заголовок и аватар в одной
 /// строке, под ними подзаголовок. Ставится в `safeAreaBar(edge: .top)`.
+/// Сессия ЛК истекла: расписание из кэша может быть устаревшим.
+struct SessionExpiredCard: View {
+    let login: () -> Void
+    let later: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: "exclamationmark.arrow.trianglehead.2.clockwise.rotate.90")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(.orange))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Расписание может быть устаревшим").font(.headline)
+                    Text("Сессия личного кабинета истекла, обновить расписание не получается.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            HStack(spacing: 10) {
+                Button("Войти", action: login)
+                    .buttonStyle(.glassProminent)
+                Button("Позже", action: later)
+                    .buttonStyle(.glass)
+            }
+            .padding(.leading, 58)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 26))
+    }
+}
+
 struct TabHeader: View {
     let title: String
     var subtitle: String? = nil
