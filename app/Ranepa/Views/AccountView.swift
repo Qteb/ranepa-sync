@@ -94,7 +94,7 @@ struct AccountView: View {
                     NavigationLink {
                         AboutView()
                     } label: {
-                        Label { Text("О приложении") } icon: { SettingsIcon("info", .gray) }
+                        Label { Text("О приложении") } icon: { SettingsIcon(logo: "Logo") }
                     }
                 }
 
