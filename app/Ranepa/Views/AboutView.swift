@@ -4,13 +4,6 @@ enum Links {
     static let repo = URL(string: "https://github.com/Qteb/ranepa-sync")!
     static let privacyRaw = URL(string: "https://raw.githubusercontent.com/Qteb/ranepa-sync/main/PRIVACY.md")!
     static let privacyCDN = URL(string: "https://cdn.jsdelivr.net/gh/Qteb/ranepa-sync@main/PRIVACY.md")!
-
-    /// Чат с разработчиком; в поле ввода уже стоят версии приложения и iOS.
-    static func telegram(_ draft: String) -> URL {
-        var parts = URLComponents(string: "https://t.me/qtebest")!
-        parts.queryItems = [URLQueryItem(name: "text", value: draft)]
-        return parts.url!
-    }
 }
 
 /// Версия, справка, конфиденциальность и связь с разработчиком.
@@ -46,8 +39,8 @@ struct AboutView: View {
             }
             // Ссылки, которые открываются вне приложения.
             Section {
-                Link(destination: Links.telegram("Расписание студента \(version), iOS \(UIDevice.current.systemVersion)")) {
-                    externalRow("Написать в Telegram", icon: SettingsIcon(logo: "Telegram"))
+                Link(destination: SupportLink.url) {
+                    externalRow("Поддержка в Telegram", icon: SettingsIcon(logo: "Telegram"))
                 }
                 Link(destination: Links.repo) {
                     externalRow("Исходный код на GitHub",
