@@ -47,7 +47,7 @@ struct AboutView: View {
             // Ссылки, которые открываются вне приложения.
             Section {
                 Link(destination: Links.telegram("Расписание студента \(version), iOS \(UIDevice.current.systemVersion)")) {
-                    externalRow("Написать в Telegram", icon: SettingsIcon("paperplane.fill", .cyan))
+                    externalRow("Написать в Telegram", icon: SettingsIcon(logo: "Telegram"))
                 }
                 Link(destination: Links.repo) {
                     externalRow("Исходный код на GitHub",

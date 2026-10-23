@@ -40,11 +40,13 @@ func lessonDetails(_ l: Lesson, icon: Bool = false) -> Text {
 struct SettingsIcon: View {
     private let symbol: String?
     private let asset: String?
+    private let logo: String?
     let color: Color
 
     init(_ symbol: String, _ color: Color) {
         self.symbol = symbol
         asset = nil
+        logo = nil
         self.color = color
     }
 
@@ -52,10 +54,27 @@ struct SettingsIcon: View {
     init(asset: String, _ color: Color) {
         symbol = nil
         self.asset = asset
+        logo = nil
         self.color = color
     }
 
+    /// Логотип в оригинальных цветах и форме, без подложки, например Telegram.
+    init(logo: String) {
+        symbol = nil
+        asset = nil
+        self.logo = logo
+        color = .clear
+    }
+
     var body: some View {
+        if let logo {
+            Image(logo).resizable().scaledToFit().frame(width: 30, height: 30)
+        } else {
+            tile
+        }
+    }
+
+    private var tile: some View {
         Group {
             if let symbol {
                 Image(systemName: symbol).font(.system(size: 16, weight: .medium))
