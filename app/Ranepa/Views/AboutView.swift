@@ -4,14 +4,17 @@ enum Links {
     static let repo = URL(string: "https://github.com/Qteb/ranepa-sync")!
     static let privacyRaw = URL(string: "https://raw.githubusercontent.com/Qteb/ranepa-sync/main/PRIVACY.md")!
     static let privacyCDN = URL(string: "https://cdn.jsdelivr.net/gh/Qteb/ranepa-sync@main/PRIVACY.md")!
-    static let email = "qtebest.dev@gmail.com"
+
+    /// Чат с разработчиком; в поле ввода уже стоят версии приложения и iOS.
+    static func telegram(_ draft: String) -> URL {
+        var parts = URLComponents(string: "https://t.me/qtebest")!
+        parts.queryItems = [URLQueryItem(name: "text", value: draft)]
+        return parts.url!
+    }
 }
 
 /// Версия, справка, конфиденциальность и связь с разработчиком.
 struct AboutView: View {
-    @Environment(\.openURL) private var openURL
-    @State private var copied = false
-
     private var version: String {
         let info = Bundle.main.infoDictionary
         return "\(info?["CFBundleShortVersionString"] ?? "") (\(info?["CFBundleVersion"] ?? ""))"
@@ -43,10 +46,8 @@ struct AboutView: View {
             }
             // Ссылки, которые открываются вне приложения.
             Section {
-                Button {
-                    openMail(Links.email, subject: "Расписание студента \(version)", openURL: openURL) { copied = true }
-                } label: {
-                    externalRow("Написать разработчику", icon: SettingsIcon("envelope.fill", .orange))
+                Link(destination: Links.telegram("Расписание студента \(version), iOS \(UIDevice.current.systemVersion)")) {
+                    externalRow("Написать в Telegram", icon: SettingsIcon("paperplane.fill", .cyan))
                 }
                 Link(destination: Links.repo) {
                     externalRow("Исходный код на GitHub",
@@ -61,7 +62,6 @@ struct AboutView: View {
         }
         .navigationTitle("О приложении")
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Адрес скопирован", isPresented: $copied) {} message: { Text(Links.email) }
     }
 
     private func externalRow(_ title: String, icon: SettingsIcon) -> some View {
