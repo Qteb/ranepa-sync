@@ -40,9 +40,13 @@ enum SupportLink {
     /// с пометкой `simulator`, у неизвестной модели — сам код.
     static func modelName(_ identifier: String) -> String {
         if let simulated = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] {
-            return modelName(simulated) + "-simulator"
+            return knownName(simulated) + "-simulator"
         }
-        return models[identifier] ?? slug(identifier)
+        return knownName(identifier)
+    }
+
+    private static func knownName(_ identifier: String) -> String {
+        models[identifier] ?? slug(identifier)
     }
 
     private static var machineIdentifier: String {

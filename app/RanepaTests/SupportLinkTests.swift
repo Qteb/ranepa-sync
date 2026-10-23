@@ -14,6 +14,18 @@ final class SupportLinkTests: XCTestCase {
         XCTAssertEqual(SupportLink.slug("iPhone19,1"), "iphone19-1")
     }
 
+    /// Собирает ссылку целиком, на реальном устройстве — из настоящих данных.
+    /// Тесты идут в симуляторе, поэтому модель должна прийти с пометкой simulator.
+    func testFullLink() throws {
+        let url = SupportLink.url.absoluteString
+        XCTAssertTrue(url.hasPrefix("https://t.me/ranepa_sync_robot?start=app-"))
+        let start = try XCTUnwrap(url.components(separatedBy: "start=").last)
+        XCTAssertNotNil(start.range(of: "^[a-z0-9_-]{1,64}$", options: .regularExpression))
+        if ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] != nil {
+            XCTAssertTrue(start.hasSuffix("-simulator"), start)
+        }
+    }
+
     /// Telegram отбрасывает start длиннее 64 символов и с недопустимыми знаками.
     func testOnlyModelIsShortened() {
         let start = SupportLink.startParameter(
