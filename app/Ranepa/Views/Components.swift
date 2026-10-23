@@ -58,7 +58,7 @@ struct SettingsIcon: View {
         self.color = color
     }
 
-    /// Логотип в оригинальных цветах и форме, без подложки, например Telegram.
+    /// Логотип в оригинальных цветах и форме, без подложки, например Telegram или иконка приложения.
     init(logo: String) {
         symbol = nil
         asset = nil
@@ -69,6 +69,7 @@ struct SettingsIcon: View {
     var body: some View {
         if let logo {
             Image(logo).resizable().scaledToFit().frame(width: 30, height: 30)
+                .clipShape(.rect(cornerRadius: 7))
         } else {
             tile
         }
